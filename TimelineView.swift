@@ -94,9 +94,6 @@ public struct TimelineView: View {
                     Text("Profile: **\(user)**")
                         .font(.caption)
                     Spacer()
-                    Text("Downloaded Files: \(store.downloadedFiles.count)")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
                 }
                 .padding(.vertical, 8)
                 .padding(.horizontal, 12)
