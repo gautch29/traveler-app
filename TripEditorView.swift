@@ -1,0 +1,420 @@
+import SwiftUI
+import MapKit
+
+public struct TripEditorView: View {
+    @ObservedObject var store: TripStore
+    
+    @State private var editedTrip: Trip?
+    @State private var showingUploadAlert = false
+    @State private var uploadSuccess = false
+    @State private var uploadMessage = ""
+    @State private var isUploading = false
+    
+    public init(store: TripStore) {
+        self.store = store
+    }
+    
+    public var body: some View {
+        NavigationStack {
+            Group {
+                if let trip = editedTrip {
+                    Form {
+                        Section("Trip Settings") {
+                            TextField("Trip Name", text: Binding(
+                                get: { trip.tripName },
+                                set: { editedTrip = Trip(tripName: $0, startDate: trip.startDate, endDate: trip.endDate, users: trip.users, emergencyInfo: trip.emergencyInfo, steps: trip.steps) }
+                            ))
+                            TextField("Start Date (YYYY-MM-DD)", text: Binding(
+                                get: { trip.startDate },
+                                set: { editedTrip = Trip(tripName: trip.tripName, startDate: $0, endDate: trip.endDate, users: trip.users, emergencyInfo: trip.emergencyInfo, steps: trip.steps) }
+                            ))
+                            TextField("End Date (YYYY-MM-DD)", text: Binding(
+                                get: { trip.endDate },
+                                set: { editedTrip = Trip(tripName: trip.tripName, startDate: trip.startDate, endDate: $0, users: trip.users, emergencyInfo: trip.emergencyInfo, steps: trip.steps) }
+                            ))
+                        }
+                        
+                        Section("Users / Profiles") {
+                            Text(trip.users.joined(separator: ", "))
+                                .foregroundColor(.secondary)
+                                .font(.subheadline)
+                        }
+                        
+                        Section("Days / Steps") {
+                            List {
+                                ForEach(trip.steps) { step in
+                                    NavigationLink(destination: DayEditorView(step: step, users: trip.users, onSave: { updatedStep in
+                                        updateStep(updatedStep)
+                                    })) {
+                                        HStack {
+                                            Text("Day \(step.dayNumber)")
+                                                .fontWeight(.bold)
+                                                .foregroundColor(.accentColor)
+                                            Text(step.title)
+                                                .lineLimit(1)
+                                        }
+                                    }
+                                }
+                                .onDelete(perform: deleteStep)
+                            }
+                            
+                            Button(action: addStep) {
+                                Label("Add Day", systemImage: "calendar.badge.plus")
+                            }
+                        }
+                        
+                        Section("Save Changes") {
+                            Button(action: saveAndUpload) {
+                                if isUploading {
+                                    HStack {
+                                        ProgressView()
+                                        Text("Uploading to Server...")
+                                            .padding(.leading, 8)
+                                    }
+                                } else {
+                                    Label("Upload Trip to Server ☁️", systemImage: "icloud.and.arrow.up.fill")
+                                }
+                            }
+                            .disabled(isUploading)
+                            .frame(maxWidth: .infinity)
+                            .alignmentGuide(.leading) { _ in 0 }
+                        }
+                    }
+                } else {
+                    VStack(spacing: 20) {
+                        Image(systemName: "square.and.pencil.circle")
+                            .font(.system(size: 80))
+                            .foregroundColor(.secondary)
+                        Text("No Trip Config Loaded")
+                            .font(.headline)
+                        Button("Load Current Config") {
+                            editedTrip = store.trip
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
+                    .padding()
+                }
+            }
+            .navigationTitle("Itinerary Editor ✍️")
+            .onAppear {
+                if editedTrip == nil {
+                    editedTrip = store.trip
+                }
+            }
+            .alert(uploadSuccess ? "Upload Succeeded" : "Upload Failed", isPresented: $showingUploadAlert) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(uploadMessage)
+            }
+        }
+    }
+    
+    // MARK: - Editor Operations
+    
+    private func updateStep(_ updatedStep: Step) {
+        guard let trip = editedTrip else { return }
+        var updatedSteps = trip.steps
+        if let idx = updatedSteps.firstIndex(where: { $0.id == updatedStep.id }) {
+            updatedSteps[idx] = updatedStep
+        }
+        
+        // Resort steps by dayNumber just in case
+        updatedSteps.sort(by: { $0.dayNumber < $1.dayNumber })
+        
+        editedTrip = Trip(tripName: trip.tripName, startDate: trip.startDate, endDate: trip.endDate, users: trip.users, emergencyInfo: trip.emergencyInfo, steps: updatedSteps)
+    }
+    
+    private func addStep() {
+        guard let trip = editedTrip else { return }
+        let nextDayNum = (trip.steps.map { $0.dayNumber }.max() ?? 0) + 1
+        
+        let newStep = Step(
+            id: UUID().uuidString.lowercased(),
+            dayNumber: nextDayNum,
+            title: "New Day Step",
+            date: "2026-08-\(String(format: "%02d", nextDayNum))",
+            location: LocationInfo(name: "New Destination", latitude: 37.0902, longitude: -95.7129),
+            description: "Describe the day activities here.",
+            items: []
+        )
+        
+        let updatedSteps = (trip.steps + [newStep]).sorted(by: { $0.dayNumber < $1.dayNumber })
+        editedTrip = Trip(tripName: trip.tripName, startDate: trip.startDate, endDate: trip.endDate, users: trip.users, emergencyInfo: trip.emergencyInfo, steps: updatedSteps)
+    }
+    
+    private func deleteStep(at offsets: IndexSet) {
+        guard let trip = editedTrip else { return }
+        var updatedSteps = trip.steps
+        updatedSteps.remove(atOffsets: offsets)
+        
+        // Re-index day numbers sequentially
+        for i in 0..<updatedSteps.count {
+            let step = updatedSteps[i]
+            updatedSteps[i] = Step(id: step.id, dayNumber: i + 1, title: step.title, date: step.date, location: step.location, description: step.description, items: step.items)
+        }
+        
+        editedTrip = Trip(tripName: trip.tripName, startDate: trip.startDate, endDate: trip.endDate, users: trip.users, emergencyInfo: trip.emergencyInfo, steps: updatedSteps)
+    }
+    
+    private func saveAndUpload() {
+        guard let trip = editedTrip else { return }
+        isUploading = true
+        
+        Task {
+            // 1. Update the store's copy locally
+            store.trip = trip
+            
+            // 2. Upload to server
+            let success = await store.uploadTrip()
+            
+            isUploading = false
+            uploadSuccess = success
+            if success {
+                uploadMessage = "The updated itinerary has been successfully saved to the server and synchronized!"
+                
+                // Re-download assets based on newly modified config
+                await store.downloadAllFilesForCurrentConfig()
+            } else {
+                uploadMessage = "Failed to upload to the server. Please verify the mock server is running and the connection URL is correct."
+            }
+            showingUploadAlert = true
+        }
+    }
+}
+
+// MARK: - Day Editor View
+
+struct DayEditorView: View {
+    @State var step: Step
+    let users: [String]
+    let onSave: (Step) -> Void
+    
+    @State private var locName = ""
+    @State private var locLat = ""
+    @State private var locLng = ""
+    
+    var body: some View {
+        Form {
+            Section("Day Properties") {
+                TextField("Step Title", text: $step.title)
+                TextField("Date", text: $step.date)
+                TextField("Description", text: $step.description, axis: .vertical)
+                    .lineLimit(3...6)
+            }
+            
+            Section("Location (Map integration)") {
+                TextField("Location Name", text: $locName)
+                TextField("Latitude", text: $locLat)
+                    .keyboardType(.decimalPad)
+                TextField("Longitude", text: $locLng)
+                    .keyboardType(.decimalPad)
+            }
+            
+            Section("Schedule & Activities") {
+                List {
+                    ForEach(step.items) { item in
+                        NavigationLink(destination: ActivityEditorView(item: item, users: users, onSave: { updatedItem in
+                            updateItem(updatedItem)
+                        })) {
+                            HStack {
+                                Image(systemName: item.type.iconName)
+                                    .foregroundColor(.accentColor)
+                                VStack(alignment: .leading) {
+                                    Text(item.title)
+                                        .font(.subheadline)
+                                    Text(item.time)
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                        }
+                    }
+                    .onDelete(perform: deleteItem)
+                }
+                
+                Button(action: addItem) {
+                    Label("Add Activity", systemImage: "plus.circle")
+                }
+            }
+        }
+        .navigationTitle("Day \(step.dayNumber) Editor")
+        .onAppear {
+            locName = step.location.name
+            locLat = String(step.location.latitude)
+            locLng = String(step.location.longitude)
+        }
+        .onDisappear {
+            // Save location parameters
+            let lat = Double(locLat) ?? 37.0902
+            let lng = Double(locLng) ?? -95.7129
+            let updatedStep = Step(
+                id: step.id,
+                dayNumber: step.dayNumber,
+                title: step.title,
+                date: step.date,
+                location: LocationInfo(name: locName, latitude: lat, longitude: lng),
+                description: step.description,
+                items: step.items
+            )
+            onSave(updatedStep)
+        }
+    }
+    
+    private func updateItem(_ updatedItem: TripItem) {
+        var items = step.items
+        if let idx = items.firstIndex(where: { $0.id == updatedItem.id }) {
+            items[idx] = updatedItem
+        }
+        step = Step(id: step.id, dayNumber: step.dayNumber, title: step.title, date: step.date, location: step.location, description: step.description, items: items)
+    }
+    
+    private func addItem() {
+        let newItem = TripItem(
+            id: UUID().uuidString.lowercased(),
+            type: .activity,
+            title: "New Activity",
+            time: "12:00 PM",
+            details: "Activity Details",
+            sharedFiles: [],
+            profileFiles: [:],
+            walletPasses: [],
+            profileWalletPasses: [:],
+            websiteURL: nil
+        )
+        let items = step.items + [newItem]
+        step = Step(id: step.id, dayNumber: step.dayNumber, title: step.title, date: step.date, location: step.location, description: step.description, items: items)
+    }
+    
+    private func deleteItem(at offsets: IndexSet) {
+        var items = step.items
+        items.remove(atOffsets: offsets)
+        step = Step(id: step.id, dayNumber: step.dayNumber, title: step.title, date: step.date, location: step.location, description: step.description, items: items)
+    }
+}
+
+// MARK: - Activity Editor View
+
+struct ActivityEditorView: View {
+    @State var item: TripItem
+    let users: [String]
+    let onSave: (TripItem) -> Void
+    
+    @State private var typeIndex = 0
+    @State private var sharedFilesInput = ""
+    @State private var sharedPassesInput = ""
+    @State private var websiteURLInput = ""
+    
+    // Manage profile mappings
+    @State private var profileFiles = [String: String]()
+    @State private var profilePasses = [String: String]()
+    
+    var body: some View {
+        Form {
+            Section("Properties") {
+                TextField("Activity Title", text: $item.title)
+                TextField("Time", text: $item.time)
+                TextField("Details", text: $item.details, axis: .vertical)
+                
+                Picker("Activity Type", selection: $typeIndex) {
+                    ForEach(0..<TripItemType.allCases.count, id: \.self) { idx in
+                        Text(TripItemType.allCases[idx].rawValue.capitalized).tag(idx)
+                    }
+                }
+            }
+            
+            Section("Links") {
+                TextField("Website URL", text: $websiteURLInput)
+                    .keyboardType(.URL)
+                    .autocapitalization(.none)
+            }
+            
+            Section("PDF Ticket Files") {
+                TextField("Shared PDFs (comma separated)", text: $sharedFilesInput)
+                    .autocapitalization(.none)
+                
+                Text("Personal PDFs (per User):")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                ForEach(users, id: \.self) { user in
+                    HStack {
+                        Text(user)
+                            .frame(width: 80, alignment: .leading)
+                        TextField("ticket.pdf", text: Binding(
+                            get: { profileFiles[user] ?? "" },
+                            set: { profileFiles[user] = $0.isEmpty ? nil : $0 }
+                        ))
+                        .autocapitalization(.none)
+                    }
+                }
+            }
+            
+            Section("Apple Wallet Passes") {
+                TextField("Shared Passes (comma separated)", text: $sharedPassesInput)
+                    .autocapitalization(.none)
+                
+                Text("Personal Passes (per User):")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                ForEach(users, id: \.self) { user in
+                    HStack {
+                        Text(user)
+                            .frame(width: 80, alignment: .leading)
+                        TextField("pass.pkpass", text: Binding(
+                            get: { profilePasses[user] ?? "" },
+                            set: { profilePasses[user] = $0.isEmpty ? nil : $0 }
+                        ))
+                        .autocapitalization(.none)
+                    }
+                }
+            }
+        }
+        .navigationTitle("Activity Editor")
+        .onAppear {
+            if let idx = TripItemType.allCases.firstIndex(of: item.type) {
+                typeIndex = idx
+            }
+            sharedFilesInput = item.sharedFiles.joined(separator: ", ")
+            sharedPassesInput = (item.walletPasses ?? []).joined(separator: ", ")
+            websiteURLInput = item.websiteURL ?? ""
+            
+            // Populate profile dictionaries
+            for user in users {
+                profileFiles[user] = item.profileFiles?[user] ?? ""
+                profilePasses[user] = item.profileWalletPasses?[user] ?? ""
+            }
+        }
+        .onDisappear {
+            // Save state back
+            let sharedFiles = sharedFilesInput.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
+            let walletPasses = sharedPassesInput.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
+            
+            var pFiles = [String: String]()
+            var pPasses = [String: String]()
+            
+            for user in users {
+                if let file = profileFiles[user], !file.isEmpty {
+                    pFiles[user] = file
+                }
+                if let pass = profilePasses[user], !pass.isEmpty {
+                    pPasses[user] = pass
+                }
+            }
+            
+            let updatedItem = TripItem(
+                id: item.id,
+                type: TripItemType.allCases[typeIndex],
+                title: item.title,
+                time: item.time,
+                details: item.details,
+                sharedFiles: sharedFiles,
+                profileFiles: pFiles.isEmpty ? nil : pFiles,
+                walletPasses: walletPasses.isEmpty ? nil : walletPasses,
+                profileWalletPasses: pPasses.isEmpty ? nil : pPasses,
+                websiteURL: websiteURLInput.isEmpty ? nil : websiteURLInput
+            )
+            onSave(updatedItem)
+        }
+    }
+}

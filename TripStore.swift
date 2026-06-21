@@ -125,6 +125,30 @@ public class TripStore: ObservableObject {
         self.isSyncing = false
     }
     
+    public func uploadTrip() async -> Bool {
+        guard let trip = trip, let url = URL(string: serverURLString) else { return false }
+        
+        do {
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+            let data = try encoder.encode(trip)
+            
+            var request = URLRequest(url: url)
+            request.httpMethod = "POST"
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.httpBody = data
+            
+            let (_, response) = try await URLSession.shared.data(for: request)
+            guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+                return false
+            }
+            return true
+        } catch {
+            print("Failed to upload trip: \(error)")
+            return false
+        }
+    }
+    
     // MARK: - Cache & PDF Downloads
     
     private var assetsDirectory: URL {

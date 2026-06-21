@@ -48,6 +48,7 @@ public struct TripItem: Codable, Identifiable, Hashable, Equatable {
     public let profileFiles: [String: String]? // Maps username to file name
     public let walletPasses: [String]? // Shared .pkpass files
     public let profileWalletPasses: [String: String]? // Maps username to personal .pkpass file
+    public let websiteURL: String? // Optional website link
     
     // Helper to get applicable files for a user
     public func getFiles(forUser username: String) -> [String] {

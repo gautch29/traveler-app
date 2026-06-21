@@ -580,6 +580,29 @@ public struct StepDetailView: View {
                     }
                 }
             }
+            
+            // Website URL Link
+            if let webString = item.websiteURL, let webURL = URL(string: webString) {
+                Divider()
+                
+                Link(destination: webURL) {
+                    HStack {
+                        Image(systemName: "safari")
+                            .foregroundColor(.accentColor)
+                        Text("Open Website")
+                            .font(.caption)
+                            .bold()
+                            .foregroundColor(.accentColor)
+                        Spacer()
+                        Image(systemName: "arrow.up.right.square")
+                            .font(.caption)
+                            .foregroundColor(.accentColor)
+                    }
+                    .padding(10)
+                    .background(Color.accentColor.opacity(0.1))
+                    .cornerRadius(8)
+                }
+            }
         }
         .padding()
         .background(.thinMaterial)
@@ -587,5 +610,4 @@ public struct StepDetailView: View {
         .padding(.horizontal)
     }
 }
-
 
