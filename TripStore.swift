@@ -1,11 +1,24 @@
 import Foundation
 import Combine
 
+class SelfSignedSessionDelegate: NSObject, URLSessionDelegate {
+    func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
+        if challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust {
+            if let serverTrust = challenge.protectionSpace.serverTrust {
+                completionHandler(.useCredential, URLCredential(trust: serverTrust))
+                return
+            }
+        }
+        completionHandler(.performDefaultHandling, nil)
+    }
+}
+
 @MainActor
 public class TripStore: ObservableObject {
     @Published public var trip: Trip?
     @Published public var selectedUser: String?
     @Published public var serverURLString: String
+    @Published public var serverToken: String
     @Published public var isSyncing = false
     @Published public var syncError: String?
     @Published public var downloadedFiles: Set<String> = []
@@ -16,12 +29,17 @@ public class TripStore: ObservableObject {
     private let tripKey = "traveler_saved_trip"
     private let userKey = "traveler_selected_user"
     private let serverURLKey = "traveler_server_url"
+    private let serverTokenKey = "traveler_server_token"
     private let expensesKey = "traveler_expenses"
+    private var session: URLSession!
     
     public init() {
         // Load defaults
-        self.serverURLString = UserDefaults.standard.string(forKey: serverURLKey) ?? "http://localhost:8000/trip.json"
+        self.serverToken = UserDefaults.standard.string(forKey: serverTokenKey) ?? "traveler_secret_token_2026"
+        self.serverURLString = UserDefaults.standard.string(forKey: serverURLKey) ?? "https://localhost:8000/trip.json"
         self.selectedUser = UserDefaults.standard.string(forKey: userKey)
+        
+        self.session = URLSession(configuration: .default, delegate: SelfSignedSessionDelegate(), delegateQueue: nil)
         
         loadLocalData()
         loadLocalExpenses()
@@ -83,6 +101,11 @@ public class TripStore: ObservableObject {
         UserDefaults.standard.set(urlString, forKey: serverURLKey)
     }
     
+    public func updateServerToken(_ token: String) {
+        self.serverToken = token
+        UserDefaults.standard.set(token, forKey: serverTokenKey)
+    }
+    
     // MARK: - Sync Logic
     
     public func sync() async {
@@ -95,7 +118,11 @@ public class TripStore: ObservableObject {
         self.syncError = nil
         
         do {
-            let (data, response) = try await URLSession.shared.data(from: url)
+            var request = URLRequest(url: url)
+            if !serverToken.isEmpty {
+                request.setValue("Bearer \(serverToken)", forHTTPHeaderField: "Authorization")
+            }
+            let (data, response) = try await self.session.data(for: request)
             
             guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
                 throw URLError(.badServerResponse)
@@ -136,9 +163,12 @@ public class TripStore: ObservableObject {
             var request = URLRequest(url: url)
             request.httpMethod = "POST"
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            if !serverToken.isEmpty {
+                request.setValue("Bearer \(serverToken)", forHTTPHeaderField: "Authorization")
+            }
             request.httpBody = data
             
-            let (_, response) = try await URLSession.shared.data(for: request)
+            let (_, response) = try await self.session.data(for: request)
             guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
                 return false
             }
@@ -262,8 +292,12 @@ public class TripStore: ObservableObject {
     public func downloadFile(from url: URL, originalFilename: String) async throws {
         let destination = localURL(forFilename: originalFilename)
         
-        // Download using URLSession
-        let (tempURL, _) = try await URLSession.shared.download(from: url)
+        // Download using custom session
+        var request = URLRequest(url: url)
+        if !serverToken.isEmpty {
+            request.setValue("Bearer \(serverToken)", forHTTPHeaderField: "Authorization")
+        }
+        let (tempURL, _) = try await self.session.download(for: request)
         
         // Remove existing if any
         if fileManager.fileExists(atPath: destination.path) {

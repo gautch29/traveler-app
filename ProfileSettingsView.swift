@@ -4,6 +4,7 @@ public struct ProfileSettingsView: View {
     @ObservedObject var store: TripStore
     
     @State private var serverURLInput = ""
+    @State private var serverTokenInput = ""
     @State private var showResetConfirmation = false
     
     public init(store: TripStore) {
@@ -42,8 +43,13 @@ public struct ProfileSettingsView: View {
                         .autocapitalization(.none)
                         .disableAutocorrection(true)
                     
+                    SecureField("Server Access Token", text: $serverTokenInput)
+                        .autocapitalization(.none)
+                        .disableAutocorrection(true)
+                    
                     Button {
                         store.updateServerURL(serverURLInput)
+                        store.updateServerToken(serverTokenInput)
                         Task {
                             await store.sync()
                         }
@@ -106,6 +112,7 @@ public struct ProfileSettingsView: View {
             .navigationTitle("Settings & Info ⚙️")
             .onAppear {
                 serverURLInput = store.serverURLString
+                serverTokenInput = store.serverToken
             }
             .confirmationDialog(
                 "Are you sure you want to clear the local cache?",
