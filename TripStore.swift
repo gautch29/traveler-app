@@ -91,6 +91,68 @@ public class TripStore: ObservableObject {
         }
     }
     
+    public func fetchExpenses() async {
+        guard let tripURL = URL(string: serverURLString) else { return }
+        let baseURL = tripURL.deletingLastPathComponent()
+        let expensesURL = baseURL.appendingPathComponent("expenses.json")
+        
+        var request = URLRequest(url: expensesURL)
+        if !serverToken.isEmpty {
+            request.setValue("Bearer \(serverToken)", forHTTPHeaderField: "Authorization")
+        }
+        
+        do {
+            let (data, response) = try await self.session.data(for: request)
+            guard let httpResponse = response as? HTTPURLResponse else { return }
+            
+            if httpResponse.statusCode == 200 {
+                let decoder = JSONDecoder()
+                let fetchedExpenses = try decoder.decode([Expense].self, from: data)
+                self.expenses = fetchedExpenses
+                
+                // Save locally too as offline fallback
+                do {
+                    let encoder = JSONEncoder()
+                    let localData = try encoder.encode(fetchedExpenses)
+                    UserDefaults.standard.set(localData, forKey: expensesKey)
+                } catch {}
+            } else if httpResponse.statusCode == 404 {
+                print("No expenses found on server (404).")
+            }
+        } catch {
+            print("Failed to fetch expenses: \(error)")
+        }
+    }
+    
+    public func uploadExpenses() async -> Bool {
+        guard let tripURL = URL(string: serverURLString) else { return false }
+        let baseURL = tripURL.deletingLastPathComponent()
+        let expensesURL = baseURL.appendingPathComponent("expenses.json")
+        
+        do {
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+            let data = try encoder.encode(expenses)
+            
+            var request = URLRequest(url: expensesURL)
+            request.httpMethod = "POST"
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            if !serverToken.isEmpty {
+                request.setValue("Bearer \(serverToken)", forHTTPHeaderField: "Authorization")
+            }
+            request.httpBody = data
+            
+            let (_, response) = try await self.session.data(for: request)
+            guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+                return false
+            }
+            return true
+        } catch {
+            print("Failed to upload expenses: \(error)")
+            return false
+        }
+    }
+    
     public func selectUser(_ username: String) {
         self.selectedUser = username
         UserDefaults.standard.set(username, forKey: userKey)
@@ -143,6 +205,9 @@ public class TripStore: ObservableObject {
             
             // Trigger pre-download of all applicable files
             await downloadAllFilesForCurrentConfig()
+            
+            // Sync expenses from server
+            await fetchExpenses()
             
         } catch {
             self.syncError = "Sync failed: \(error.localizedDescription). Using offline cached data."
@@ -328,11 +393,19 @@ public class TripStore: ObservableObject {
         let expense = Expense(title: title, amount: amount, paidBy: paidBy, splitAmong: splitAmong)
         expenses.append(expense)
         saveExpenses()
+        
+        Task {
+            _ = await uploadExpenses()
+        }
     }
     
     public func deleteExpense(at offsets: IndexSet) {
         expenses.remove(atOffsets: offsets)
         saveExpenses()
+        
+        Task {
+            _ = await uploadExpenses()
+        }
     }
     
     // MARK: - Debt Settlement Calculations
