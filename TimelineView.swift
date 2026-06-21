@@ -1,6 +1,7 @@
 import SwiftUI
 import MapKit
 import PassKit
+import PDFKit
 
 public struct TimelineView: View {
     @ObservedObject var store: TripStore
@@ -445,18 +446,36 @@ public struct StepDetailView: View {
                             Spacer()
                             
                             if store.downloadedFiles.contains(file) {
-                                Button {
-                                    if let url = store.getLocalFileURL(forFilename: file) {
-                                        fileViewTitle = file.components(separatedBy: "/").last ?? "Ticket"
-                                        selectedFileToView = IdentifiableURL(url: url)
+                                if let url = store.getLocalFileURL(forFilename: file) {
+                                    VStack(alignment: .leading, spacing: 6) {
+                                        HStack {
+                                            Text(file.replacingOccurrences(of: "tickets/", with: "").replacingOccurrences(of: "permits/", with: ""))
+                                                .font(.caption2)
+                                                .fontWeight(.bold)
+                                                .foregroundColor(.secondary)
+                                                .lineLimit(1)
+                                            
+                                            Spacer()
+                                            
+                                            ShareLink(item: url) {
+                                                Image(systemName: "square.and.arrow.up")
+                                                    .font(.caption)
+                                            }
+                                        }
+                                        
+                                        // Inline PDF Integration
+                                        PDFKitRepresentable(url: url)
+                                            .frame(height: 320)
+                                            .cornerRadius(10)
+                                            .shadow(color: Color.black.opacity(0.08), radius: 5, x: 0, y: 3)
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 10)
+                                                    .stroke(Color.primary.opacity(0.12), lineWidth: 1)
+                                            )
                                     }
-                                } label: {
-                                    Text("Open PDF")
-                                        .font(.caption)
-                                        .bold()
+                                    .padding(.top, 4)
+                                    .padding(.bottom, 8)
                                 }
-                                .buttonStyle(.bordered)
-                                .tint(Color.accentColor)
                             } else {
                                 Button {
                                     // Trigger file download
@@ -467,7 +486,7 @@ public struct StepDetailView: View {
                                         }
                                     }
                                 } label: {
-                                    Label("Download", systemImage: "arrow.down.circle")
+                                    Label("Download PDF", systemImage: "arrow.down.circle")
                                         .font(.caption)
                                 }
                                 .buttonStyle(.bordered)
