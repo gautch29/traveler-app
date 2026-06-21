@@ -1,0 +1,442 @@
+import SwiftUI
+import MapKit
+
+public struct TimelineView: View {
+    @ObservedObject var store: TripStore
+    
+    public init(store: TripStore) {
+        self.store = store
+    }
+    
+    public var body: some View {
+        NavigationStack {
+            ZStack {
+                // Background USA Map
+                Map(initialPosition: .region(MKCoordinateRegion(
+                    center: CLLocationCoordinate2D(latitude: 37.0902, longitude: -95.7129),
+                    span: MKCoordinateSpan(latitudeDelta: 22, longitudeDelta: 42)
+                )))
+                .disabled(true)
+                .ignoresSafeArea()
+                .opacity(0.18)
+                .blur(radius: 1.5)
+                
+                Group {
+                    if let trip = store.trip {
+                        ScrollView {
+                            LazyVStack(spacing: 0) {
+                                // Trip header
+                                tripHeaderView(trip)
+                                
+                                // Day timeline
+                                ForEach(trip.steps) { step in
+                                    NavigationLink(value: step) {
+                                        TimelineRow(step: step, totalSteps: trip.steps.count)
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
+                                }
+                                
+                                Spacer()
+                                    .frame(height: 40)
+                            }
+                        }
+                        .scrollContentBackground(.hidden)
+                        .refreshable {
+                            await store.sync()
+                        }
+                    } else {
+                        emptyStateView
+                    }
+                }
+            }
+            .navigationTitle(store.trip?.tripName ?? "My Trip")
+            .navigationDestination(for: Step.self) { step in
+                StepDetailView(step: step, store: store)
+            }
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    if store.isSyncing {
+                        ProgressView()
+                    } else {
+                        Button {
+                            Task {
+                                await store.sync()
+                            }
+                        } label: {
+                            Image(systemName: "arrow.clockwise")
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    // MARK: - Header
+    
+    private func tripHeaderView(_ trip: Trip) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(trip.tripName)
+                        .font(.title)
+                        .fontWeight(.bold)
+                    Text("\(trip.startDate) to \(trip.endDate) • 3 Weeks")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+                Spacer()
+            }
+            
+            // Basic status / info
+            if let user = store.selectedUser {
+                HStack {
+                    Image(systemName: "person.circle.fill")
+                        .foregroundColor(.accentColor)
+                    Text("Profile: **\(user)**")
+                        .font(.caption)
+                    Spacer()
+                    Text("Downloaded Files: \(store.downloadedFiles.count)")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+                .padding(.vertical, 8)
+                .padding(.horizontal, 12)
+                .background(Color.accentColor.opacity(0.1))
+                .cornerRadius(8)
+                .padding(.top, 4)
+            }
+        }
+        .padding()
+        .background(.ultraThinMaterial)
+    }
+    
+    // MARK: - Empty State
+    
+    private var emptyStateView: some View {
+        VStack(spacing: 20) {
+            Image(systemName: "airplane.circle")
+                .font(.system(size: 80))
+                .foregroundColor(.secondary)
+            
+            Text("No Trip Configured")
+                .font(.title2)
+                .fontWeight(.bold)
+            
+            Text("Go to Settings to enter your server URL and pull the trip configuration. Make sure you run the mock server!")
+                .font(.body)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 40)
+            
+            Button {
+                Task {
+                    await store.sync()
+                }
+            } label: {
+                if store.isSyncing {
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                } else {
+                    Label("Sync Now", systemImage: "arrow.clockwise")
+                }
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(Color.accentColor)
+        }
+        .padding()
+    }
+}
+
+// MARK: - Timeline Row Component
+
+struct TimelineRow: View {
+    let step: Step
+    let totalSteps: Int
+    
+    var body: some View {
+        HStack(alignment: .top, spacing: 0) {
+            // Timeline connector track
+            VStack {
+                Circle()
+                    .fill(Color.accentColor)
+                    .frame(width: 14, height: 14)
+                    .overlay(
+                        Circle()
+                            .stroke(Color(.systemBackground), lineWidth: 2)
+                    )
+                    .padding(.top, 6)
+                
+                if step.dayNumber < totalSteps {
+                    Rectangle()
+                        .fill(Color.accentColor.opacity(0.3))
+                        .frame(width: 2)
+                        .frame(maxHeight: .infinity)
+                } else {
+                    Spacer()
+                }
+            }
+            .frame(width: 40)
+            
+            // Content Card
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("DAY \(step.dayNumber)")
+                        .font(.caption2)
+                        .fontWeight(.bold)
+                        .foregroundColor(.accentColor)
+                    
+                    Spacer()
+                    
+                    Text(step.date)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                
+                Text(step.title)
+                    .font(.headline)
+                    .foregroundColor(.primary)
+                
+                Text(step.location.name)
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+                
+                Text(step.description)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                    .padding(.top, 2)
+                
+                // Show item preview icons
+                if !step.items.isEmpty {
+                    HStack(spacing: 8) {
+                        ForEach(step.items) { item in
+                            Image(systemName: item.type.iconName)
+                                .font(.caption2)
+                                .foregroundColor(.accentColor)
+                                .padding(6)
+                                .background(Color.accentColor.opacity(0.1))
+                                .clipShape(Circle())
+                        }
+                    }
+                    .padding(.top, 4)
+                }
+            }
+            .padding()
+            .background(.thinMaterial)
+            .cornerRadius(12)
+            .shadow(color: Color.black.opacity(0.04), radius: 4, x: 0, y: 2)
+            .padding(.trailing)
+            .padding(.bottom, 16)
+        }
+    }
+}
+
+// MARK: - Step Detail View
+
+public struct IdentifiableURL: Identifiable {
+    public var id: String { url.absoluteString }
+    public let url: URL
+}
+
+public struct StepDetailView: View {
+    let step: Step
+    @ObservedObject var store: TripStore
+    
+    @State private var selectedFileToView: IdentifiableURL? = nil
+    @State private var fileViewTitle = ""
+    
+    public init(step: Step, store: TripStore) {
+        self.step = step
+        self.store = store
+    }
+    
+    public var body: some View {
+        ZStack {
+            // Local Map centered on step location coordinates
+            Map(initialPosition: .region(MKCoordinateRegion(
+                center: step.location.coordinate,
+                span: MKCoordinateSpan(latitudeDelta: 0.15, longitudeDelta: 0.15)
+            )))
+            .disabled(true)
+            .ignoresSafeArea()
+            .opacity(0.25)
+            .blur(radius: 1.5)
+            
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    // Header card
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack {
+                            Text("DAY \(step.dayNumber)")
+                                .font(.caption)
+                                .fontWeight(.bold)
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 4)
+                                .background(Color.accentColor)
+                                .cornerRadius(6)
+                            
+                            Spacer()
+                            
+                            Text(step.date)
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                        }
+                        
+                        Text(step.title)
+                            .font(.title2)
+                            .fontWeight(.bold)
+                        
+                        Text(step.location.name)
+                            .font(.body)
+                            .foregroundColor(.secondary)
+                        
+                        Divider()
+                            .padding(.vertical, 8)
+                        
+                        Text(step.description)
+                            .font(.body)
+                            .foregroundColor(.primary)
+                    }
+                    .padding()
+                    .background(.thinMaterial)
+                    .cornerRadius(16)
+                    .shadow(color: Color.black.opacity(0.03), radius: 8, x: 0, y: 4)
+                    .padding(.horizontal)
+                    
+                    // Activities / Tickets Section
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Schedule & Bookings")
+                            .font(.title3)
+                            .fontWeight(.bold)
+                            .padding(.horizontal)
+                        
+                        if step.items.isEmpty {
+                            Text("No specific schedule details for this day. Free exploration!")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                                .padding()
+                                .frame(maxWidth: .infinity)
+                                .background(.thinMaterial)
+                                .cornerRadius(12)
+                                .padding(.horizontal)
+                        } else {
+                            ForEach(step.items) { item in
+                                activityItemCard(item)
+                            }
+                        }
+                    }
+                }
+                .padding(.vertical)
+            }
+            .scrollContentBackground(.hidden)
+        }
+        .navigationTitle("Day \(step.dayNumber)")
+        .navigationBarTitleDisplayMode(.inline)
+        .sheet(item: $selectedFileToView) { identifiableURL in
+            PDFKitView(fileURL: identifiableURL.url, title: fileViewTitle)
+        }
+    }
+    
+    // MARK: - Activity Card
+    
+    private func activityItemCard(_ item: TripItem) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top) {
+                // Leading Icon
+                Image(systemName: item.type.iconName)
+                    .font(.title2)
+                    .foregroundColor(.white)
+                    .padding(10)
+                    .background(Color.accentColor)
+                    .cornerRadius(10)
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text(item.title)
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                        Spacer()
+                        Text(item.time)
+                            .font(.caption)
+                            .fontWeight(.bold)
+                            .foregroundColor(.accentColor)
+                    }
+                    
+                    Text(item.details)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+            }
+            
+            // Files / Tickets attachments
+            let user = store.selectedUser ?? ""
+            let applicableFiles = item.getFiles(forUser: user)
+            
+            if !applicableFiles.isEmpty {
+                Divider()
+                
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Attachments")
+                        .font(.caption)
+                        .fontWeight(.bold)
+                        .foregroundColor(.secondary)
+                    
+                    ForEach(applicableFiles, id: \.self) { file in
+                        HStack {
+                            Image(systemName: "doc.text.fill")
+                                .foregroundColor(.red)
+                            
+                            Text(file.replacingOccurrences(of: "tickets/", with: "").replacingOccurrences(of: "permits/", with: ""))
+                                .font(.caption)
+                                .foregroundColor(.primary)
+                                .lineLimit(1)
+                            
+                            Spacer()
+                            
+                            if store.downloadedFiles.contains(file) {
+                                Button {
+                                    if let url = store.getLocalFileURL(forFilename: file) {
+                                        fileViewTitle = file.components(separatedBy: "/").last ?? "Ticket"
+                                        selectedFileToView = IdentifiableURL(url: url)
+                                    }
+                                } label: {
+                                    Text("Open PDF")
+                                        .font(.caption)
+                                        .bold()
+                                }
+                                .buttonStyle(.bordered)
+                                .tint(Color.accentColor)
+                            } else {
+                                Button {
+                                    // Trigger file download
+                                    Task {
+                                        if let tripURL = URL(string: store.serverURLString) {
+                                            let remoteURL = tripURL.deletingLastPathComponent().appendingPathComponent(file)
+                                            try? await store.downloadFile(from: remoteURL, originalFilename: file)
+                                        }
+                                    }
+                                } label: {
+                                    Label("Download", systemImage: "arrow.down.circle")
+                                        .font(.caption)
+                                }
+                                .buttonStyle(.bordered)
+                            }
+                        }
+                        .padding(8)
+                        .background(Color(.systemGroupedBackground))
+                        .cornerRadius(8)
+                    }
+                }
+            }
+        }
+        .padding()
+        .background(.thinMaterial)
+        .cornerRadius(12)
+        .padding(.horizontal)
+    }
+}
+
+
