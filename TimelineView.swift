@@ -334,9 +334,23 @@ public struct StepDetailView: View {
                             .font(.title2)
                             .fontWeight(.bold)
                         
-                        Text(step.location.name)
-                            .font(.body)
-                            .foregroundColor(.secondary)
+                        HStack {
+                            Text(step.location.name)
+                                .font(.body)
+                                .foregroundColor(.secondary)
+                            
+                            Spacer()
+                            
+                            Button {
+                                openInMaps(coordinate: step.location.coordinate, name: step.location.name)
+                            } label: {
+                                Label("Go to", systemImage: "arrow.turn.up.right.circle.fill")
+                                    .font(.caption)
+                                    .fontWeight(.bold)
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .tint(Color.accentColor)
+                        }
                         
                         Divider()
                             .padding(.vertical, 8)
@@ -387,6 +401,17 @@ public struct StepDetailView: View {
                 PDFKitView(fileURL: identifiableURL.url, title: fileViewTitle)
             }
         }
+    }
+    
+    // MARK: - Navigation Launcher
+    
+    private func openInMaps(coordinate: CLLocationCoordinate2D, name: String) {
+        let placemark = MKPlacemark(coordinate: coordinate)
+        let mapItem = MKMapItem(placemark: placemark)
+        mapItem.name = name
+        
+        let launchOptions = [MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeDriving]
+        mapItem.openInMaps(launchOptions: launchOptions)
     }
     
     // MARK: - Activity Card
