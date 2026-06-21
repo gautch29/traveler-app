@@ -342,7 +342,13 @@ struct ActivityEditorView: View {
                             .frame(width: 80, alignment: .leading)
                         TextField("ticket.pdf", text: Binding(
                             get: { profileFiles[user] ?? "" },
-                            set: { profileFiles[user] = $0.isEmpty ? nil : $0 }
+                            set: { newValue in
+                                if newValue.isEmpty {
+                                    profileFiles.removeValue(forKey: user)
+                                } else {
+                                    profileFiles[user] = newValue
+                                }
+                            }
                         ))
                         .autocapitalization(.none)
                     }
@@ -363,7 +369,13 @@ struct ActivityEditorView: View {
                             .frame(width: 80, alignment: .leading)
                         TextField("pass.pkpass", text: Binding(
                             get: { profilePasses[user] ?? "" },
-                            set: { profilePasses[user] = $0.isEmpty ? nil : $0 }
+                            set: { newValue in
+                                if newValue.isEmpty {
+                                    profilePasses.removeValue(forKey: user)
+                                } else {
+                                    profilePasses[user] = newValue
+                                }
+                            }
                         ))
                         .autocapitalization(.none)
                     }
