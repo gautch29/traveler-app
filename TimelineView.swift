@@ -504,22 +504,41 @@ public struct StepDetailView: View {
                             Spacer()
                             
                             if store.downloadedFiles.contains(passFile) {
-                                Button {
-                                    if let url = store.getLocalFileURL(forFilename: passFile) {
-                                        fileViewTitle = passFile.components(separatedBy: "/").last ?? "Pass"
-                                        selectedFileToView = IdentifiableURL(url: url)
+                                HStack(spacing: 8) {
+                                    Button {
+                                        if let url = store.getLocalFileURL(forFilename: passFile) {
+                                            fileViewTitle = passFile.components(separatedBy: "/").last ?? "Pass"
+                                            selectedFileToView = IdentifiableURL(url: url)
+                                        }
+                                    } label: {
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "plus.circle")
+                                            Text("Add")
+                                        }
+                                        .font(.system(size: 11, weight: .bold))
+                                        .foregroundColor(.white)
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 6)
+                                        .background(Color.black)
+                                        .cornerRadius(6)
                                     }
-                                } label: {
-                                    HStack(spacing: 4) {
-                                        Image(systemName: "plus.circle")
-                                        Text("Add to Wallet")
+                                    
+                                    Button {
+                                        if let walletURL = URL(string: "shoebox://") {
+                                            UIApplication.shared.open(walletURL)
+                                        }
+                                    } label: {
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "wallet.pass.fill")
+                                            Text("Open")
+                                        }
+                                        .font(.system(size: 11, weight: .bold))
+                                        .foregroundColor(.primary)
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 6)
+                                        .background(Color(.systemGray5))
+                                        .cornerRadius(6)
                                     }
-                                    .font(.system(size: 11, weight: .bold))
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 6)
-                                    .background(Color.black)
-                                    .cornerRadius(6)
                                 }
                             } else {
                                 Button {
