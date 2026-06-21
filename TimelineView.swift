@@ -226,9 +226,41 @@ struct TimelineRow: View {
                 }
             }
             .padding()
-            .background(.thinMaterial)
-            .cornerRadius(12)
-            .shadow(color: Color.black.opacity(0.04), radius: 4, x: 0, y: 2)
+            .background(
+                ZStack {
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(.ultraThinMaterial)
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    Color.white.opacity(0.25),
+                                    Color.white.opacity(0.03),
+                                    Color.clear
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                }
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(
+                        LinearGradient(
+                            colors: [
+                                Color.white.opacity(0.6),
+                                Color.white.opacity(0.1),
+                                Color.clear,
+                                Color.white.opacity(0.15)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 1.2
+                    )
+            )
+            .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 4)
             .padding(.trailing)
             .padding(.bottom, 16)
         }
@@ -360,9 +392,41 @@ public struct StepDetailView: View {
                             .foregroundColor(.primary)
                     }
                     .padding()
-                    .background(.thinMaterial)
-                    .cornerRadius(16)
-                    .shadow(color: Color.black.opacity(0.03), radius: 8, x: 0, y: 4)
+                    .background(
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 20)
+                                .fill(.ultraThinMaterial)
+                            RoundedRectangle(cornerRadius: 20)
+                                .fill(
+                                    LinearGradient(
+                                        colors: [
+                                            Color.white.opacity(0.28),
+                                            Color.white.opacity(0.04),
+                                            Color.clear
+                                        ],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                        }
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20)
+                            .stroke(
+                                LinearGradient(
+                                    colors: [
+                                        Color.white.opacity(0.65),
+                                        Color.white.opacity(0.12),
+                                        Color.clear,
+                                        Color.white.opacity(0.2)
+                                    ],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                lineWidth: 1.2
+                            )
+                    )
+                    .shadow(color: Color.black.opacity(0.08), radius: 12, x: 0, y: 6)
                     .padding(.horizontal)
                     
                     // Activities / Tickets Section
@@ -630,8 +694,41 @@ public struct StepDetailView: View {
             }
         }
         .padding()
-        .background(.thinMaterial)
-        .cornerRadius(12)
+        .background(
+            ZStack {
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(.ultraThinMaterial)
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color.white.opacity(0.24),
+                                Color.white.opacity(0.03),
+                                Color.clear
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+            }
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(0.55),
+                            Color.white.opacity(0.1),
+                            Color.clear,
+                            Color.white.opacity(0.15)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1.0
+                )
+        )
+        .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 4)
         .padding(.horizontal)
     }
 }
