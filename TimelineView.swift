@@ -1,5 +1,6 @@
 import SwiftUI
 import MapKit
+import PassKit
 
 public struct TimelineView: View {
     @ObservedObject var store: TripStore
@@ -240,6 +241,49 @@ public struct IdentifiableURL: Identifiable {
     public let url: URL
 }
 
+struct WalletPassView: UIViewControllerRepresentable {
+    let passURL: URL
+    
+    func makeUIViewController(context: Context) -> UIViewController {
+        guard let passData = try? Data(contentsOf: passURL),
+              let pass = try? PKPass(data: passData) else {
+            let vc = UIViewController()
+            let label = UILabel()
+            label.text = "Failed to load Apple Wallet Pass.\n(Requires valid signed .pkpass signature)"
+            label.numberOfLines = 0
+            label.textAlignment = .center
+            label.textColor = .secondaryLabel
+            vc.view.addSubview(label)
+            label.translatesAutoresizingMaskIntoConstraints = false
+            NSLayoutConstraint.activate([
+                label.centerXAnchor.constraint(equalTo: vc.view.centerXAnchor),
+                label.centerYAnchor.constraint(equalTo: vc.view.centerYAnchor),
+                label.leadingAnchor.constraint(equalTo: vc.view.leadingAnchor, constant: 20),
+                label.trailingAnchor.constraint(equalTo: vc.view.trailingAnchor, constant: -20)
+            ])
+            return vc
+        }
+        
+        guard let addPassVC = PKAddPassesViewController(pass: pass) else {
+            let vc = UIViewController()
+            let label = UILabel()
+            label.text = "Pass already added or is invalid."
+            label.textAlignment = .center
+            label.textColor = .secondaryLabel
+            vc.view.addSubview(label)
+            label.translatesAutoresizingMaskIntoConstraints = false
+            NSLayoutConstraint.activate([
+                label.centerXAnchor.constraint(equalTo: vc.view.centerXAnchor),
+                label.centerYAnchor.constraint(equalTo: vc.view.centerYAnchor)
+            ])
+            return vc
+        }
+        return addPassVC
+    }
+    
+    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}
+}
+
 public struct StepDetailView: View {
     let step: Step
     @ObservedObject var store: TripStore
@@ -336,7 +380,11 @@ public struct StepDetailView: View {
         .navigationTitle("Day \(step.dayNumber)")
         .navigationBarTitleDisplayMode(.inline)
         .sheet(item: $selectedFileToView) { identifiableURL in
-            PDFKitView(fileURL: identifiableURL.url, title: fileViewTitle)
+            if identifiableURL.url.pathExtension.lowercased() == "pkpass" {
+                WalletPassView(passURL: identifiableURL.url)
+            } else {
+                PDFKitView(fileURL: identifiableURL.url, title: fileViewTitle)
+            }
         }
     }
     
@@ -416,6 +464,69 @@ public struct StepDetailView: View {
                                         if let tripURL = URL(string: store.serverURLString) {
                                             let remoteURL = tripURL.deletingLastPathComponent().appendingPathComponent(file)
                                             try? await store.downloadFile(from: remoteURL, originalFilename: file)
+                                        }
+                                    }
+                                } label: {
+                                    Label("Download", systemImage: "arrow.down.circle")
+                                        .font(.caption)
+                                }
+                                .buttonStyle(.bordered)
+                            }
+                        }
+                        .padding(8)
+                        .background(Color(.systemGroupedBackground))
+                        .cornerRadius(8)
+                    }
+                }
+            }
+            
+            // Apple Wallet Passes Section
+            let applicablePasses = item.getWalletPasses(forUser: user)
+            if !applicablePasses.isEmpty {
+                Divider()
+                
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Apple Wallet Passes 💳")
+                        .font(.caption)
+                        .fontWeight(.bold)
+                        .foregroundColor(.secondary)
+                    
+                    ForEach(applicablePasses, id: \.self) { passFile in
+                        HStack {
+                            Image(systemName: "wallet.pass.fill")
+                                .foregroundColor(.orange)
+                            
+                            Text(passFile.replacingOccurrences(of: "tickets/", with: "").replacingOccurrences(of: "passes/", with: ""))
+                                .font(.caption)
+                                .foregroundColor(.primary)
+                                .lineLimit(1)
+                            
+                            Spacer()
+                            
+                            if store.downloadedFiles.contains(passFile) {
+                                Button {
+                                    if let url = store.getLocalFileURL(forFilename: passFile) {
+                                        fileViewTitle = passFile.components(separatedBy: "/").last ?? "Pass"
+                                        selectedFileToView = IdentifiableURL(url: url)
+                                    }
+                                } label: {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "plus.circle")
+                                        Text("Add to Wallet")
+                                    }
+                                    .font(.system(size: 11, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 6)
+                                    .background(Color.black)
+                                    .cornerRadius(6)
+                                }
+                            } else {
+                                Button {
+                                    Task {
+                                        if let tripURL = URL(string: store.serverURLString) {
+                                            let remoteURL = tripURL.deletingLastPathComponent().appendingPathComponent(passFile)
+                                            try? await store.downloadFile(from: remoteURL, originalFilename: passFile)
                                         }
                                     }
                                 } label: {

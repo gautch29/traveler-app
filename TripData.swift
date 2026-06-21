@@ -46,6 +46,8 @@ public struct TripItem: Codable, Identifiable, Hashable, Equatable {
     public let details: String
     public let sharedFiles: [String]
     public let profileFiles: [String: String]? // Maps username to file name
+    public let walletPasses: [String]? // Shared .pkpass files
+    public let profileWalletPasses: [String: String]? // Maps username to personal .pkpass file
     
     // Helper to get applicable files for a user
     public func getFiles(forUser username: String) -> [String] {
@@ -54,6 +56,18 @@ public struct TripItem: Codable, Identifiable, Hashable, Equatable {
             files.append(userFile)
         }
         return files
+    }
+    
+    // Helper to get applicable wallet passes for a user
+    public func getWalletPasses(forUser username: String) -> [String] {
+        var passes = [String]()
+        if let shared = walletPasses {
+            passes.append(contentsOf: shared)
+        }
+        if let userPass = profileWalletPasses?[username] {
+            passes.append(userPass)
+        }
+        return passes
     }
 }
 

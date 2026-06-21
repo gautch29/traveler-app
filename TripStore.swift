@@ -174,6 +174,14 @@ public class TripStore: ObservableObject {
                         files.insert(file)
                     }
                 }
+                if let walletShared = item.walletPasses {
+                    files.formUnion(walletShared)
+                }
+                if let walletProfile = item.profileWalletPasses {
+                    for (_, file) in walletProfile {
+                        files.insert(file)
+                    }
+                }
             }
         }
         return files
@@ -191,6 +199,12 @@ public class TripStore: ObservableObject {
                 filesToDownload.formUnion(item.sharedFiles)
                 if let profileFile = item.profileFiles?[user] {
                     filesToDownload.insert(profileFile)
+                }
+                if let walletShared = item.walletPasses {
+                    filesToDownload.formUnion(walletShared)
+                }
+                if let walletProfile = item.profileWalletPasses?[user] {
+                    filesToDownload.insert(walletProfile)
                 }
             }
         }
