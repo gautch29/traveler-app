@@ -1,5 +1,6 @@
 import SwiftUI
 import MapKit
+import UniformTypeIdentifiers
 
 public struct TripEditorView: View {
     @ObservedObject var store: TripStore
@@ -43,7 +44,7 @@ public struct TripEditorView: View {
                         Section("Days / Steps") {
                             List {
                                 ForEach(trip.steps) { step in
-                                    NavigationLink(destination: DayEditorView(step: step, users: trip.users, onSave: { updatedStep in
+                                    NavigationLink(destination: DayEditorView(step: step, users: trip.users, store: store, onSave: { updatedStep in
                                         updateStep(updatedStep)
                                     })) {
                                         HStack {
@@ -187,6 +188,7 @@ public struct TripEditorView: View {
 struct DayEditorView: View {
     @State var step: Step
     let users: [String]
+    let store: TripStore
     let onSave: (Step) -> Void
     
     @State private var locName = ""
@@ -213,7 +215,7 @@ struct DayEditorView: View {
             Section("Schedule & Activities") {
                 List {
                     ForEach(step.items) { item in
-                        NavigationLink(destination: ActivityEditorView(item: item, users: users, onSave: { updatedItem in
+                        NavigationLink(destination: ActivityEditorView(item: item, users: users, store: store, onSave: { updatedItem in
                             updateItem(updatedItem)
                         })) {
                             HStack {
@@ -295,8 +297,16 @@ struct DayEditorView: View {
 // MARK: - Activity Editor View
 
 struct ActivityEditorView: View {
+    enum UploadTarget: Equatable {
+        case sharedPDF
+        case profilePDF(user: String)
+        case sharedPass
+        case profilePass(user: String)
+    }
+
     @State var item: TripItem
     let users: [String]
+    let store: TripStore
     let onSave: (TripItem) -> Void
     
     @State private var typeIndex = 0
@@ -307,6 +317,13 @@ struct ActivityEditorView: View {
     // Manage profile mappings
     @State private var profileFiles = [String: String]()
     @State private var profilePasses = [String: String]()
+    
+    // Upload state
+    @State private var showingFilePicker = false
+    @State private var uploadingTarget: UploadTarget? = nil
+    @State private var isUploadingFile = false
+    @State private var uploadErrorMsg = ""
+    @State private var showingUploadError = false
     
     var body: some View {
         Form {
@@ -329,8 +346,17 @@ struct ActivityEditorView: View {
             }
             
             Section("PDF Ticket Files") {
-                TextField("Shared PDFs (comma separated)", text: $sharedFilesInput)
-                    .autocapitalization(.none)
+                HStack {
+                    TextField("Shared PDFs (comma separated)", text: $sharedFilesInput)
+                        .autocapitalization(.none)
+                    
+                    Button {
+                        uploadingTarget = .sharedPDF
+                        showingFilePicker = true
+                    } label: {
+                        Image(systemName: "icloud.and.arrow.up")
+                    }
+                }
                 
                 Text("Personal PDFs (per User):")
                     .font(.caption)
@@ -351,13 +377,29 @@ struct ActivityEditorView: View {
                             }
                         ))
                         .autocapitalization(.none)
+                        
+                        Button {
+                            uploadingTarget = .profilePDF(user: user)
+                            showingFilePicker = true
+                        } label: {
+                            Image(systemName: "icloud.and.arrow.up")
+                        }
                     }
                 }
             }
             
             Section("Apple Wallet Passes") {
-                TextField("Shared Passes (comma separated)", text: $sharedPassesInput)
-                    .autocapitalization(.none)
+                HStack {
+                    TextField("Shared Passes (comma separated)", text: $sharedPassesInput)
+                        .autocapitalization(.none)
+                    
+                    Button {
+                        uploadingTarget = .sharedPass
+                        showingFilePicker = true
+                    } label: {
+                        Image(systemName: "icloud.and.arrow.up")
+                    }
+                }
                 
                 Text("Personal Passes (per User):")
                     .font(.caption)
@@ -378,11 +420,40 @@ struct ActivityEditorView: View {
                             }
                         ))
                         .autocapitalization(.none)
+                        
+                        Button {
+                            uploadingTarget = .profilePass(user: user)
+                            showingFilePicker = true
+                        } label: {
+                            Image(systemName: "icloud.and.arrow.up")
+                        }
+                    }
+                }
+            }
+            
+            if isUploadingFile {
+                Section {
+                    HStack {
+                        ProgressView()
+                        Text("Uploading file to server...")
+                            .padding(.leading, 8)
                     }
                 }
             }
         }
         .navigationTitle("Activity Editor")
+        .fileImporter(
+            isPresented: $showingFilePicker,
+            allowedContentTypes: [.pdf, .data],
+            allowsMultipleSelection: false
+        ) { result in
+            handleFileImport(result: result)
+        }
+        .alert("Upload Failed", isPresented: $showingUploadError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(uploadErrorMsg)
+        }
         .onAppear {
             if let idx = TripItemType.allCases.firstIndex(of: item.type) {
                 typeIndex = idx
@@ -427,6 +498,75 @@ struct ActivityEditorView: View {
                 websiteURL: websiteURLInput.isEmpty ? nil : websiteURLInput
             )
             onSave(updatedItem)
+        }
+    }
+    
+    private func handleFileImport(result: Result<[URL], Error>) {
+        guard let target = uploadingTarget else { return }
+        
+        switch result {
+        case .success(let urls):
+            guard let selectedURL = urls.first else { return }
+            
+            let gotAccess = selectedURL.startAccessingSecurityScopedResource()
+            defer {
+                if gotAccess {
+                    selectedURL.stopAccessingSecurityScopedResource()
+                }
+            }
+            
+            do {
+                let fileData = try Data(contentsOf: selectedURL)
+                let rawFilename = selectedURL.lastPathComponent
+                
+                // Determine prefix folder
+                let folder: String
+                switch target {
+                case .sharedPDF, .profilePDF:
+                    folder = "tickets"
+                case .sharedPass, .profilePass:
+                    folder = "passes"
+                }
+                
+                let serverPath = "\(folder)/\(rawFilename)"
+                
+                isUploadingFile = true
+                Task {
+                    let success = await store.uploadFile(data: fileData, filename: serverPath)
+                    isUploadingFile = false
+                    
+                    if success {
+                        // Automatically fill the fields
+                        switch target {
+                        case .sharedPDF:
+                            if sharedFilesInput.isEmpty {
+                                sharedFilesInput = serverPath
+                            } else {
+                                sharedFilesInput += ", \(serverPath)"
+                            }
+                        case .profilePDF(let user):
+                            profileFiles[user] = serverPath
+                        case .sharedPass:
+                            if sharedPassesInput.isEmpty {
+                                sharedPassesInput = serverPath
+                            } else {
+                                sharedPassesInput += ", \(serverPath)"
+                            }
+                        case .profilePass(let user):
+                            profilePasses[user] = serverPath
+                        }
+                    } else {
+                        uploadErrorMsg = "Failed to upload file to the server."
+                        showingUploadError = true
+                    }
+                }
+            } catch {
+                uploadErrorMsg = "Error reading local file: \(error.localizedDescription)"
+                showingUploadError = true
+            }
+        case .failure(let error):
+            uploadErrorMsg = "Error picking file: \(error.localizedDescription)"
+            showingUploadError = true
         }
     }
 }

@@ -153,6 +153,38 @@ public class TripStore: ObservableObject {
         }
     }
     
+    public func uploadFile(data: Data, filename: String) async -> Bool {
+        guard let tripURL = URL(string: serverURLString) else { return false }
+        let baseURL = tripURL.deletingLastPathComponent()
+        let uploadURL = baseURL.appendingPathComponent("upload")
+        
+        do {
+            var request = URLRequest(url: uploadURL)
+            request.httpMethod = "POST"
+            request.setValue("application/octet-stream", forHTTPHeaderField: "Content-Type")
+            request.setValue(filename, forHTTPHeaderField: "X-Filename")
+            if !serverToken.isEmpty {
+                request.setValue("Bearer \(serverToken)", forHTTPHeaderField: "Authorization")
+            }
+            request.httpBody = data
+            
+            let (_, response) = try await self.session.data(for: request)
+            guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+                return false
+            }
+            
+            // Instantly register and cache locally
+            self.downloadedFiles.insert(filename)
+            let dest = localURL(forFilename: filename)
+            try? data.write(to: dest)
+            
+            return true
+        } catch {
+            print("Failed to upload file \(filename): \(error)")
+            return false
+        }
+    }
+    
     public func selectUser(_ username: String) {
         self.selectedUser = username
         UserDefaults.standard.set(username, forKey: userKey)
