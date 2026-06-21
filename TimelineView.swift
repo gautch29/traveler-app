@@ -79,10 +79,7 @@ public struct TimelineView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(trip.tripName)
-                        .font(.title)
-                        .fontWeight(.bold)
-                    Text("\(trip.startDate) to \(trip.endDate) • 3 Weeks")
+                    Text("\(formatDateString(trip.startDate)) to \(formatDateString(trip.endDate)) • 3 Weeks")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
@@ -189,7 +186,7 @@ struct TimelineRow: View {
                     
                     Spacer()
                     
-                    Text(step.date)
+                    Text(formatDateString(step.date))
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -357,7 +354,7 @@ public struct StepDetailView: View {
                             
                             Spacer()
                             
-                            Text(step.date)
+                            Text(formatDateString(step.date))
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
                         }
@@ -731,5 +728,30 @@ public struct StepDetailView: View {
         .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 4)
         .padding(.horizontal)
     }
+}
+
+// MARK: - Date Formatter Helper
+
+func formatDateString(_ dateStr: String) -> String {
+    let formatter = DateFormatter()
+    formatter.dateFormat = "yyyy-MM-dd"
+    guard let date = formatter.date(from: dateStr) else { return dateStr }
+    
+    // Format to MMMM d (e.g. August 6)
+    formatter.dateFormat = "MMMM d"
+    let basicDate = formatter.string(from: date)
+    
+    // Add ordinal suffix (st, nd, rd, th)
+    let calendar = Calendar.current
+    let day = calendar.component(.day, from: date)
+    let suffix: String
+    switch day {
+    case 1, 21, 31: suffix = "st"
+    case 2, 22: suffix = "nd"
+    case 3, 23: suffix = "rd"
+    default: suffix = "th"
+    }
+    
+    return "\(basicDate)\(suffix)"
 }
 
