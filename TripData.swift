@@ -39,16 +39,16 @@ public enum TripItemType: String, Codable, CaseIterable {
 }
 
 public struct TripItem: Codable, Identifiable, Hashable, Equatable {
-    public let id: String
-    public let type: TripItemType
-    public let title: String
-    public let time: String
-    public let details: String
-    public let sharedFiles: [String]
-    public let profileFiles: [String: String]? // Maps username to file name
-    public let walletPasses: [String]? // Shared .pkpass files
-    public let profileWalletPasses: [String: String]? // Maps username to personal .pkpass file
-    public let websiteURL: String? // Optional website link
+    public var id: String
+    public var type: TripItemType
+    public var title: String
+    public var time: String
+    public var details: String
+    public var sharedFiles: [String]
+    public var profileFiles: [String: String]? // Maps username to file name
+    public var walletPasses: [String]? // Shared .pkpass files
+    public var profileWalletPasses: [String: String]? // Maps username to personal .pkpass file
+    public var websiteURL: String? // Optional website link
     
     // Helper to get applicable files for a user
     public func getFiles(forUser username: String) -> [String] {
@@ -73,13 +73,13 @@ public struct TripItem: Codable, Identifiable, Hashable, Equatable {
 }
 
 public struct Step: Codable, Identifiable, Hashable, Equatable {
-    public let id: String
-    public let dayNumber: Int
-    public let title: String
-    public let date: String
-    public let location: LocationInfo
-    public let description: String
-    public let items: [TripItem]
+    public var id: String
+    public var dayNumber: Int
+    public var title: String
+    public var date: String
+    public var location: LocationInfo
+    public var description: String
+    public var items: [TripItem]
     
     public static func == (lhs: Step, rhs: Step) -> Bool {
         lhs.id == rhs.id
