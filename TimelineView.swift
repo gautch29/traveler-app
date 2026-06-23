@@ -20,36 +20,40 @@ public struct TimelineView: View {
     public var body: some View {
         NavigationStack {
             ZStack(alignment: .top) {
-                // 1. Dynamic Map Background (pans smoothly when activeDayIndex changes)
+                // 1. Dynamic Map Background (smoothly pans & zooms depending on activeDayIndex)
                 Map(position: $mapPosition)
                     .disabled(true)
                     .ignoresSafeArea()
                     .opacity(0.4)
                     .blur(radius: 0.8)
                 
-                // Dark mode / light mode tint overlay for premium contrast
+                // Dark mode / light mode tint overlay
                 Color(.systemBackground)
                     .opacity(0.15)
                     .ignoresSafeArea()
                 
                 Group {
                     if let trip = store.trip {
-                        // TabView with Page style for horizontal "Tinder card" swiping
+                        // 2. TabView for horizontal "Tinder card" swiping (Day 0 + steps)
                         TabView(selection: $activeDayIndex) {
+                            // Page 0: Day 0 Welcome Hello Screen
+                            dayZeroView(trip)
+                                .tag(0)
+                            
+                            // Pages 1 to N: Daily Steps
                             ForEach(0..<trip.steps.count, id: \.self) { index in
                                 let step = trip.steps[index]
                                 
                                 ScrollView(showsIndicators: false) {
                                     VStack(spacing: 20) {
-                                        // Spacer to let map peak at the top
                                         Spacer()
                                             .frame(height: 20)
                                         
-                                        // Primary Floating Glassmorphic Card
+                                        // Floating Glassmorphic Card
                                         daySummaryCard(step)
                                             .padding(.horizontal)
                                         
-                                        // Schedule, Bookings & Tickets details
+                                        // Schedule & Tickets
                                         dayDetailsSection(step)
                                             .padding(.horizontal)
                                         
@@ -57,7 +61,7 @@ public struct TimelineView: View {
                                             .frame(height: 50)
                                     }
                                 }
-                                .tag(index)
+                                .tag(index + 1)
                             }
                         }
                         .tabViewStyle(.page(indexDisplayMode: .never))
@@ -66,9 +70,34 @@ public struct TimelineView: View {
                     }
                 }
             }
-            .navigationTitle(store.trip != nil ? "Day \(activeDayIndex + 1)" : "My Trip")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                // Custom Emoji & Gradient Header Title
+                ToolbarItem(placement: .principal) {
+                    HStack(spacing: 6) {
+                        if activeDayIndex == 0 {
+                            Text("hello")
+                                .font(.system(size: 20, weight: .black, design: .rounded))
+                                .foregroundStyle(
+                                    LinearGradient(
+                                        colors: [Color.blue, Color.red],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                            Text("🇺🇸")
+                                .font(.title3)
+                        } else if let trip = store.trip, activeDayIndex - 1 < trip.steps.count {
+                            let step = trip.steps[activeDayIndex - 1]
+                            Text(getEmojiForStep(step))
+                                .font(.title3)
+                            Text("Day \(step.dayNumber)")
+                                .font(.system(size: 18, weight: .black, design: .rounded))
+                                .foregroundColor(.primary)
+                        }
+                    }
+                }
+                
                 ToolbarItem(placement: .navigationBarTrailing) {
                     if store.isSyncing {
                         ProgressView()
@@ -111,23 +140,240 @@ public struct TimelineView: View {
     }
     
     private func updateMapPosition(forIndex index: Int, animated: Bool = true) {
-        guard let trip = store.trip, index < trip.steps.count else { return }
-        let step = trip.steps[index]
+        guard let trip = store.trip else { return }
         
-        let targetRegion = MKCoordinateRegion(
-            center: step.location.coordinate,
-            span: MKCoordinateSpan(latitudeDelta: 0.22, longitudeDelta: 0.22)
-        )
+        let targetRegion: MKCoordinateRegion
+        if index == 0 {
+            // Wide USA Overview
+            targetRegion = MKCoordinateRegion(
+                center: CLLocationCoordinate2D(latitude: 37.0902, longitude: -95.7129),
+                span: MKCoordinateSpan(latitudeDelta: 24, longitudeDelta: 44)
+            )
+        } else if index - 1 < trip.steps.count {
+            // Zoomed on specific location
+            let step = trip.steps[index - 1]
+            targetRegion = MKCoordinateRegion(
+                center: step.location.coordinate,
+                span: MKCoordinateSpan(latitudeDelta: 0.22, longitudeDelta: 0.22)
+            )
+        } else {
+            return
+        }
         
         if animated {
-            withAnimation(.spring(response: 0.9, dampingFraction: 0.82)) {
+            withAnimation(.spring(response: 0.95, dampingFraction: 0.82)) {
                 mapPosition = .region(targetRegion)
             }
         } else {
             mapPosition = .region(targetRegion)
         }
     }
-
+    
+    // MARK: - Day 0 Welcome View
+    
+    private func dayZeroView(_ trip: Trip) -> some View {
+        ScrollView(showsIndicators: false) {
+            VStack(spacing: 24) {
+                Spacer()
+                    .frame(height: 20)
+                
+                // USA Color Gradient Welcome Card
+                dayZeroWelcomeCard(trip)
+                    .padding(.horizontal)
+                
+                // Emergency info & summary details
+                dayZeroDetailsSection(trip)
+                    .padding(.horizontal)
+                
+                Spacer()
+                    .frame(height: 50)
+            }
+        }
+    }
+    
+    private func dayZeroWelcomeCard(_ trip: Trip) -> some View {
+        VStack(spacing: 18) {
+            HStack {
+                Text("LET'S GO")
+                    .font(.caption2)
+                    .fontWeight(.black)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.blue)
+                    .cornerRadius(6)
+                
+                Spacer()
+                
+                Text("🇺🇸 ADVENTURE")
+                    .font(.caption)
+                    .fontWeight(.bold)
+                    .foregroundColor(.white.opacity(0.85))
+            }
+            
+            VStack(spacing: 4) {
+                Text("hello.")
+                    .font(.system(size: 56, weight: .black, design: .rounded))
+                    .foregroundColor(.white)
+                    .shadow(color: .black.opacity(0.12), radius: 5, x: 0, y: 3)
+                
+                Text(trip.tripName)
+                    .font(.title3)
+                    .fontWeight(.bold)
+                    .foregroundColor(.white)
+                    .multilineTextAlignment(.center)
+            }
+            .padding(.vertical, 10)
+            
+            Divider()
+                .background(Color.white.opacity(0.4))
+            
+            VStack(spacing: 6) {
+                Text("\(formatDateString(trip.startDate)) to \(formatDateString(trip.endDate))")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.white)
+                
+                Text("3 Weeks • 4 Travelers")
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundColor(.white.opacity(0.9))
+            }
+            
+            // Glass pills for travelers
+            HStack(spacing: 8) {
+                ForEach(trip.users, id: \.self) { name in
+                    Text(name)
+                        .font(.caption)
+                        .fontWeight(.bold)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(Color.white.opacity(0.2))
+                        .cornerRadius(8)
+                }
+            }
+            
+            Divider()
+                .background(Color.white.opacity(0.4))
+            
+            HStack {
+                Text("Swipe left to start the journey")
+                    .font(.footnote)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.white.opacity(0.9))
+                
+                Image(systemName: "chevron.right.2")
+                    .font(.footnote)
+                    .foregroundColor(.white)
+                    .opacity(0.8)
+            }
+            .padding(.top, 4)
+        }
+        .padding(24)
+        .background(
+            ZStack {
+                RoundedRectangle(cornerRadius: 24)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color.blue.opacity(0.75),
+                                Color.indigo.opacity(0.65),
+                                Color.red.opacity(0.75)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                
+                RoundedRectangle(cornerRadius: 24)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color.white.opacity(0.25),
+                                Color.white.opacity(0.02),
+                                Color.clear
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+            }
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 24)
+                .stroke(
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(0.7),
+                            Color.white.opacity(0.15),
+                            Color.clear,
+                            Color.white.opacity(0.25)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1.2
+                )
+        )
+        .shadow(color: Color.black.opacity(0.15), radius: 15, x: 0, y: 8)
+    }
+    
+    private func dayZeroDetailsSection(_ trip: Trip) -> some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Text("Emergency Contacts & Info 🚨")
+                .font(.headline)
+                .fontWeight(.bold)
+                .padding(.leading, 4)
+            
+            VStack(alignment: .leading, spacing: 14) {
+                ForEach(trip.emergencyInfo.numbers) { num in
+                    Button {
+                        if let url = URL(string: "tel://\(num.number.replacingOccurrences(of: " ", with: ""))") {
+                            UIApplication.shared.open(url)
+                        }
+                    } label: {
+                        HStack {
+                            Image(systemName: "phone.fill")
+                                .foregroundColor(.green)
+                            
+                            Text(num.label)
+                                .font(.subheadline)
+                                .fontWeight(.bold)
+                                .foregroundColor(.primary)
+                            
+                            Spacer()
+                            
+                            Text(num.number)
+                                .font(.subheadline)
+                                .foregroundColor(.accentColor)
+                                .fontWeight(.semibold)
+                        }
+                        .padding()
+                        .background(Color(.secondarySystemGroupedBackground).opacity(0.6))
+                        .cornerRadius(12)
+                    }
+                }
+                
+                Text(trip.emergencyInfo.notes)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .padding(.horizontal, 4)
+            }
+            .padding()
+            .background(
+                ZStack {
+                    RoundedRectangle(cornerRadius: 20)
+                        .fill(.ultraThinMaterial)
+                }
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 20)
+                    .stroke(Color.white.opacity(0.2), lineWidth: 1)
+            )
+        }
+    }
+    
     // MARK: - Day Summary Card
     
     private func daySummaryCard(_ step: Step) -> some View {
@@ -226,7 +472,7 @@ public struct TimelineView: View {
         .shadow(color: Color.black.opacity(0.1), radius: 12, x: 0, y: 6)
     }
     
-    // MARK: - Day Details Section (Activities, Tickets)
+    // MARK: - Day Details Section
     
     private func dayDetailsSection(_ step: Step) -> some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -283,7 +529,6 @@ public struct TimelineView: View {
                 }
             }
             
-            // Shared Files and User Specific Files
             let user = store.selectedUser ?? ""
             let applicableFiles = item.getFiles(forUser: user)
             
@@ -362,7 +607,6 @@ public struct TimelineView: View {
                 }
             }
             
-            // Apple Wallet Passes
             let applicablePasses = item.getWalletPasses(forUser: user)
             if !applicablePasses.isEmpty {
                 Divider()
@@ -444,7 +688,6 @@ public struct TimelineView: View {
                 }
             }
             
-            // Website URLs
             if let webString = item.websiteURL, let webURL = URL(string: webString) {
                 Divider()
                 
@@ -515,6 +758,33 @@ public struct TimelineView: View {
         mapItem.openInMaps(launchOptions: launchOptions)
     }
     
+    // MARK: - Emojis Mapping
+    
+    private func getEmojiForStep(_ step: Step) -> String {
+        let title = step.title.lowercased()
+        let desc = step.description.lowercased()
+        
+        if title.contains("flight") || title.contains("airport") || desc.contains("flight") {
+            return "✈️"
+        } else if title.contains("hotel") || title.contains("accommodation") {
+            return "🏨"
+        } else if title.contains("beach") || title.contains("key west") || title.contains("sea") {
+            return "🏖️"
+        } else if title.contains("park") || title.contains("everglades") || title.contains("nature") {
+            return "🌲"
+        } else if title.contains("car") || title.contains("rental") || title.contains("drive") {
+            return "🚗"
+        } else if title.contains("city") || title.contains("york") || title.contains("citypass") {
+            return "🗽"
+        } else if title.contains("disney") || title.contains("universal") || title.contains("gardens") {
+            return "🎢"
+        } else if title.contains("space") || title.contains("ksc") || title.contains("kennedy") {
+            return "🚀"
+        } else {
+            return "🇺🇸"
+        }
+    }
+    
     // MARK: - Empty State View
     
     private var emptyStateView: some View {
@@ -550,85 +820,4 @@ public struct TimelineView: View {
         }
         .padding()
     }
-}
-
-// MARK: - Wallet Pass Representable
-
-struct WalletPassView: UIViewControllerRepresentable {
-    let passURL: URL
-    
-    func makeUIViewController(context: Context) -> UIViewController {
-        guard let passData = try? Data(contentsOf: passURL),
-              let pass = try? PKPass(data: passData) else {
-            let vc = UIViewController()
-            let label = UILabel()
-            label.text = "Failed to load Apple Wallet Pass.\n(Requires valid signed .pkpass signature)"
-            label.numberOfLines = 0
-            label.textAlignment = .center
-            label.textColor = .secondaryLabel
-            vc.view.addSubview(label)
-            label.translatesAutoresizingMaskIntoConstraints = false
-            NSLayoutConstraint.activate([
-                label.centerXAnchor.constraint(equalTo: vc.view.centerXAnchor),
-                label.centerYAnchor.constraint(equalTo: vc.view.centerYAnchor),
-                label.leadingAnchor.constraint(equalTo: vc.view.leadingAnchor, constant: 20),
-                label.trailingAnchor.constraint(equalTo: vc.view.trailingAnchor, constant: -20)
-            ])
-            return vc
-        }
-        
-        guard let addPassVC = PKAddPassesViewController(pass: pass) else {
-            let vc = UIViewController()
-            let label = UILabel()
-            label.text = "Pass already added or is invalid."
-            label.textAlignment = .center
-            label.textColor = .secondaryLabel
-            vc.view.addSubview(label)
-            label.translatesAutoresizingMaskIntoConstraints = false
-            NSLayoutConstraint.activate([
-                label.centerXAnchor.constraint(equalTo: vc.view.centerXAnchor),
-                label.centerYAnchor.constraint(equalTo: vc.view.centerYAnchor)
-            ])
-            return vc
-        }
-        return addPassVC
-    }
-    
-    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}
-}
-
-// MARK: - Date Formatting Helpers
-
-func formatDateString(_ dateStr: String) -> String {
-    let formatter = DateFormatter()
-    formatter.dateFormat = "yyyy-MM-dd"
-    guard let date = formatter.date(from: dateStr) else { return dateStr }
-    
-    formatter.dateFormat = "MMMM d"
-    let basicDate = formatter.string(from: date)
-    
-    let calendar = Calendar.current
-    let day = calendar.component(.day, from: date)
-    let suffix: String
-    switch day {
-    case 1, 21, 31: suffix = "st"
-    case 2, 22: suffix = "nd"
-    case 3, 23: suffix = "rd"
-    default: suffix = "th"
-    }
-    return "\(basicDate)\(suffix)"
-}
-
-func formatDateStringShort(_ dateStr: String) -> String {
-    let formatter = DateFormatter()
-    formatter.dateFormat = "yyyy-MM-dd"
-    guard let date = formatter.date(from: dateStr) else { return dateStr }
-    
-    formatter.dateFormat = "MMM d"
-    return formatter.string(from: date)
-}
-
-public struct IdentifiableURL: Identifiable {
-    public var id: String { url.absoluteString }
-    public let url: URL
 }

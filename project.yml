@@ -18,7 +18,7 @@ targets:
           NSAllowsArbitraryLoads: true
         UILaunchScreen: {}
     settings:
-      GENERATE_INFOPLIST_FILE: YES
+      GENERATE_INFOPLIST_FILE: NO
       MARKETING_VERSION: "1.0"
       CURRENT_PROJECT_VERSION: "1"
       IPHONEOS_DEPLOYMENT_TARGET: "17.0"
