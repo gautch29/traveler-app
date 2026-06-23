@@ -110,7 +110,7 @@
 		9D4EE96FDFC9D6C6A6BE51D4 /* d103524ee1130644bb9305a5f82f3545baa4d0 */ = {isa = PBXFileReference; lastKnownFileType = file; path = d103524ee1130644bb9305a5f82f3545baa4d0; sourceTree = "<group>"; };
 		9E6D42A62FF23C0ECBDDAFED /* e0c653c5decc7115bf71c9130ff09585e45f39 */ = {isa = PBXFileReference; lastKnownFileType = file; path = e0c653c5decc7115bf71c9130ff09585e45f39; sourceTree = "<group>"; };
 		A15C42F7BA0DFE357FBBCCDA /* 11711072a402437c1733e688c818d28d4306f7 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 11711072a402437c1733e688c818d28d4306f7; sourceTree = "<group>"; };
-		A29BF4C81E0752A4E7F5E11A /* Traveler.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Traveler.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A29BF4C81E0752A4E7F5E11A /* Traveler.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Traveler.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A313257B1408AA86C16CFD7A /* HEAD */ = {isa = PBXFileReference; lastKnownFileType = text; path = HEAD; sourceTree = "<group>"; };
 		A4F28EEB786466F1F36EFA67 /* 6fefa0c9e8d6bd2309f20c2ee45a41754c5eb0 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 6fefa0c9e8d6bd2309f20c2ee45a41754c5eb0; sourceTree = "<group>"; };
 		A6186AE1D24931285F32BD8F /* 511d48bb3beee11f9f33a6e1deac3b3ce116ed */ = {isa = PBXFileReference; lastKnownFileType = file; path = 511d48bb3beee11f9f33a6e1deac3b3ce116ed; sourceTree = "<group>"; };
@@ -1128,6 +1128,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = HAL7H5WW52;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -1149,6 +1150,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = HAL7H5WW52;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;

@@ -6,45 +6,68 @@ import PDFKit
 public struct TimelineView: View {
     @ObservedObject var store: TripStore
     
+    @State private var activeDayIndex = 0
+    @State private var mapPosition: MapCameraPosition = .automatic
+    @State private var initialMapSet = false
+    
+    @State private var selectedFileToView: IdentifiableURL? = nil
+    @State private var fileViewTitle = ""
+    
     public init(store: TripStore) {
         self.store = store
     }
     
     public var body: some View {
         NavigationStack {
-            ZStack {
-                // Background USA Map
-                Map(initialPosition: .region(MKCoordinateRegion(
-                    center: CLLocationCoordinate2D(latitude: 37.0902, longitude: -95.7129),
-                    span: MKCoordinateSpan(latitudeDelta: 22, longitudeDelta: 42)
-                )))
-                .disabled(true)
-                .ignoresSafeArea()
-                .opacity(0.18)
-                .blur(radius: 1.5)
+            ZStack(alignment: .top) {
+                // 1. Dynamic Map Background (pans smoothly when activeDayIndex changes)
+                Map(position: $mapPosition)
+                    .disabled(true)
+                    .ignoresSafeArea()
+                    .opacity(0.4)
+                    .blur(radius: 0.8)
+                
+                // Dark mode / light mode tint overlay for premium contrast
+                Color(.systemBackground)
+                    .opacity(0.15)
+                    .ignoresSafeArea()
                 
                 Group {
                     if let trip = store.trip {
-                        ScrollView {
-                            LazyVStack(spacing: 0) {
-                                // Trip header
-                                tripHeaderView(trip)
-                                
-                                // Day timeline
-                                ForEach(trip.steps) { step in
-                                    NavigationLink(value: step) {
-                                        TimelineRow(step: step, totalSteps: trip.steps.count)
+                        VStack(spacing: 0) {
+                            // 2. Custom Scrollable Day Selector (Linked to swipe index)
+                            daySelectorView(trip)
+                                .padding(.vertical, 10)
+                                .background(.ultraThinMaterial)
+                                .shadow(color: Color.black.opacity(0.05), radius: 5, y: 3)
+                            
+                            // 3. TabView with Page style for horizontal "Tinder card" swiping
+                            TabView(selection: $activeDayIndex) {
+                                ForEach(0..<trip.steps.count, id: \.self) { index in
+                                    let step = trip.steps[index]
+                                    
+                                    ScrollView(showsIndicators: false) {
+                                        VStack(spacing: 20) {
+                                            // Spacer to let map peak at the top
+                                            Spacer()
+                                                .frame(height: 20)
+                                            
+                                            // Primary Floating Glassmorphic Card
+                                            daySummaryCard(step)
+                                                .padding(.horizontal)
+                                            
+                                            // Schedule, Bookings & Tickets details
+                                            dayDetailsSection(step)
+                                                .padding(.horizontal)
+                                            
+                                            Spacer()
+                                                .frame(height: 50)
+                                        }
                                     }
-                                    .buttonStyle(PlainButtonStyle())
+                                    .tag(index)
                                 }
-                                
-                                Spacer()
-                                    .frame(height: 40)
                             }
-                        }
-                        .scrollContentBackground(.hidden)
-                        .refreshable {
-                            await store.sync()
+                            .tabViewStyle(.page(indexDisplayMode: .never))
                         }
                     } else {
                         emptyStateView
@@ -52,9 +75,7 @@ public struct TimelineView: View {
                 }
             }
             .navigationTitle(store.trip?.tripName ?? "My Trip")
-            .navigationDestination(for: Step.self) { step in
-                StepDetailView(step: step, store: store)
-            }
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     if store.isSyncing {
@@ -70,420 +91,236 @@ public struct TimelineView: View {
                     }
                 }
             }
+            .sheet(item: $selectedFileToView) { identifiableURL in
+                if identifiableURL.url.pathExtension.lowercased() == "pkpass" {
+                    WalletPassView(passURL: identifiableURL.url)
+                } else {
+                    PDFKitView(fileURL: identifiableURL.url, title: fileViewTitle)
+                }
+            }
+            .onAppear {
+                setInitialMapPosition()
+            }
+            .onChange(of: store.trip) { _ in
+                setInitialMapPosition()
+            }
+            .onChange(of: activeDayIndex) { newIndex in
+                updateMapPosition(forIndex: newIndex)
+            }
         }
     }
     
-    // MARK: - Header
+    // MARK: - Map Panning Animation
     
-    private func tripHeaderView(_ trip: Trip) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+    private func setInitialMapPosition() {
+        guard let trip = store.trip, !trip.steps.isEmpty, !initialMapSet else { return }
+        updateMapPosition(forIndex: activeDayIndex, animated: false)
+        initialMapSet = true
+    }
+    
+    private func updateMapPosition(forIndex index: Int, animated: Bool = true) {
+        guard let trip = store.trip, index < trip.steps.count else { return }
+        let step = trip.steps[index]
+        
+        let targetRegion = MKCoordinateRegion(
+            center: step.location.coordinate,
+            span: MKCoordinateSpan(latitudeDelta: 0.22, longitudeDelta: 0.22)
+        )
+        
+        if animated {
+            withAnimation(.spring(response: 0.9, dampingFraction: 0.82)) {
+                mapPosition = .region(targetRegion)
+            }
+        } else {
+            mapPosition = .region(targetRegion)
+        }
+    }
+    
+    // MARK: - Day Selector (Scrollable Badges)
+    
+    private func daySelectorView(_ trip: Trip) -> some View {
+        ScrollViewReader { proxy in
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(0..<trip.steps.count, id: \.self) { index in
+                        let step = trip.steps[index]
+                        Button {
+                            withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
+                                activeDayIndex = index
+                            }
+                        } label: {
+                            VStack(spacing: 4) {
+                                Text("DAY \(step.dayNumber)")
+                                    .font(.system(size: 12, weight: .bold))
+                                Text(formatDateStringShort(step.date))
+                                    .font(.system(size: 10, weight: .medium))
+                                    .opacity(0.85)
+                            }
+                            .foregroundColor(activeDayIndex == index ? .white : .primary)
+                            .padding(.vertical, 8)
+                            .padding(.horizontal, 16)
+                            .background(
+                                ZStack {
+                                    if activeDayIndex == index {
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .fill(Color.accentColor)
+                                            .shadow(color: Color.accentColor.opacity(0.4), radius: 5, y: 2)
+                                    } else {
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .fill(Color.primary.opacity(0.06))
+                                    }
+                                }
+                            )
+                        }
+                        .id(index)
+                    }
+                }
+                .padding(.horizontal)
+            }
+            .onChange(of: activeDayIndex) { newIndex in
+                withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) {
+                    proxy.scrollTo(newIndex, anchor: .center)
+                }
+            }
+        }
+    }
+    
+    // MARK: - Day Summary Card
+    
+    private func daySummaryCard(_ step: Step) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
             HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("\(formatDateString(trip.startDate)) to \(formatDateString(trip.endDate)) • 3 Weeks")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                }
+                Text("DAY \(step.dayNumber)")
+                    .font(.caption2)
+                    .fontWeight(.black)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.accentColor)
+                    .cornerRadius(6)
+                
                 Spacer()
+                
+                Text(formatDateString(step.date))
+                    .font(.caption)
+                    .fontWeight(.bold)
+                    .foregroundColor(.secondary)
             }
             
-            // Basic status / info
-            if let user = store.selectedUser {
-                HStack {
-                    Image(systemName: "person.circle.fill")
-                        .foregroundColor(.accentColor)
-                    Text("Profile: **\(user)**")
-                        .font(.caption)
-                    Spacer()
-                }
-                .padding(.vertical, 8)
-                .padding(.horizontal, 12)
-                .background(Color.accentColor.opacity(0.1))
-                .cornerRadius(8)
-                .padding(.top, 4)
-            }
-        }
-        .padding()
-        .background(.ultraThinMaterial)
-    }
-    
-    // MARK: - Empty State
-    
-    private var emptyStateView: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "airplane.circle")
-                .font(.system(size: 80))
-                .foregroundColor(.secondary)
-            
-            Text("No Trip Configured")
+            Text(step.title)
                 .font(.title2)
                 .fontWeight(.bold)
+                .foregroundColor(.primary)
             
-            Text("Go to Settings to enter your server URL and pull the trip configuration. Make sure you run the mock server!")
-                .font(.body)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 40)
-            
-            Button {
-                Task {
-                    await store.sync()
-                }
-            } label: {
-                if store.isSyncing {
-                    ProgressView()
-                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                } else {
-                    Label("Sync Now", systemImage: "arrow.clockwise")
-                }
-            }
-            .buttonStyle(.borderedProminent)
-            .tint(Color.accentColor)
-        }
-        .padding()
-    }
-}
-
-// MARK: - Timeline Row Component
-
-struct TimelineRow: View {
-    let step: Step
-    let totalSteps: Int
-    
-    var body: some View {
-        HStack(alignment: .top, spacing: 0) {
-            // Timeline connector track
-            VStack {
-                Circle()
-                    .fill(Color.accentColor)
-                    .frame(width: 14, height: 14)
-                    .overlay(
-                        Circle()
-                            .stroke(Color(.systemBackground), lineWidth: 2)
-                    )
-                    .padding(.top, 6)
-                
-                if step.dayNumber < totalSteps {
-                    Rectangle()
-                        .fill(Color.accentColor.opacity(0.3))
-                        .frame(width: 2)
-                        .frame(maxHeight: .infinity)
-                } else {
-                    Spacer()
-                }
-            }
-            .frame(width: 40)
-            
-            // Content Card
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text("DAY \(step.dayNumber)")
-                        .font(.caption2)
-                        .fontWeight(.bold)
-                        .foregroundColor(.accentColor)
-                    
-                    Spacer()
-                    
-                    Text(formatDateString(step.date))
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-                
-                Text(step.title)
-                    .font(.headline)
-                    .foregroundColor(.primary)
+            HStack {
+                Image(systemName: "mappin.and.ellipse")
+                    .foregroundColor(.accentColor)
+                    .font(.subheadline)
                 
                 Text(step.location.name)
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                     .lineLimit(1)
                 
-                Text(step.description)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.leading)
-                    .padding(.top, 2)
+                Spacer()
                 
-                // Show item preview icons
-                if !step.items.isEmpty {
-                    HStack(spacing: 8) {
-                        ForEach(step.items) { item in
-                            Image(systemName: item.type.iconName)
-                                .font(.caption2)
-                                .foregroundColor(.accentColor)
-                                .padding(6)
-                                .background(Color.accentColor.opacity(0.1))
-                                .clipShape(Circle())
-                        }
-                    }
-                    .padding(.top, 4)
+                Button {
+                    openInMaps(coordinate: step.location.coordinate, name: step.location.name)
+                } label: {
+                    Label("Go to", systemImage: "arrow.turn.up.right.circle.fill")
+                        .font(.caption)
+                        .fontWeight(.bold)
                 }
+                .buttonStyle(.borderedProminent)
+                .tint(Color.accentColor)
             }
-            .padding()
-            .background(
-                ZStack {
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(.ultraThinMaterial)
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    Color.white.opacity(0.25),
-                                    Color.white.opacity(0.03),
-                                    Color.clear
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                }
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 16)
-                    .stroke(
+            
+            Divider()
+                .padding(.vertical, 4)
+            
+            Text(step.description)
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.leading)
+                .lineLimit(4)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(20)
+        .background(
+            ZStack {
+                RoundedRectangle(cornerRadius: 24)
+                    .fill(.ultraThinMaterial)
+                RoundedRectangle(cornerRadius: 24)
+                    .fill(
                         LinearGradient(
                             colors: [
-                                Color.white.opacity(0.6),
-                                Color.white.opacity(0.1),
-                                Color.clear,
-                                Color.white.opacity(0.15)
+                                Color.white.opacity(0.28),
+                                Color.white.opacity(0.03),
+                                Color.clear
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 1.2
+                        )
                     )
-            )
-            .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 4)
-            .padding(.trailing)
-            .padding(.bottom, 16)
-        }
-    }
-}
-
-// MARK: - Step Detail View
-
-public struct IdentifiableURL: Identifiable {
-    public var id: String { url.absoluteString }
-    public let url: URL
-}
-
-struct WalletPassView: UIViewControllerRepresentable {
-    let passURL: URL
-    
-    func makeUIViewController(context: Context) -> UIViewController {
-        guard let passData = try? Data(contentsOf: passURL),
-              let pass = try? PKPass(data: passData) else {
-            let vc = UIViewController()
-            let label = UILabel()
-            label.text = "Failed to load Apple Wallet Pass.\n(Requires valid signed .pkpass signature)"
-            label.numberOfLines = 0
-            label.textAlignment = .center
-            label.textColor = .secondaryLabel
-            vc.view.addSubview(label)
-            label.translatesAutoresizingMaskIntoConstraints = false
-            NSLayoutConstraint.activate([
-                label.centerXAnchor.constraint(equalTo: vc.view.centerXAnchor),
-                label.centerYAnchor.constraint(equalTo: vc.view.centerYAnchor),
-                label.leadingAnchor.constraint(equalTo: vc.view.leadingAnchor, constant: 20),
-                label.trailingAnchor.constraint(equalTo: vc.view.trailingAnchor, constant: -20)
-            ])
-            return vc
-        }
-        
-        guard let addPassVC = PKAddPassesViewController(pass: pass) else {
-            let vc = UIViewController()
-            let label = UILabel()
-            label.text = "Pass already added or is invalid."
-            label.textAlignment = .center
-            label.textColor = .secondaryLabel
-            vc.view.addSubview(label)
-            label.translatesAutoresizingMaskIntoConstraints = false
-            NSLayoutConstraint.activate([
-                label.centerXAnchor.constraint(equalTo: vc.view.centerXAnchor),
-                label.centerYAnchor.constraint(equalTo: vc.view.centerYAnchor)
-            ])
-            return vc
-        }
-        return addPassVC
+            }
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 24)
+                .stroke(
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(0.65),
+                            Color.white.opacity(0.12),
+                            Color.clear,
+                            Color.white.opacity(0.2)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1.2
+                )
+        )
+        .shadow(color: Color.black.opacity(0.1), radius: 12, x: 0, y: 6)
     }
     
-    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}
-}
-
-public struct StepDetailView: View {
-    let step: Step
-    @ObservedObject var store: TripStore
+    // MARK: - Day Details Section (Activities, Tickets)
     
-    @State private var selectedFileToView: IdentifiableURL? = nil
-    @State private var fileViewTitle = ""
-    
-    public init(step: Step, store: TripStore) {
-        self.step = step
-        self.store = store
-    }
-    
-    public var body: some View {
-        ZStack {
-            // Local Map centered on step location coordinates
-            Map(initialPosition: .region(MKCoordinateRegion(
-                center: step.location.coordinate,
-                span: MKCoordinateSpan(latitudeDelta: 0.15, longitudeDelta: 0.15)
-            )))
-            .disabled(true)
-            .ignoresSafeArea()
-            .opacity(0.25)
-            .blur(radius: 1.5)
+    private func dayDetailsSection(_ step: Step) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Schedule & Bookings")
+                .font(.headline)
+                .fontWeight(.bold)
+                .padding(.leading, 4)
             
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    // Header card
-                    VStack(alignment: .leading, spacing: 10) {
-                        HStack {
-                            Text("DAY \(step.dayNumber)")
-                                .font(.caption)
-                                .fontWeight(.bold)
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 4)
-                                .background(Color.accentColor)
-                                .cornerRadius(6)
-                            
-                            Spacer()
-                            
-                            Text(formatDateString(step.date))
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                        }
-                        
-                        Text(step.title)
-                            .font(.title2)
-                            .fontWeight(.bold)
-                        
-                        HStack {
-                            Text(step.location.name)
-                                .font(.body)
-                                .foregroundColor(.secondary)
-                            
-                            Spacer()
-                            
-                            Button {
-                                openInMaps(coordinate: step.location.coordinate, name: step.location.name)
-                            } label: {
-                                Label("Go to", systemImage: "arrow.turn.up.right.circle.fill")
-                                    .font(.caption)
-                                    .fontWeight(.bold)
-                            }
-                            .buttonStyle(.borderedProminent)
-                            .tint(Color.accentColor)
-                        }
-                        
-                        Divider()
-                            .padding(.vertical, 8)
-                        
-                        Text(step.description)
-                            .font(.body)
-                            .foregroundColor(.primary)
-                    }
+            if step.items.isEmpty {
+                Text("No specific schedule details for this day. Free exploration!")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
                     .padding()
+                    .frame(maxWidth: .infinity)
                     .background(
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 20)
-                                .fill(.ultraThinMaterial)
-                            RoundedRectangle(cornerRadius: 20)
-                                .fill(
-                                    LinearGradient(
-                                        colors: [
-                                            Color.white.opacity(0.28),
-                                            Color.white.opacity(0.04),
-                                            Color.clear
-                                        ],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                )
-                        }
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(.thinMaterial)
                     )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 20)
-                            .stroke(
-                                LinearGradient(
-                                    colors: [
-                                        Color.white.opacity(0.65),
-                                        Color.white.opacity(0.12),
-                                        Color.clear,
-                                        Color.white.opacity(0.2)
-                                    ],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                ),
-                                lineWidth: 1.2
-                            )
-                    )
-                    .shadow(color: Color.black.opacity(0.08), radius: 12, x: 0, y: 6)
-                    .padding(.horizontal)
-                    
-                    // Activities / Tickets Section
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Schedule & Bookings")
-                            .font(.title3)
-                            .fontWeight(.bold)
-                            .padding(.horizontal)
-                        
-                        if step.items.isEmpty {
-                            Text("No specific schedule details for this day. Free exploration!")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                                .padding()
-                                .frame(maxWidth: .infinity)
-                                .background(.thinMaterial)
-                                .cornerRadius(12)
-                                .padding(.horizontal)
-                        } else {
-                            ForEach(step.items) { item in
-                                activityItemCard(item)
-                            }
-                        }
-                    }
-                }
-                .padding(.vertical)
-            }
-            .scrollContentBackground(.hidden)
-        }
-        .navigationTitle("Day \(step.dayNumber)")
-        .navigationBarTitleDisplayMode(.inline)
-        .sheet(item: $selectedFileToView) { identifiableURL in
-            if identifiableURL.url.pathExtension.lowercased() == "pkpass" {
-                WalletPassView(passURL: identifiableURL.url)
             } else {
-                PDFKitView(fileURL: identifiableURL.url, title: fileViewTitle)
+                ForEach(step.items) { item in
+                    activityItemCard(item)
+                }
             }
         }
     }
     
-    // MARK: - Navigation Launcher
-    
-    private func openInMaps(coordinate: CLLocationCoordinate2D, name: String) {
-        let placemark = MKPlacemark(coordinate: coordinate)
-        let mapItem = MKMapItem(placemark: placemark)
-        mapItem.name = name
-        
-        let launchOptions = [MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeDriving]
-        mapItem.openInMaps(launchOptions: launchOptions)
-    }
-    
-    // MARK: - Activity Card
+    // MARK: - Activity Card Component
     
     private func activityItemCard(_ item: TripItem) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top) {
-                // Leading Icon
                 Image(systemName: item.type.iconName)
-                    .font(.title2)
+                    .font(.title3)
                     .foregroundColor(.white)
-                    .padding(10)
+                    .padding(8)
                     .background(Color.accentColor)
-                    .cornerRadius(10)
+                    .cornerRadius(8)
                 
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
@@ -503,7 +340,7 @@ public struct StepDetailView: View {
                 }
             }
             
-            // Files / Tickets attachments
+            // Shared Files and User Specific Files
             let user = store.selectedUser ?? ""
             let applicableFiles = item.getFiles(forUser: user)
             
@@ -549,7 +386,6 @@ public struct StepDetailView: View {
                                     }
                                 } else {
                                     Button {
-                                        // Trigger file download
                                         Task {
                                             if let tripURL = URL(string: store.serverURLString) {
                                                 let remoteURL = tripURL.deletingLastPathComponent().appendingPathComponent(file)
@@ -565,7 +401,6 @@ public struct StepDetailView: View {
                             }
                             
                             if store.downloadedFiles.contains(file), let url = store.getLocalFileURL(forFilename: file) {
-                                // Inline PDF Integration
                                 PDFKitRepresentable(url: url)
                                     .frame(height: 320)
                                     .cornerRadius(10)
@@ -578,13 +413,13 @@ public struct StepDetailView: View {
                             }
                         }
                         .padding(8)
-                        .background(Color(.systemGroupedBackground))
+                        .background(Color(.systemGroupedBackground).opacity(0.5))
                         .cornerRadius(8)
                     }
                 }
             }
             
-            // Apple Wallet Passes Section
+            // Apple Wallet Passes
             let applicablePasses = item.getWalletPasses(forUser: user)
             if !applicablePasses.isEmpty {
                 Divider()
@@ -660,13 +495,13 @@ public struct StepDetailView: View {
                             }
                         }
                         .padding(8)
-                        .background(Color(.systemGroupedBackground))
+                        .background(Color(.systemGroupedBackground).opacity(0.5))
                         .cornerRadius(8)
                     }
                 }
             }
             
-            // Website URL Link
+            // Website URLs
             if let webString = item.websiteURL, let webURL = URL(string: webString) {
                 Divider()
                 
@@ -692,9 +527,9 @@ public struct StepDetailView: View {
         .padding()
         .background(
             ZStack {
-                RoundedRectangle(cornerRadius: 16)
+                RoundedRectangle(cornerRadius: 20)
                     .fill(.ultraThinMaterial)
-                RoundedRectangle(cornerRadius: 16)
+                RoundedRectangle(cornerRadius: 20)
                     .fill(
                         LinearGradient(
                             colors: [
@@ -709,12 +544,12 @@ public struct StepDetailView: View {
             }
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: 20)
                 .stroke(
                     LinearGradient(
                         colors: [
                             Color.white.opacity(0.55),
-                            Color.white.opacity(0.1),
+                            Color.white.opacity(0.10),
                             Color.clear,
                             Color.white.opacity(0.15)
                         ],
@@ -725,22 +560,110 @@ public struct StepDetailView: View {
                 )
         )
         .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 4)
-        .padding(.horizontal)
+    }
+    
+    // MARK: - Navigation Launcher
+    
+    private func openInMaps(coordinate: CLLocationCoordinate2D, name: String) {
+        let placemark = MKPlacemark(coordinate: coordinate)
+        let mapItem = MKMapItem(placemark: placemark)
+        mapItem.name = name
+        let launchOptions = [MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeDriving]
+        mapItem.openInMaps(launchOptions: launchOptions)
+    }
+    
+    // MARK: - Empty State View
+    
+    private var emptyStateView: some View {
+        VStack(spacing: 20) {
+            Image(systemName: "airplane.circle")
+                .font(.system(size: 80))
+                .foregroundColor(.secondary)
+            
+            Text("No Trip Configured")
+                .font(.title2)
+                .fontWeight(.bold)
+            
+            Text("Go to Settings to enter your server URL and pull the trip configuration.")
+                .font(.body)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 40)
+            
+            Button {
+                Task {
+                    await store.sync()
+                }
+            } label: {
+                if store.isSyncing {
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                } else {
+                    Label("Sync Now", systemImage: "arrow.clockwise")
+                }
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(Color.accentColor)
+        }
+        .padding()
     }
 }
 
-// MARK: - Date Formatter Helper
+// MARK: - Wallet Pass Representable
+
+struct WalletPassView: UIViewControllerRepresentable {
+    let passURL: URL
+    
+    func makeUIViewController(context: Context) -> UIViewController {
+        guard let passData = try? Data(contentsOf: passURL),
+              let pass = try? PKPass(data: passData) else {
+            let vc = UIViewController()
+            let label = UILabel()
+            label.text = "Failed to load Apple Wallet Pass.\n(Requires valid signed .pkpass signature)"
+            label.numberOfLines = 0
+            label.textAlignment = .center
+            label.textColor = .secondaryLabel
+            vc.view.addSubview(label)
+            label.translatesAutoresizingMaskIntoConstraints = false
+            NSLayoutConstraint.activate([
+                label.centerXAnchor.constraint(equalTo: vc.view.centerXAnchor),
+                label.centerYAnchor.constraint(equalTo: vc.view.centerYAnchor),
+                label.leadingAnchor.constraint(equalTo: vc.view.leadingAnchor, constant: 20),
+                label.trailingAnchor.constraint(equalTo: vc.view.trailingAnchor, constant: -20)
+            ])
+            return vc
+        }
+        
+        guard let addPassVC = PKAddPassesViewController(pass: pass) else {
+            let vc = UIViewController()
+            let label = UILabel()
+            label.text = "Pass already added or is invalid."
+            label.textAlignment = .center
+            label.textColor = .secondaryLabel
+            vc.view.addSubview(label)
+            label.translatesAutoresizingMaskIntoConstraints = false
+            NSLayoutConstraint.activate([
+                label.centerXAnchor.constraint(equalTo: vc.view.centerXAnchor),
+                label.centerYAnchor.constraint(equalTo: vc.view.centerYAnchor)
+            ])
+            return vc
+        }
+        return addPassVC
+    }
+    
+    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}
+}
+
+// MARK: - Date Formatting Helpers
 
 func formatDateString(_ dateStr: String) -> String {
     let formatter = DateFormatter()
     formatter.dateFormat = "yyyy-MM-dd"
     guard let date = formatter.date(from: dateStr) else { return dateStr }
     
-    // Format to MMMM d (e.g. August 6)
     formatter.dateFormat = "MMMM d"
     let basicDate = formatter.string(from: date)
     
-    // Add ordinal suffix (st, nd, rd, th)
     let calendar = Calendar.current
     let day = calendar.component(.day, from: date)
     let suffix: String
@@ -750,7 +673,19 @@ func formatDateString(_ dateStr: String) -> String {
     case 3, 23: suffix = "rd"
     default: suffix = "th"
     }
-    
     return "\(basicDate)\(suffix)"
 }
 
+func formatDateStringShort(_ dateStr: String) -> String {
+    let formatter = DateFormatter()
+    formatter.dateFormat = "yyyy-MM-dd"
+    guard let date = formatter.date(from: dateStr) else { return dateStr }
+    
+    formatter.dateFormat = "MMM d"
+    return formatter.string(from: date)
+}
+
+public struct IdentifiableURL: Identifiable {
+    public var id: String { url.absoluteString }
+    public let url: URL
+}
