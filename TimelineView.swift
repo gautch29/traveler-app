@@ -350,8 +350,7 @@ public struct TimelineView: View {
                                 .fontWeight(.semibold)
                         }
                         .padding()
-                        .background(Color(.secondarySystemGroupedBackground).opacity(0.6))
-                        .cornerRadius(12)
+                        .liquidGlassStyle(cornerRadius: 12)
                     }
                 }
                 
@@ -365,12 +364,37 @@ public struct TimelineView: View {
                 ZStack {
                     RoundedRectangle(cornerRadius: 20)
                         .fill(.ultraThinMaterial)
+                    RoundedRectangle(cornerRadius: 20)
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    Color.white.opacity(0.24),
+                                    Color.white.opacity(0.03),
+                                    Color.clear
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
                 }
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 20)
-                    .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                    .stroke(
+                        LinearGradient(
+                            colors: [
+                                Color.white.opacity(0.55),
+                                Color.white.opacity(0.10),
+                                Color.clear,
+                                Color.white.opacity(0.15)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 1.0
+                    )
             )
+            .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 4)
         }
     }
     
@@ -487,10 +511,7 @@ public struct TimelineView: View {
                     .foregroundColor(.secondary)
                     .padding()
                     .frame(maxWidth: .infinity)
-                    .background(
-                        RoundedRectangle(cornerRadius: 16)
-                            .fill(.thinMaterial)
-                    )
+                    .liquidGlassStyle(cornerRadius: 16)
             } else {
                 ForEach(step.items) { item in
                     activityItemCard(item)
@@ -601,8 +622,7 @@ public struct TimelineView: View {
                             }
                         }
                         .padding(8)
-                        .background(Color(.systemGroupedBackground).opacity(0.5))
-                        .cornerRadius(8)
+                        .liquidGlassStyle(cornerRadius: 10, opacity: 0.12)
                     }
                 }
             }
@@ -682,8 +702,7 @@ public struct TimelineView: View {
                             }
                         }
                         .padding(8)
-                        .background(Color(.systemGroupedBackground).opacity(0.5))
-                        .cornerRadius(8)
+                        .liquidGlassStyle(cornerRadius: 10, opacity: 0.12)
                     }
                 }
             }
@@ -705,8 +724,7 @@ public struct TimelineView: View {
                             .foregroundColor(.accentColor)
                     }
                     .padding(10)
-                    .background(Color.accentColor.opacity(0.1))
-                    .cornerRadius(8)
+                    .liquidGlassStyle(cornerRadius: 10, opacity: 0.12)
                 }
             }
         }
@@ -901,4 +919,60 @@ func formatDateStringShort(_ dateStr: String) -> String {
 public struct IdentifiableURL: Identifiable {
     public var id: String { url.absoluteString }
     public let url: URL
+}
+
+// MARK: - Liquid Glass Modifier & Extensions
+
+public struct LiquidGlassModifier: ViewModifier {
+    public var cornerRadius: CGFloat
+    public var opacity: Double
+    
+    public init(cornerRadius: CGFloat = 12, opacity: Double = 0.08) {
+        self.cornerRadius = cornerRadius
+        self.opacity = opacity
+    }
+    
+    public func body(content: Content) -> some View {
+        content
+            .background(
+                ZStack {
+                    RoundedRectangle(cornerRadius: cornerRadius)
+                        .fill(Color.white.opacity(opacity))
+                    RoundedRectangle(cornerRadius: cornerRadius)
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    Color.white.opacity(0.15),
+                                    Color.white.opacity(0.01)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                }
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: cornerRadius)
+                    .stroke(
+                        LinearGradient(
+                            colors: [
+                                Color.white.opacity(0.45),
+                                Color.white.opacity(0.06),
+                                Color.clear,
+                                Color.white.opacity(0.12)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 0.8
+                    )
+            )
+            .shadow(color: Color.black.opacity(0.03), radius: 3, x: 0, y: 1)
+    }
+}
+
+extension View {
+    public func liquidGlassStyle(cornerRadius: CGFloat = 12, opacity: Double = 0.08) -> some View {
+        self.modifier(LiquidGlassModifier(cornerRadius: cornerRadius, opacity: opacity))
+    }
 }
