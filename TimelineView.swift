@@ -34,47 +34,39 @@ public struct TimelineView: View {
                 
                 Group {
                     if let trip = store.trip {
-                        VStack(spacing: 0) {
-                            // 2. Custom Scrollable Day Selector (Linked to swipe index)
-                            daySelectorView(trip)
-                                .padding(.vertical, 10)
-                                .background(.ultraThinMaterial)
-                                .shadow(color: Color.black.opacity(0.05), radius: 5, y: 3)
-                            
-                            // 3. TabView with Page style for horizontal "Tinder card" swiping
-                            TabView(selection: $activeDayIndex) {
-                                ForEach(0..<trip.steps.count, id: \.self) { index in
-                                    let step = trip.steps[index]
-                                    
-                                    ScrollView(showsIndicators: false) {
-                                        VStack(spacing: 20) {
-                                            // Spacer to let map peak at the top
-                                            Spacer()
-                                                .frame(height: 20)
-                                            
-                                            // Primary Floating Glassmorphic Card
-                                            daySummaryCard(step)
-                                                .padding(.horizontal)
-                                            
-                                            // Schedule, Bookings & Tickets details
-                                            dayDetailsSection(step)
-                                                .padding(.horizontal)
-                                            
-                                            Spacer()
-                                                .frame(height: 50)
-                                        }
+                        // TabView with Page style for horizontal "Tinder card" swiping
+                        TabView(selection: $activeDayIndex) {
+                            ForEach(0..<trip.steps.count, id: \.self) { index in
+                                let step = trip.steps[index]
+                                
+                                ScrollView(showsIndicators: false) {
+                                    VStack(spacing: 20) {
+                                        // Spacer to let map peak at the top
+                                        Spacer()
+                                            .frame(height: 20)
+                                        
+                                        // Primary Floating Glassmorphic Card
+                                        daySummaryCard(step)
+                                            .padding(.horizontal)
+                                        
+                                        // Schedule, Bookings & Tickets details
+                                        dayDetailsSection(step)
+                                            .padding(.horizontal)
+                                        
+                                        Spacer()
+                                            .frame(height: 50)
                                     }
-                                    .tag(index)
                                 }
+                                .tag(index)
                             }
-                            .tabViewStyle(.page(indexDisplayMode: .never))
                         }
+                        .tabViewStyle(.page(indexDisplayMode: .never))
                     } else {
                         emptyStateView
                     }
                 }
             }
-            .navigationTitle(store.trip?.tripName ?? "My Trip")
+            .navigationTitle(store.trip != nil ? "Day \(activeDayIndex + 1)" : "My Trip")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -135,56 +127,7 @@ public struct TimelineView: View {
             mapPosition = .region(targetRegion)
         }
     }
-    
-    // MARK: - Day Selector (Scrollable Badges)
-    
-    private func daySelectorView(_ trip: Trip) -> some View {
-        ScrollViewReader { proxy in
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
-                    ForEach(0..<trip.steps.count, id: \.self) { index in
-                        let step = trip.steps[index]
-                        Button {
-                            withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
-                                activeDayIndex = index
-                            }
-                        } label: {
-                            VStack(spacing: 4) {
-                                Text("DAY \(step.dayNumber)")
-                                    .font(.system(size: 12, weight: .bold))
-                                Text(formatDateStringShort(step.date))
-                                    .font(.system(size: 10, weight: .medium))
-                                    .opacity(0.85)
-                            }
-                            .foregroundColor(activeDayIndex == index ? .white : .primary)
-                            .padding(.vertical, 8)
-                            .padding(.horizontal, 16)
-                            .background(
-                                ZStack {
-                                    if activeDayIndex == index {
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .fill(Color.accentColor)
-                                            .shadow(color: Color.accentColor.opacity(0.4), radius: 5, y: 2)
-                                    } else {
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .fill(Color.primary.opacity(0.06))
-                                    }
-                                }
-                            )
-                        }
-                        .id(index)
-                    }
-                }
-                .padding(.horizontal)
-            }
-            .onChange(of: activeDayIndex) { newIndex in
-                withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) {
-                    proxy.scrollTo(newIndex, anchor: .center)
-                }
-            }
-        }
-    }
-    
+
     // MARK: - Day Summary Card
     
     private func daySummaryCard(_ step: Step) -> some View {
