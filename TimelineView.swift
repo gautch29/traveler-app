@@ -350,7 +350,31 @@ public struct TimelineView: View {
                                 .fontWeight(.semibold)
                         }
                         .padding()
-                        .liquidGlassStyle(cornerRadius: 12)
+            VStack(alignment: .leading, spacing: 14) {
+                ForEach(trip.emergencyInfo.numbers) { num in
+                    Button {
+                        if let url = URL(string: "tel://\(num.number.replacingOccurrences(of: " ", with: ""))") {
+                            UIApplication.shared.open(url)
+                        }
+                    } label: {
+                        HStack {
+                            Image(systemName: "phone.fill")
+                                .foregroundColor(.green)
+                            
+                            Text(num.label)
+                                .font(.subheadline)
+                                .fontWeight(.bold)
+                                .foregroundColor(.primary)
+                            
+                            Spacer()
+                            
+                            Text(num.number)
+                                .font(.subheadline)
+                                .foregroundColor(.accentColor)
+                                .fontWeight(.semibold)
+                        }
+                        .padding()
+                        .liquidGlassStyle(cornerRadius: 12, fillOpacity: 0.015, borderOpacity: 0.25)
                     }
                 }
                 
@@ -360,41 +384,7 @@ public struct TimelineView: View {
                     .padding(.horizontal, 4)
             }
             .padding()
-            .background(
-                ZStack {
-                    RoundedRectangle(cornerRadius: 20)
-                        .fill(.ultraThinMaterial)
-                    RoundedRectangle(cornerRadius: 20)
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    Color.white.opacity(0.24),
-                                    Color.white.opacity(0.03),
-                                    Color.clear
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                }
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 20)
-                    .stroke(
-                        LinearGradient(
-                            colors: [
-                                Color.white.opacity(0.55),
-                                Color.white.opacity(0.10),
-                                Color.clear,
-                                Color.white.opacity(0.15)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 1.0
-                    )
-            )
-            .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 4)
+            .liquidGlassStyle(cornerRadius: 20, fillOpacity: 0.03, borderOpacity: 0.45)
         }
     }
     
@@ -459,41 +449,7 @@ public struct TimelineView: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(20)
-        .background(
-            ZStack {
-                RoundedRectangle(cornerRadius: 24)
-                    .fill(.ultraThinMaterial)
-                RoundedRectangle(cornerRadius: 24)
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                Color.white.opacity(0.28),
-                                Color.white.opacity(0.03),
-                                Color.clear
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-            }
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 24)
-                .stroke(
-                    LinearGradient(
-                        colors: [
-                            Color.white.opacity(0.65),
-                            Color.white.opacity(0.12),
-                            Color.clear,
-                            Color.white.opacity(0.2)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 1.2
-                )
-        )
-        .shadow(color: Color.black.opacity(0.1), radius: 12, x: 0, y: 6)
+        .liquidGlassStyle(cornerRadius: 24, fillOpacity: 0.03, borderOpacity: 0.45)
     }
     
     // MARK: - Day Details Section
@@ -511,7 +467,7 @@ public struct TimelineView: View {
                     .foregroundColor(.secondary)
                     .padding()
                     .frame(maxWidth: .infinity)
-                    .liquidGlassStyle(cornerRadius: 16)
+                    .liquidGlassStyle(cornerRadius: 16, fillOpacity: 0.03, borderOpacity: 0.45)
             } else {
                 ForEach(step.items) { item in
                     activityItemCard(item)
@@ -622,7 +578,7 @@ public struct TimelineView: View {
                             }
                         }
                         .padding(8)
-                        .liquidGlassStyle(cornerRadius: 10, opacity: 0.12)
+                        .liquidGlassStyle(cornerRadius: 10, fillOpacity: 0.015, borderOpacity: 0.25)
                     }
                 }
             }
@@ -702,7 +658,7 @@ public struct TimelineView: View {
                             }
                         }
                         .padding(8)
-                        .liquidGlassStyle(cornerRadius: 10, opacity: 0.12)
+                        .liquidGlassStyle(cornerRadius: 10, fillOpacity: 0.015, borderOpacity: 0.25)
                     }
                 }
             }
@@ -724,46 +680,12 @@ public struct TimelineView: View {
                             .foregroundColor(.accentColor)
                     }
                     .padding(10)
-                    .liquidGlassStyle(cornerRadius: 10, opacity: 0.12)
+                    .liquidGlassStyle(cornerRadius: 10, fillOpacity: 0.015, borderOpacity: 0.25)
                 }
             }
         }
         .padding()
-        .background(
-            ZStack {
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(.ultraThinMaterial)
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                Color.white.opacity(0.24),
-                                Color.white.opacity(0.03),
-                                Color.clear
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-            }
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 20)
-                .stroke(
-                    LinearGradient(
-                        colors: [
-                            Color.white.opacity(0.55),
-                            Color.white.opacity(0.10),
-                            Color.clear,
-                            Color.white.opacity(0.15)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 1.0
-                )
-        )
-        .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 4)
+        .liquidGlassStyle(cornerRadius: 20, fillOpacity: 0.03, borderOpacity: 0.45)
     }
     
     // MARK: - Navigation Launcher
@@ -925,11 +847,13 @@ public struct IdentifiableURL: Identifiable {
 
 public struct LiquidGlassModifier: ViewModifier {
     public var cornerRadius: CGFloat
-    public var opacity: Double
+    public var fillOpacity: Double
+    public var borderOpacity: Double
     
-    public init(cornerRadius: CGFloat = 12, opacity: Double = 0.08) {
+    public init(cornerRadius: CGFloat = 12, fillOpacity: Double = 0.03, borderOpacity: Double = 0.45) {
         self.cornerRadius = cornerRadius
-        self.opacity = opacity
+        self.fillOpacity = fillOpacity
+        self.borderOpacity = borderOpacity
     }
     
     public func body(content: Content) -> some View {
@@ -937,13 +861,13 @@ public struct LiquidGlassModifier: ViewModifier {
             .background(
                 ZStack {
                     RoundedRectangle(cornerRadius: cornerRadius)
-                        .fill(Color.white.opacity(opacity))
+                        .fill(Color.white.opacity(fillOpacity))
                     RoundedRectangle(cornerRadius: cornerRadius)
                         .fill(
                             LinearGradient(
                                 colors: [
-                                    Color.white.opacity(0.15),
-                                    Color.white.opacity(0.01)
+                                    Color.white.opacity(fillOpacity * 2.0),
+                                    Color.white.opacity(0.005)
                                 ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
@@ -956,23 +880,23 @@ public struct LiquidGlassModifier: ViewModifier {
                     .stroke(
                         LinearGradient(
                             colors: [
-                                Color.white.opacity(0.45),
-                                Color.white.opacity(0.06),
+                                Color.white.opacity(borderOpacity),
+                                Color.white.opacity(borderOpacity * 0.15),
                                 Color.clear,
-                                Color.white.opacity(0.12)
+                                Color.white.opacity(borderOpacity * 0.3)
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         ),
-                        lineWidth: 0.8
+                        lineWidth: 0.6
                     )
             )
-            .shadow(color: Color.black.opacity(0.03), radius: 3, x: 0, y: 1)
+            .shadow(color: Color.black.opacity(0.04), radius: 6, x: 0, y: 3)
     }
 }
 
 extension View {
-    public func liquidGlassStyle(cornerRadius: CGFloat = 12, opacity: Double = 0.08) -> some View {
-        self.modifier(LiquidGlassModifier(cornerRadius: cornerRadius, opacity: opacity))
+    public func liquidGlassStyle(cornerRadius: CGFloat = 12, fillOpacity: Double = 0.03, borderOpacity: Double = 0.45) -> some View {
+        self.modifier(LiquidGlassModifier(cornerRadius: cornerRadius, fillOpacity: fillOpacity, borderOpacity: borderOpacity))
     }
 }
