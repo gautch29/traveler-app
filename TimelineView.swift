@@ -12,6 +12,7 @@ public struct TimelineView: View {
     
     @State private var selectedFileToView: IdentifiableURL? = nil
     @State private var fileViewTitle = ""
+    @State private var expandedPDFs: Set<String> = []
     
     public init(store: TripStore) {
         self.store = store
@@ -537,19 +538,41 @@ public struct TimelineView: View {
                                 
                                 if store.downloadedFiles.contains(file) {
                                     if let url = store.getLocalFileURL(forFilename: file) {
-                                        HStack(spacing: 12) {
+                                        HStack(spacing: 10) {
                                             ShareLink(item: url) {
                                                 Image(systemName: "square.and.arrow.up")
                                                     .font(.caption)
                                             }
                                             
                                             Button {
+                                                withAnimation(.easeInOut(duration: 0.25)) {
+                                                    if expandedPDFs.contains(file) {
+                                                        expandedPDFs.remove(file)
+                                                    } else {
+                                                        expandedPDFs.insert(file)
+                                                    }
+                                                }
+                                            } label: {
+                                                HStack(spacing: 3) {
+                                                    Image(systemName: expandedPDFs.contains(file) ? "eye.slash" : "eye")
+                                                        .font(.system(size: 10))
+                                                    Text(expandedPDFs.contains(file) ? "Hide" : "Show")
+                                                        .font(.caption)
+                                                        .bold()
+                                                }
+                                            }
+                                            
+                                            Button {
                                                 fileViewTitle = file.components(separatedBy: "/").last ?? "Ticket"
                                                 selectedFileToView = IdentifiableURL(url: url)
                                             } label: {
-                                                Text("View")
-                                                    .font(.caption)
-                                                    .bold()
+                                                HStack(spacing: 3) {
+                                                    Image(systemName: "arrow.up.left.and.arrow.down.right")
+                                                        .font(.system(size: 10))
+                                                    Text("Open")
+                                                        .font(.caption)
+                                                        .bold()
+                                                }
                                             }
                                         }
                                     }
@@ -569,7 +592,7 @@ public struct TimelineView: View {
                                 }
                             }
                             
-                            if store.downloadedFiles.contains(file), let url = store.getLocalFileURL(forFilename: file) {
+                            if expandedPDFs.contains(file), store.downloadedFiles.contains(file), let url = store.getLocalFileURL(forFilename: file) {
                                 PDFKitRepresentable(url: url)
                                     .frame(height: 320)
                                     .cornerRadius(10)
@@ -579,6 +602,7 @@ public struct TimelineView: View {
                                             .stroke(Color.primary.opacity(0.12), lineWidth: 1)
                                     )
                                     .padding(.top, 4)
+                                    .transition(.opacity.combined(with: .scale(scale: 0.95, anchor: .top)))
                             }
                         }
                         .padding(8)
