@@ -49,6 +49,7 @@ public struct TripItem: Codable, Identifiable, Hashable, Equatable {
     public var walletPasses: [String]? // Shared .pkpass files
     public var profileWalletPasses: [String: String]? // Maps username to personal .pkpass file
     public var websiteURL: String? // Optional website link
+    public var flightNumber: String? // Optional flight code
     
     // Helper to get applicable files for a user
     public func getFiles(forUser username: String) -> [String] {
@@ -71,6 +72,21 @@ public struct TripItem: Codable, Identifiable, Hashable, Equatable {
         return passes
     }
 }
+
+public struct FlightStatus: Codable, Equatable {
+    public let flightNumber: String
+    public let status: String
+    public let gate: String
+    public let terminal: String
+    public let delayMinutes: Int
+    public let scheduledDeparture: String
+    public let estimatedDeparture: String
+    public let aircraft: String
+    public let departureCity: String
+    public let arrivalCity: String
+    public let baggageClaim: String
+}
+
 
 public struct Step: Codable, Identifiable, Hashable, Equatable {
     public var id: String

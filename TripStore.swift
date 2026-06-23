@@ -153,6 +153,33 @@ public class TripStore: ObservableObject {
         }
     }
     
+    public func fetchFlightStatus(for flightNumber: String) async -> FlightStatus? {
+        guard let tripURL = URL(string: serverURLString) else { return nil }
+        let baseURL = tripURL.deletingLastPathComponent()
+        
+        var components = URLComponents(url: baseURL.appendingPathComponent("flight-status"), resolvingAgainstBaseURL: false)
+        components?.queryItems = [URLQueryItem(name: "flight", value: flightNumber)]
+        
+        guard let url = components?.url else { return nil }
+        
+        var request = URLRequest(url: url)
+        if !serverToken.isEmpty {
+            request.setValue("Bearer \(serverToken)", forHTTPHeaderField: "Authorization")
+        }
+        
+        do {
+            let (data, response) = try await self.session.data(for: request)
+            guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+                return nil
+            }
+            let decoder = JSONDecoder()
+            return try decoder.decode(FlightStatus.self, from: data)
+        } catch {
+            print("Failed to fetch flight status for \(flightNumber): \(error)")
+            return nil
+        }
+    }
+    
     public func uploadFile(data: Data, filename: String) async -> Bool {
         guard let tripURL = URL(string: serverURLString) else { return false }
         let baseURL = tripURL.deletingLastPathComponent()

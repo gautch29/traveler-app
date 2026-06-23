@@ -281,7 +281,8 @@ struct DayEditorView: View {
             profileFiles: [:],
             walletPasses: [],
             profileWalletPasses: [:],
-            websiteURL: nil
+            websiteURL: nil,
+            flightNumber: nil
         )
         let items = step.items + [newItem]
         step = Step(id: step.id, dayNumber: step.dayNumber, title: step.title, date: step.date, location: step.location, description: step.description, items: items)
@@ -313,6 +314,7 @@ struct ActivityEditorView: View {
     @State private var sharedFilesInput = ""
     @State private var sharedPassesInput = ""
     @State private var websiteURLInput = ""
+    @State private var flightNumberInput = ""
     
     // Manage profile mappings
     @State private var profileFiles = [String: String]()
@@ -336,6 +338,14 @@ struct ActivityEditorView: View {
                     ForEach(0..<TripItemType.allCases.count, id: \.self) { idx in
                         Text(TripItemType.allCases[idx].rawValue.capitalized).tag(idx)
                     }
+                }
+            }
+            
+            if TripItemType.allCases[typeIndex] == .flight {
+                Section("Flight Status Tracking") {
+                    TextField("Flight Number (e.g. AF372)", text: $flightNumberInput)
+                        .autocapitalization(.allCharacters)
+                        .disableAutocorrection(true)
                 }
             }
             
@@ -461,6 +471,7 @@ struct ActivityEditorView: View {
             sharedFilesInput = item.sharedFiles.joined(separator: ", ")
             sharedPassesInput = (item.walletPasses ?? []).joined(separator: ", ")
             websiteURLInput = item.websiteURL ?? ""
+            flightNumberInput = item.flightNumber ?? ""
             
             // Populate profile dictionaries
             for user in users {
@@ -512,6 +523,7 @@ struct ActivityEditorView: View {
                 }
             }
             
+            let flightNum = flightNumberInput.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
             let updatedItem = TripItem(
                 id: item.id,
                 type: TripItemType.allCases[typeIndex],
@@ -522,7 +534,8 @@ struct ActivityEditorView: View {
                 profileFiles: pFiles.isEmpty ? nil : pFiles,
                 walletPasses: walletPasses.isEmpty ? nil : walletPasses,
                 profileWalletPasses: pPasses.isEmpty ? nil : pPasses,
-                websiteURL: websiteURLInput.isEmpty ? nil : websiteURLInput
+                websiteURL: websiteURLInput.isEmpty ? nil : websiteURLInput,
+                flightNumber: flightNum.isEmpty ? nil : flightNum
             )
             onSave(updatedItem)
         }

@@ -511,6 +511,11 @@ public struct TimelineView: View {
                 }
             }
             
+            if item.type == .flight, let flightNo = item.flightNumber, !flightNo.isEmpty {
+                Divider()
+                FlightStatusTrackerView(flightNumber: flightNo, store: store)
+            }
+            
             let user = store.selectedUser ?? ""
             let applicableFiles = item.getFiles(forUser: user)
             
@@ -787,6 +792,241 @@ public struct TimelineView: View {
             .tint(Color.accentColor)
         }
         .padding()
+    }
+}
+
+// MARK: - Flight Status Tracker View
+
+struct FlightStatusTrackerView: View {
+    let flightNumber: String
+    let store: TripStore
+    
+    @State private var status: FlightStatus? = nil
+    @State private var isLoading = false
+    @State private var errorOccurred = false
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            if isLoading {
+                HStack {
+                    ProgressView()
+                        .padding(.trailing, 6)
+                    Text("Fetching status for \(flightNumber)...")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .padding(.vertical, 8)
+                .frame(maxWidth: .infinity, alignment: .center)
+            } else if let fs = status {
+                VStack(spacing: 12) {
+                    // Status Header
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("FLIGHT STATUS")
+                                .font(.caption2)
+                                .fontWeight(.black)
+                                .foregroundColor(.secondary)
+                            Text(fs.flightNumber)
+                                .font(.headline)
+                                .fontWeight(.bold)
+                        }
+                        
+                        Spacer()
+                        
+                        // Status badge
+                        Text(fs.status.uppercased())
+                            .font(.caption2)
+                            .fontWeight(.black)
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(statusColor(fs.status))
+                            .cornerRadius(6)
+                    }
+                    
+                    Divider()
+                    
+                    // Route/Times Row
+                    HStack(alignment: .center) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(fs.departureCity)
+                                .font(.caption)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.secondary)
+                            Text(fs.scheduledDeparture)
+                                .font(.subheadline)
+                                .fontWeight(.bold)
+                        }
+                        
+                        Spacer()
+                        
+                        VStack(spacing: 2) {
+                            Image(systemName: "airplane")
+                                .font(.system(size: 14))
+                                .foregroundColor(.accentColor)
+                            Rectangle()
+                                .fill(Color.accentColor.opacity(0.3))
+                                .frame(height: 1)
+                                .frame(width: 40)
+                        }
+                        
+                        Spacer()
+                        
+                        VStack(alignment: .trailing, spacing: 4) {
+                            Text(fs.arrivalCity)
+                                .font(.caption)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.secondary)
+                            Text(fs.estimatedDeparture)
+                                .font(.subheadline)
+                                .fontWeight(.bold)
+                                .foregroundColor(fs.delayMinutes > 0 ? .orange : .primary)
+                        }
+                    }
+                    
+                    if fs.delayMinutes > 0 {
+                        HStack {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .foregroundColor(.orange)
+                                .font(.caption)
+                            Text("\(fs.delayMinutes) min delay")
+                                .font(.caption)
+                                .fontWeight(.bold)
+                                .foregroundColor(.orange)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    
+                    Divider()
+                    
+                    // Info Grid (2x2)
+                    Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 10) {
+                        GridRow {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("TERMINAL")
+                                    .font(.system(size: 9, weight: .bold))
+                                    .foregroundColor(.secondary)
+                                Text(fs.terminal)
+                                    .font(.caption)
+                                    .fontWeight(.bold)
+                            }
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("GATE")
+                                    .font(.system(size: 9, weight: .bold))
+                                    .foregroundColor(.secondary)
+                                Text(fs.gate)
+                                    .font(.caption)
+                                    .fontWeight(.bold)
+                            }
+                        }
+                        GridRow {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("BAG CLAIM")
+                                    .font(.system(size: 9, weight: .bold))
+                                    .foregroundColor(.secondary)
+                                Text(fs.baggageClaim)
+                                    .font(.caption)
+                                    .fontWeight(.bold)
+                            }
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("AIRCRAFT")
+                                    .font(.system(size: 9, weight: .bold))
+                                    .foregroundColor(.secondary)
+                                Text(fs.aircraft)
+                                    .font(.caption)
+                                    .fontWeight(.bold)
+                                    .lineLimit(1)
+                            }
+                        }
+                    }
+                    
+                    Divider()
+                    
+                    // FlightRadar24 Link
+                    if let flightradarURL = URL(string: "https://www.flightradar24.com/data/flights/\(fs.flightNumber.lowercased())") {
+                        Link(destination: flightradarURL) {
+                            HStack {
+                                Image(systemName: "safari")
+                                Text("Track on FlightRadar24")
+                                    .font(.caption)
+                                    .bold()
+                                Spacer()
+                                Image(systemName: "arrow.up.right.square")
+                            }
+                            .padding(8)
+                            .foregroundColor(.white)
+                            .background(Color.blue)
+                            .cornerRadius(8)
+                        }
+                    }
+                }
+                .padding(10)
+                .liquidGlassStyle(cornerRadius: 12, fillOpacity: 0.015, borderOpacity: 0.25)
+            } else {
+                // Fallback / Error - Still show FlightRadar24 link
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("Flight tracking code: \(flightNumber)")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Spacer()
+                        Button {
+                            loadStatus()
+                        } label: {
+                            Image(systemName: "arrow.clockwise")
+                                .font(.caption)
+                        }
+                    }
+                    
+                    if let flightradarURL = URL(string: "https://www.flightradar24.com/data/flights/\(flightNumber.lowercased())") {
+                        Link(destination: flightradarURL) {
+                            HStack {
+                                Image(systemName: "safari")
+                                Text("Track on FlightRadar24")
+                                    .font(.caption)
+                                    .bold()
+                                Spacer()
+                                Image(systemName: "arrow.up.right.square")
+                            }
+                            .padding(8)
+                            .foregroundColor(.accentColor)
+                            .liquidGlassStyle(cornerRadius: 8, fillOpacity: 0.015, borderOpacity: 0.25)
+                        }
+                    }
+                }
+            }
+        }
+        .task(id: flightNumber) {
+            loadStatus()
+        }
+    }
+    
+    private func loadStatus() {
+        isLoading = true
+        errorOccurred = false
+        Task {
+            if let fetched = await store.fetchFlightStatus(for: flightNumber) {
+                self.status = fetched
+            } else {
+                errorOccurred = true
+            }
+            isLoading = false
+        }
+    }
+    
+    private func statusColor(_ status: String) -> Color {
+        switch status.lowercased() {
+        case "on time":
+            return .green
+        case "delayed":
+            return .orange
+        case "boarding":
+            return .blue
+        case "departed", "arrived":
+            return .secondary
+        default:
+            return .red
+        }
     }
 }
 
