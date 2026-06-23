@@ -16,5 +16,4 @@ targets:
       CURRENT_PROJECT_VERSION: "1"
       IPHONEOS_DEPLOYMENT_TARGET: "17.0"
       SWIFT_VERSION: "5.9"
-      INFOPLIST_KEY_NSAppTransportSecurity:
-        NSAllowsArbitraryLoads: true
+      INFOPLIST_KEY_NSAppTransportSecurity[NSAllowsArbitraryLoads]: YES
