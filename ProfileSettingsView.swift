@@ -95,13 +95,6 @@ public struct ProfileSettingsView: View {
                 }
                 
                 Section("Cache & Local Data") {
-                    HStack {
-                        Text("Cached Files")
-                        Spacer()
-                        Text("\(store.downloadedFiles.count) files")
-                            .foregroundColor(.secondary)
-                    }
-                    
                     Button(role: .destructive) {
                         showResetConfirmation = true
                     } label: {

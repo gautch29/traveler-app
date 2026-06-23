@@ -517,62 +517,64 @@ public struct StepDetailView: View {
                         .foregroundColor(.secondary)
                     
                     ForEach(applicableFiles, id: \.self) { file in
-                        HStack {
-                            Image(systemName: "doc.text.fill")
-                                .foregroundColor(.red)
-                            
-                            Text(file.replacingOccurrences(of: "tickets/", with: "").replacingOccurrences(of: "permits/", with: ""))
-                                .font(.caption)
-                                .foregroundColor(.primary)
-                                .lineLimit(1)
-                            
-                            Spacer()
-                            
-                            if store.downloadedFiles.contains(file) {
-                                if let url = store.getLocalFileURL(forFilename: file) {
-                                    VStack(alignment: .leading, spacing: 6) {
-                                        HStack {
-                                            Text(file.replacingOccurrences(of: "tickets/", with: "").replacingOccurrences(of: "permits/", with: ""))
-                                                .font(.caption2)
-                                                .fontWeight(.bold)
-                                                .foregroundColor(.secondary)
-                                                .lineLimit(1)
-                                            
-                                            Spacer()
-                                            
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Image(systemName: "doc.text.fill")
+                                    .foregroundColor(.red)
+                                
+                                Text(file.replacingOccurrences(of: "tickets/", with: "").replacingOccurrences(of: "permits/", with: ""))
+                                    .font(.caption)
+                                    .foregroundColor(.primary)
+                                    .lineLimit(1)
+                                
+                                Spacer()
+                                
+                                if store.downloadedFiles.contains(file) {
+                                    if let url = store.getLocalFileURL(forFilename: file) {
+                                        HStack(spacing: 12) {
                                             ShareLink(item: url) {
                                                 Image(systemName: "square.and.arrow.up")
                                                     .font(.caption)
                                             }
+                                            
+                                            Button {
+                                                fileViewTitle = file.components(separatedBy: "/").last ?? "Ticket"
+                                                selectedFileToView = IdentifiableURL(url: url)
+                                            } label: {
+                                                Text("View")
+                                                    .font(.caption)
+                                                    .bold()
+                                            }
                                         }
-                                        
-                                        // Inline PDF Integration
-                                        PDFKitRepresentable(url: url)
-                                            .frame(height: 320)
-                                            .cornerRadius(10)
-                                            .shadow(color: Color.black.opacity(0.08), radius: 5, x: 0, y: 3)
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 10)
-                                                    .stroke(Color.primary.opacity(0.12), lineWidth: 1)
-                                            )
                                     }
+                                } else {
+                                    Button {
+                                        // Trigger file download
+                                        Task {
+                                            if let tripURL = URL(string: store.serverURLString) {
+                                                let remoteURL = tripURL.deletingLastPathComponent().appendingPathComponent(file)
+                                                try? await store.downloadFile(from: remoteURL, originalFilename: file)
+                                            }
+                                        }
+                                    } label: {
+                                        Label("Download PDF", systemImage: "arrow.down.circle")
+                                            .font(.caption)
+                                    }
+                                    .buttonStyle(.bordered)
+                                }
+                            }
+                            
+                            if store.downloadedFiles.contains(file), let url = store.getLocalFileURL(forFilename: file) {
+                                // Inline PDF Integration
+                                PDFKitRepresentable(url: url)
+                                    .frame(height: 320)
+                                    .cornerRadius(10)
+                                    .shadow(color: Color.black.opacity(0.08), radius: 5, x: 0, y: 3)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .stroke(Color.primary.opacity(0.12), lineWidth: 1)
+                                    )
                                     .padding(.top, 4)
-                                    .padding(.bottom, 8)
-                                }
-                            } else {
-                                Button {
-                                    // Trigger file download
-                                    Task {
-                                        if let tripURL = URL(string: store.serverURLString) {
-                                            let remoteURL = tripURL.deletingLastPathComponent().appendingPathComponent(file)
-                                            try? await store.downloadFile(from: remoteURL, originalFilename: file)
-                                        }
-                                    }
-                                } label: {
-                                    Label("Download PDF", systemImage: "arrow.down.circle")
-                                        .font(.caption)
-                                }
-                                .buttonStyle(.bordered)
                             }
                         }
                         .padding(8)
