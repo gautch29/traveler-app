@@ -180,6 +180,49 @@ public class TripStore: ObservableObject {
         }
     }
     
+    public func generateAISummary(title: String, locationName: String, items: [TripItem]) async -> String? {
+        guard let tripURL = URL(string: serverURLString) else { return nil }
+        let baseURL = tripURL.deletingLastPathComponent()
+        let summaryURL = baseURL.appendingPathComponent("generate-summary")
+        
+        struct GeneratePayload: Codable {
+            let title: String
+            let locationName: String
+            let items: [TripItem]
+        }
+        
+        let payload = GeneratePayload(title: title, locationName: locationName, items: items)
+        
+        do {
+            let encoder = JSONEncoder()
+            let data = try encoder.encode(payload)
+            
+            var request = URLRequest(url: summaryURL)
+            request.httpMethod = "POST"
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            if !serverToken.isEmpty {
+                request.setValue("Bearer \(serverToken)", forHTTPHeaderField: "Authorization")
+            }
+            request.httpBody = data
+            
+            let (responseData, response) = try await self.session.data(for: request)
+            guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+                return nil
+            }
+            
+            struct ResponsePayload: Codable {
+                let summary: String
+            }
+            
+            let decoder = JSONDecoder()
+            let result = try decoder.decode(ResponsePayload.self, from: responseData)
+            return result.summary
+        } catch {
+            print("Failed to generate AI summary: \(error)")
+            return nil
+        }
+    }
+    
     public func uploadFile(data: Data, filename: String) async -> Bool {
         guard let tripURL = URL(string: serverURLString) else { return false }
         let baseURL = tripURL.deletingLastPathComponent()

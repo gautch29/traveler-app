@@ -195,6 +195,9 @@ struct DayEditorView: View {
     @State private var locLat = ""
     @State private var locLng = ""
     
+    @State private var isGenerating = false
+    @State private var isAnimating = false
+    
     var body: some View {
         Form {
             Section("Day Properties") {
@@ -202,6 +205,46 @@ struct DayEditorView: View {
                 TextField("Date", text: $step.date)
                 TextField("Description", text: $step.description, axis: .vertical)
                     .lineLimit(3...6)
+                
+                Button(action: generateDetail) {
+                    HStack(spacing: 8) {
+                        if isGenerating {
+                            ProgressView()
+                                .tint(.white)
+                            Text("Generating Summary...")
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                        } else {
+                            Image(systemName: "sparkles")
+                                .font(.system(size: 16, weight: .semibold))
+                            Text("Generate Day Detail")
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                        }
+                    }
+                    .foregroundColor(.white)
+                    .padding(.vertical, 10)
+                    .padding(.horizontal, 16)
+                    .frame(maxWidth: .infinity)
+                    .background(
+                        LinearGradient(
+                            colors: [
+                                Color(red: 0.6, green: 0.3, blue: 0.9), // Purple
+                                Color(red: 0.95, green: 0.3, blue: 0.6), // Pink
+                                Color(red: 0.3, green: 0.6, blue: 0.9)  // Blue
+                            ],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .cornerRadius(10)
+                    .shadow(color: Color.purple.opacity(isGenerating ? 0.5 : 0.2), radius: isGenerating ? 6 : 3)
+                    .scaleEffect(isGenerating && isAnimating ? 0.98 : 1.0)
+                    .opacity(isGenerating && isAnimating ? 0.8 : 1.0)
+                }
+                .buttonStyle(.plain)
+                .disabled(isGenerating)
+                .padding(.vertical, 4)
             }
             
             Section("Location (Map integration)") {
@@ -292,6 +335,27 @@ struct DayEditorView: View {
         var items = step.items
         items.remove(atOffsets: offsets)
         step = Step(id: step.id, dayNumber: step.dayNumber, title: step.title, date: step.date, location: step.location, description: step.description, items: items)
+    }
+    
+    private func generateDetail() {
+        isGenerating = true
+        withAnimation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true)) {
+            isAnimating = true
+        }
+        
+        Task {
+            if let summary = await store.generateAISummary(title: step.title, locationName: locName, items: step.items) {
+                await MainActor.run {
+                    step.description = summary
+                }
+            }
+            await MainActor.run {
+                withAnimation {
+                    isGenerating = false
+                    isAnimating = false
+                }
+            }
+        }
     }
 }
 
