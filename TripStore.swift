@@ -493,19 +493,40 @@ public class TripStore: ObservableObject {
     
     public func addExpense(title: String, amount: Double, paidBy: String, splitAmong: [String]) {
         let expense = Expense(title: title, amount: amount, paidBy: paidBy, splitAmong: splitAmong)
+        
+        // Optimistically update local array and cache
         expenses.append(expense)
         saveExpenses()
         
         Task {
+            // Pull the latest expenses from the server to merge conflicts
+            await fetchExpenses()
+            
+            // Append if not already present
+            if !expenses.contains(where: { $0.id == expense.id }) {
+                expenses.append(expense)
+                saveExpenses()
+            }
             _ = await uploadExpenses()
         }
     }
     
     public func deleteExpense(at offsets: IndexSet) {
+        // Collect exact IDs to delete before mutating the local array
+        let idsToDelete = offsets.map { expenses[$0].id }
+        
+        // Optimistically update local array and cache
         expenses.remove(atOffsets: offsets)
         saveExpenses()
         
         Task {
+            // Pull latest expenses from server
+            await fetchExpenses()
+            
+            // Remove matching IDs
+            expenses.removeAll(where: { idsToDelete.contains($0.id) })
+            saveExpenses()
+            
             _ = await uploadExpenses()
         }
     }

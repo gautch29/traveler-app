@@ -69,6 +69,9 @@ public struct ExpenseTrackerView: View {
             }
             .onAppear {
                 setInitialMapPosition()
+                Task {
+                    await store.fetchExpenses()
+                }
             }
         }
     }
@@ -87,23 +90,23 @@ public struct ExpenseTrackerView: View {
     
     private var expensesListTab: some View {
         VStack(spacing: 0) {
-            if store.expenses.isEmpty {
-                VStack(spacing: 12) {
-                    Image(systemName: "creditcard.and.123")
-                        .font(.system(size: 60))
-                        .foregroundColor(.secondary)
-                        .padding(.top, 40)
-                    Text("No Expenses Yet")
-                        .font(.headline)
-                    Text("Keep track of who paid for what during the trip. Tap the button below to add an expense.")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 40)
-                    Spacer()
-                }
-            } else {
-                ScrollView(showsIndicators: false) {
+            ScrollView(showsIndicators: false) {
+                if store.expenses.isEmpty {
+                    VStack(spacing: 12) {
+                        Image(systemName: "creditcard.and.123")
+                            .font(.system(size: 60))
+                            .foregroundColor(.secondary)
+                            .padding(.top, 80)
+                        Text("No Expenses Yet")
+                            .font(.headline)
+                        Text("Keep track of who paid for what during the trip. Tap the button below to add an expense.")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 40)
+                    }
+                    .frame(maxWidth: .infinity)
+                } else {
                     LazyVStack(spacing: 12) {
                         Spacer()
                             .frame(height: 12)
@@ -154,6 +157,9 @@ public struct ExpenseTrackerView: View {
                             .frame(height: 20)
                     }
                 }
+            }
+            .refreshable {
+                await store.fetchExpenses()
             }
             
             Button {
@@ -258,6 +264,9 @@ public struct ExpenseTrackerView: View {
                 Spacer()
                     .frame(height: 20)
             }
+        }
+        .refreshable {
+            await store.fetchExpenses()
         }
     }
     
