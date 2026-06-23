@@ -69,8 +69,23 @@ public struct TimelineView: View {
                         emptyStateView
                     }
                 }
+                
+                // 3. Top Gradient Blur Overlay (smoothly fades content as it scrolls up)
+                Rectangle()
+                    .fill(.ultraThinMaterial)
+                    .mask(
+                        LinearGradient(
+                            colors: [.black, .black.opacity(0.85), .black.opacity(0.5), .clear],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .frame(height: 110)
+                    .ignoresSafeArea(edges: .top)
+                    .allowsHitTesting(false)
             }
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {
                 // Custom Emoji & Gradient Header Title
                 ToolbarItem(placement: .principal) {
@@ -350,30 +365,6 @@ public struct TimelineView: View {
                                 .fontWeight(.semibold)
                         }
                         .padding()
-            VStack(alignment: .leading, spacing: 14) {
-                ForEach(trip.emergencyInfo.numbers) { num in
-                    Button {
-                        if let url = URL(string: "tel://\(num.number.replacingOccurrences(of: " ", with: ""))") {
-                            UIApplication.shared.open(url)
-                        }
-                    } label: {
-                        HStack {
-                            Image(systemName: "phone.fill")
-                                .foregroundColor(.green)
-                            
-                            Text(num.label)
-                                .font(.subheadline)
-                                .fontWeight(.bold)
-                                .foregroundColor(.primary)
-                            
-                            Spacer()
-                            
-                            Text(num.number)
-                                .font(.subheadline)
-                                .foregroundColor(.accentColor)
-                                .fontWeight(.semibold)
-                        }
-                        .padding()
                         .liquidGlassStyle(cornerRadius: 12, fillOpacity: 0.015, borderOpacity: 0.25)
                     }
                 }
@@ -430,12 +421,14 @@ public struct TimelineView: View {
                 Button {
                     openInMaps(coordinate: step.location.coordinate, name: step.location.name)
                 } label: {
-                    Label("Go to", systemImage: "arrow.turn.up.right.circle.fill")
-                        .font(.caption)
-                        .fontWeight(.bold)
+                    Image(systemName: "arrow.triangle.turn.up.right.diamond.fill")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(.white)
+                        .frame(width: 36, height: 36)
+                        .background(Color.blue)
+                        .clipShape(Circle())
+                        .shadow(color: Color.blue.opacity(0.3), radius: 4, x: 0, y: 2)
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(Color.accentColor)
             }
             
             Divider()
