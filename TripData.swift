@@ -124,13 +124,15 @@ public struct Expense: Codable, Identifiable, Equatable {
     public let paidBy: String
     public let splitAmong: [String]
     public let date: Date
+    public let location: LocationInfo?
     
-    public init(id: UUID = UUID(), title: String, amount: Double, paidBy: String, splitAmong: [String], date: Date = Date()) {
+    public init(id: UUID = UUID(), title: String, amount: Double, paidBy: String, splitAmong: [String], date: Date = Date(), location: LocationInfo? = nil) {
         self.id = id
         self.title = title
         self.amount = amount
         self.paidBy = paidBy
         self.splitAmong = splitAmong
         self.date = date
+        self.location = location
     }
 }

@@ -10,8 +10,18 @@ public struct ExpenseTrackerView: View {
     @State private var paidBy = ""
     @State private var splitAmong = Set<String>()
     
-    @State private var activeTab = 0 // 0: Expenses, 1: Balances & Settlements
+    @State private var activeTab = 0 // 0: Expenses, 1: Balances & Settlements, 2: Map
     @State private var mapPosition: MapCameraPosition = .automatic
+    @State private var expenseMapPosition: MapCameraPosition = .automatic
+    
+    // For Location Manager
+    @StateObject private var locationManager = LocationManager()
+    
+    // For Location Picker inside Add Expense
+    @State private var selectedLocation: LocationInfo? = nil
+    @State private var locationSearchQuery = ""
+    @State private var locationSearchResults = [LocationInfo]()
+    @State private var isSearchingLocation = false
     
     public init(store: TripStore) {
         self.store = store
@@ -20,46 +30,53 @@ public struct ExpenseTrackerView: View {
     public var body: some View {
         NavigationStack {
             ZStack(alignment: .top) {
-                // 1. Map Background (shows overview of the trip region)
-                Map(position: $mapPosition)
-                    .disabled(true)
-                    .ignoresSafeArea()
-                    .opacity(0.4)
-                    .blur(radius: 0.8)
-                
-                Color(.systemBackground)
-                    .opacity(0.15)
-                    .ignoresSafeArea()
+                // 1. Map Background (shows overview of the trip region) - only for lists, not active map
+                if activeTab != 2 {
+                    Map(position: $mapPosition)
+                        .disabled(true)
+                        .ignoresSafeArea()
+                        .opacity(0.4)
+                        .blur(radius: 0.8)
+                    
+                    Color(.systemBackground)
+                        .opacity(0.15)
+                        .ignoresSafeArea()
+                }
                 
                 // 2. Main Content
                 VStack(spacing: 0) {
                     Picker("Tab", selection: $activeTab) {
                         Text("Expenses").tag(0)
-                        Text("Balances & Settlements").tag(1)
+                        Text("Balances").tag(1)
+                        Text("Map").tag(2)
                     }
                     .pickerStyle(.segmented)
                     .padding()
                     
                     if activeTab == 0 {
                         expensesListTab
-                    } else {
+                    } else if activeTab == 1 {
                         balancesTab
+                    } else {
+                        expenseMapTab
                     }
                 }
                 
                 // 3. Top Gradient Blur Overlay (smoothly fades content as it scrolls up)
-                Rectangle()
-                    .fill(.ultraThinMaterial)
-                    .mask(
-                        LinearGradient(
-                            colors: [.black, .black.opacity(0.85), .black.opacity(0.5), .clear],
-                            startPoint: .top,
-                            endPoint: .bottom
+                if activeTab != 2 {
+                    Rectangle()
+                        .fill(.ultraThinMaterial)
+                        .mask(
+                            LinearGradient(
+                                colors: [.black, .black.opacity(0.85), .black.opacity(0.5), .clear],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
                         )
-                    )
-                    .frame(height: 110)
-                    .ignoresSafeArea(edges: .top)
-                    .allowsHitTesting(false)
+                        .frame(height: 110)
+                        .ignoresSafeArea(edges: .top)
+                        .allowsHitTesting(false)
+                }
             }
             .navigationTitle("Expenses 💸")
             .navigationBarTitleDisplayMode(.inline)
@@ -83,6 +100,25 @@ public struct ExpenseTrackerView: View {
                 span: MKCoordinateSpan(latitudeDelta: 12, longitudeDelta: 12)
             )
             mapPosition = .region(region)
+        }
+    }
+    
+    private func setExpenseMapPosition() {
+        let localized = store.expenses.compactMap { $0.location }
+        if !localized.isEmpty {
+            let avgLat = localized.map { $0.latitude }.reduce(0, +) / Double(localized.count)
+            let avgLng = localized.map { $0.longitude }.reduce(0, +) / Double(localized.count)
+            let region = MKCoordinateRegion(
+                center: CLLocationCoordinate2D(latitude: avgLat, longitude: avgLng),
+                span: MKCoordinateSpan(latitudeDelta: 4, longitudeDelta: 4)
+            )
+            expenseMapPosition = .region(region)
+        } else if let firstStep = store.trip?.steps.first {
+            let region = MKCoordinateRegion(
+                center: firstStep.location.coordinate,
+                span: MKCoordinateSpan(latitudeDelta: 12, longitudeDelta: 12)
+            )
+            expenseMapPosition = .region(region)
         }
     }
     
@@ -117,9 +153,18 @@ public struct ExpenseTrackerView: View {
                                     Text(expense.title)
                                         .font(.headline)
                                         .foregroundColor(.primary)
-                                    Text("Paid by \(expense.paidBy)")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
+                                    HStack(spacing: 6) {
+                                        Text("Paid by \(expense.paidBy)")
+                                        if let loc = expense.location {
+                                            Text("•")
+                                            Image(systemName: "mappin.and.ellipse")
+                                                .font(.caption)
+                                            Text(loc.name)
+                                                .font(.caption)
+                                        }
+                                    }
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
                                 }
                                 
                                 Spacer()
@@ -169,6 +214,9 @@ public struct ExpenseTrackerView: View {
                 }
                 expenseTitle = ""
                 expenseAmount = ""
+                selectedLocation = nil
+                locationSearchQuery = ""
+                locationSearchResults.removeAll()
                 showingAddExpense = true
             } label: {
                 Label("Add Expense", systemImage: "plus")
@@ -270,6 +318,42 @@ public struct ExpenseTrackerView: View {
         }
     }
     
+    // MARK: - Expense Map Tab
+    
+    private var expenseMapTab: some View {
+        ZStack(alignment: .bottom) {
+            Map(position: $expenseMapPosition) {
+                ForEach(store.expenses.filter { $0.location != nil }) { expense in
+                    if let loc = expense.location {
+                        Annotation(expense.title, coordinate: loc.coordinate) {
+                            VStack(spacing: 4) {
+                                Text(String(format: "$%.2f", expense.amount))
+                                    .font(.system(size: 10, weight: .bold))
+                                    .padding(.vertical, 4)
+                                    .padding(.horizontal, 8)
+                                    .background(Color.accentColor)
+                                    .foregroundColor(.white)
+                                    .cornerRadius(6)
+                                    .shadow(radius: 2)
+                                
+                                Text(expense.title)
+                                    .font(.system(size: 9))
+                                    .padding(.vertical, 2)
+                                    .padding(.horizontal, 4)
+                                    .background(Color(.systemBackground).opacity(0.85))
+                                    .cornerRadius(4)
+                            }
+                        }
+                    }
+                }
+            }
+            .ignoresSafeArea(edges: .bottom)
+        }
+        .onAppear {
+            setExpenseMapPosition()
+        }
+    }
+    
     // MARK: - Add Expense Sheet
     
     private var addExpenseSheet: some View {
@@ -279,6 +363,101 @@ public struct ExpenseTrackerView: View {
                     TextField("What did you pay for?", text: $expenseTitle)
                     TextField("Amount ($)", text: $expenseAmount)
                         .keyboardType(.decimalPad)
+                }
+                
+                Section("Location") {
+                    if let location = selectedLocation {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(location.name)
+                                    .font(.subheadline)
+                                    .fontWeight(.semibold)
+                                Text(String(format: "Lat: %.4f, Lng: %.4f", location.latitude, location.longitude))
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                            }
+                            Spacer()
+                            Button("Remove") {
+                                selectedLocation = nil
+                            }
+                            .foregroundColor(.red)
+                            .buttonStyle(.borderless)
+                        }
+                    } else {
+                        Text("No location selected")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    Button {
+                        locationManager.requestLocation()
+                        if let loc = locationManager.location {
+                            selectedLocation = LocationInfo(
+                                name: "Current Location",
+                                latitude: loc.coordinate.latitude,
+                                longitude: loc.coordinate.longitude
+                            )
+                        } else {
+                            // Temporary fallback during permission check
+                            selectedLocation = LocationInfo(
+                                name: "Current Location",
+                                latitude: 37.0902,
+                                longitude: -95.7129
+                            )
+                            // Async check again in 1s
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                                if let loc = locationManager.location {
+                                    selectedLocation = LocationInfo(
+                                        name: "Current Location",
+                                        latitude: loc.coordinate.latitude,
+                                        longitude: loc.coordinate.longitude
+                                    )
+                                }
+                            }
+                        }
+                    } label: {
+                        Label("Use Current Location (Here)", systemImage: "location.fill")
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            TextField("Search Map...", text: $locationSearchQuery)
+                                .textFieldStyle(.roundedBorder)
+                                .disableAutocorrection(true)
+                                .autocapitalization(.none)
+                            
+                            Button("Search") {
+                                performLocationSearch()
+                            }
+                            .buttonStyle(.borderedProminent)
+                        }
+                        
+                        if isSearchingLocation {
+                            ProgressView()
+                                .frame(maxWidth: .infinity, alignment: .center)
+                                .padding(.vertical, 4)
+                        } else if !locationSearchResults.isEmpty {
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 8) {
+                                    ForEach(locationSearchResults, id: \.self) { result in
+                                        Button {
+                                            selectedLocation = result
+                                            locationSearchResults.removeAll()
+                                            locationSearchQuery = ""
+                                        } label: {
+                                            Text(result.name)
+                                                .font(.caption)
+                                                .padding(.vertical, 6)
+                                                .padding(.horizontal, 12)
+                                                .background(Color.accentColor.opacity(0.15))
+                                                .cornerRadius(8)
+                                        }
+                                    }
+                                }
+                                .padding(.vertical, 4)
+                            }
+                        }
+                    }
                 }
                 
                 if let users = store.trip?.users {
@@ -317,12 +496,55 @@ public struct ExpenseTrackerView: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
                         if let amount = Double(expenseAmount), !expenseTitle.isEmpty {
-                            store.addExpense(title: expenseTitle, amount: amount, paidBy: paidBy, splitAmong: Array(splitAmong))
+                            store.addExpense(
+                                title: expenseTitle,
+                                amount: amount,
+                                paidBy: paidBy,
+                                splitAmong: Array(splitAmong),
+                                location: selectedLocation
+                            )
                             showingAddExpense = false
                         }
                     }
                     .disabled(expenseTitle.isEmpty || Double(expenseAmount) == nil || splitAmong.isEmpty)
                 }
+            }
+            .onChange(of: locationManager.location) { oldVal, newVal in
+                if let loc = newVal, selectedLocation?.name == "Current Location" {
+                    selectedLocation = LocationInfo(
+                        name: "Current Location",
+                        latitude: loc.coordinate.latitude,
+                        longitude: loc.coordinate.longitude
+                    )
+                }
+            }
+        }
+    }
+    
+    private func performLocationSearch() {
+        guard !locationSearchQuery.isEmpty else { return }
+        isSearchingLocation = true
+        
+        let request = MKLocalSearch.Request()
+        request.naturalLanguageQuery = locationSearchQuery
+        
+        if let firstStep = store.trip?.steps.first {
+            request.region = MKCoordinateRegion(
+                center: firstStep.location.coordinate,
+                span: MKCoordinateSpan(latitudeDelta: 2.0, longitudeDelta: 2.0)
+            )
+        }
+        
+        let search = MKLocalSearch(request: request)
+        search.start { response, error in
+            isSearchingLocation = false
+            guard let response = response else { return }
+            locationSearchResults = response.mapItems.map { item in
+                LocationInfo(
+                    name: item.name ?? "Unknown Location",
+                    latitude: item.placemark.coordinate.latitude,
+                    longitude: item.placemark.coordinate.longitude
+                )
             }
         }
     }

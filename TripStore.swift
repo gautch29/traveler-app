@@ -491,8 +491,8 @@ public class TripStore: ObservableObject {
     
     // MARK: - Expense Operations
     
-    public func addExpense(title: String, amount: Double, paidBy: String, splitAmong: [String]) {
-        let expense = Expense(title: title, amount: amount, paidBy: paidBy, splitAmong: splitAmong)
+    public func addExpense(title: String, amount: Double, paidBy: String, splitAmong: [String], location: LocationInfo?) {
+        let expense = Expense(title: title, amount: amount, paidBy: paidBy, splitAmong: splitAmong, location: location)
         
         // Optimistically update local array and cache
         expenses.append(expense)
