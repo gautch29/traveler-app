@@ -150,8 +150,19 @@ public struct TimelineView: View {
     
     private func setInitialMapPosition() {
         guard let trip = store.trip, !trip.steps.isEmpty, !initialMapSet else { return }
+        // If today matches a trip day, auto-slide to it
+        if let todayIndex = todayStepIndex(for: trip) {
+            activeDayIndex = todayIndex + 1 // +1 because page 0 is the welcome card
+        }
         updateMapPosition(forIndex: activeDayIndex, animated: false)
         initialMapSet = true
+    }
+    
+    private func todayStepIndex(for trip: Trip) -> Int? {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        let todayString = formatter.string(from: Date())
+        return trip.steps.firstIndex { $0.date == todayString }
     }
     
     private func updateMapPosition(forIndex index: Int, animated: Bool = true) {
