@@ -347,7 +347,7 @@ struct ActivityEditorView: View {
             
             Section("PDF Ticket Files") {
                 HStack {
-                    TextField("Shared PDFs (comma separated)", text: $sharedFilesInput)
+                    TextField("Shared PDFs (e.g. tickets/hotel.pdf)", text: $sharedFilesInput)
                         .autocapitalization(.none)
                     
                     Button {
@@ -366,7 +366,7 @@ struct ActivityEditorView: View {
                     HStack {
                         Text(user)
                             .frame(width: 80, alignment: .leading)
-                        TextField("ticket.pdf", text: Binding(
+                        TextField("tickets/ticket.pdf", text: Binding(
                             get: { profileFiles[user] ?? "" },
                             set: { newValue in
                                 if newValue.isEmpty {
@@ -390,7 +390,7 @@ struct ActivityEditorView: View {
             
             Section("Apple Wallet Passes") {
                 HStack {
-                    TextField("Shared Passes (comma separated)", text: $sharedPassesInput)
+                    TextField("Shared Passes (e.g. passes/ticket.pkpass)", text: $sharedPassesInput)
                         .autocapitalization(.none)
                     
                     Button {
@@ -409,7 +409,7 @@ struct ActivityEditorView: View {
                     HStack {
                         Text(user)
                             .frame(width: 80, alignment: .leading)
-                        TextField("pass.pkpass", text: Binding(
+                        TextField("passes/pass.pkpass", text: Binding(
                             get: { profilePasses[user] ?? "" },
                             set: { newValue in
                                 if newValue.isEmpty {
@@ -469,19 +469,46 @@ struct ActivityEditorView: View {
             }
         }
         .onDisappear {
-            // Save state back
-            let sharedFiles = sharedFilesInput.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
-            let walletPasses = sharedPassesInput.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
+            // Save state back with normalization to ensure proper parent directories exist
+            let sharedFiles = sharedFilesInput.components(separatedBy: ",")
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
+                .map { file -> String in
+                    if !file.contains("/") {
+                        return "tickets/\(file)"
+                    }
+                    return file
+                }
+                
+            let walletPasses = sharedPassesInput.components(separatedBy: ",")
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
+                .map { pass -> String in
+                    if !pass.contains("/") {
+                        return "passes/\(pass)"
+                    }
+                    return pass
+                }
             
             var pFiles = [String: String]()
             var pPasses = [String: String]()
             
             for user in users {
                 if let file = profileFiles[user], !file.isEmpty {
-                    pFiles[user] = file
+                    let trimmed = file.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !trimmed.contains("/") {
+                        pFiles[user] = "tickets/\(trimmed)"
+                    } else {
+                        pFiles[user] = trimmed
+                    }
                 }
                 if let pass = profilePasses[user], !pass.isEmpty {
-                    pPasses[user] = pass
+                    let trimmed = pass.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !trimmed.contains("/") {
+                        pPasses[user] = "passes/\(trimmed)"
+                    } else {
+                        pPasses[user] = trimmed
+                    }
                 }
             }
             
