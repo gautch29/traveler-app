@@ -16,6 +16,7 @@ targets:
       properties:
         NSAppTransportSecurity:
           NSAllowsArbitraryLoads: true
+        NSLocationWhenInUseUsageDescription: "We need your location to add expense locations at your current position."
         UILaunchScreen: {}
     settings:
       GENERATE_INFOPLIST_FILE: NO

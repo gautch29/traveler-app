@@ -23,6 +23,8 @@
 		<key>NSAllowsArbitraryLoads</key>
 		<true/>
 	</dict>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>We need your location to add expense locations at your current position.</string>
 	<key>UILaunchScreen</key>
 	<dict/>
 </dict>
