@@ -522,96 +522,163 @@ public struct TimelineView: View {
             if !applicableFiles.isEmpty {
                 Divider()
                 
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Attachments")
-                        .font(.caption)
-                        .fontWeight(.bold)
-                        .foregroundColor(.secondary)
-                    
-                    ForEach(applicableFiles, id: \.self) { file in
-                        VStack(alignment: .leading, spacing: 8) {
-                            HStack {
-                                Image(systemName: "doc.text.fill")
-                                    .foregroundColor(.red)
-                                
-                                Text(file.replacingOccurrences(of: "tickets/", with: "").replacingOccurrences(of: "permits/", with: ""))
-                                    .font(.caption)
-                                    .foregroundColor(.primary)
-                                    .lineLimit(1)
-                                
-                                Spacer()
-                                
-                                if store.downloadedFiles.contains(file) {
-                                    if let url = store.getLocalFileURL(forFilename: file) {
-                                        HStack(spacing: 10) {
-                                            ShareLink(item: url) {
-                                                Image(systemName: "square.and.arrow.up")
-                                                    .font(.caption)
-                                            }
-                                            
-                                            Button {
-                                                withAnimation(.easeInOut(duration: 0.25)) {
-                                                    if expandedPDFs.contains(file) {
-                                                        expandedPDFs.remove(file)
-                                                    } else {
-                                                        expandedPDFs.insert(file)
-                                                    }
-                                                }
-                                            } label: {
-                                                HStack(spacing: 3) {
-                                                    Image(systemName: expandedPDFs.contains(file) ? "eye.slash" : "eye")
-                                                        .font(.system(size: 10))
-                                                    Text(expandedPDFs.contains(file) ? "Hide" : "Show")
-                                                        .font(.caption)
-                                                        .bold()
-                                                }
-                                            }
-                                            
-                                            Button {
-                                                fileViewTitle = file.components(separatedBy: "/").last ?? "Ticket"
-                                                selectedFileToView = IdentifiableURL(url: url)
-                                            } label: {
-                                                HStack(spacing: 3) {
-                                                    Image(systemName: "arrow.up.left.and.arrow.down.right")
-                                                        .font(.system(size: 10))
-                                                    Text("Open")
-                                                        .font(.caption)
-                                                        .bold()
-                                                }
-                                            }
-                                        }
-                                    }
-                                } else {
+                if item.type == .flight || item.type == .train {
+                    VStack(alignment: .leading, spacing: 8) {
+                        ForEach(applicableFiles, id: \.self) { file in
+                            if store.downloadedFiles.contains(file) {
+                                HStack(spacing: 8) {
                                     Button {
-                                        Task {
-                                            if let tripURL = URL(string: store.serverURLString) {
-                                                let remoteURL = tripURL.deletingLastPathComponent().appendingPathComponent(file)
-                                                try? await store.downloadFile(from: remoteURL, originalFilename: file)
-                                            }
+                                        if let url = store.getLocalFileURL(forFilename: file) {
+                                            fileViewTitle = item.type == .flight ? "Boarding Pass" : "Train Ticket"
+                                            selectedFileToView = IdentifiableURL(url: url)
                                         }
                                     } label: {
-                                        Label("Download PDF", systemImage: "arrow.down.circle")
-                                            .font(.caption)
+                                        HStack {
+                                            Image(systemName: item.type == .flight ? "airplane" : "tram.fill")
+                                                .foregroundColor(.accentColor)
+                                            Text(item.type == .flight ? "View Boarding Pass" : "View Train Ticket")
+                                                .font(.subheadline)
+                                                .fontWeight(.bold)
+                                                .foregroundColor(.primary)
+                                            Spacer()
+                                            Image(systemName: "arrow.up.left.and.arrow.down.right")
+                                                .font(.caption)
+                                                .foregroundColor(.secondary)
+                                        }
+                                        .padding(.horizontal, 16)
+                                        .padding(.vertical, 12)
+                                        .frame(maxWidth: .infinity)
+                                        .liquidGlassStyle(cornerRadius: 12, fillOpacity: 0.015, borderOpacity: 0.25)
                                     }
-                                    .buttonStyle(.bordered)
+                                    
+                                    if let url = store.getLocalFileURL(forFilename: file) {
+                                        ShareLink(item: url) {
+                                            Image(systemName: "square.and.arrow.up")
+                                                .font(.subheadline)
+                                                .padding(.horizontal, 14)
+                                                .padding(.vertical, 12)
+                                                .liquidGlassStyle(cornerRadius: 12, fillOpacity: 0.015, borderOpacity: 0.25)
+                                        }
+                                    }
+                                }
+                            } else {
+                                Button {
+                                    Task {
+                                        if let tripURL = URL(string: store.serverURLString) {
+                                            let remoteURL = tripURL.deletingLastPathComponent().appendingPathComponent(file)
+                                            try? await store.downloadFile(from: remoteURL, originalFilename: file)
+                                        }
+                                    }
+                                } label: {
+                                    HStack {
+                                        Image(systemName: "arrow.down.circle")
+                                            .foregroundColor(.accentColor)
+                                        Text(item.type == .flight ? "Download Boarding Pass" : "Download Train Ticket")
+                                            .font(.subheadline)
+                                            .fontWeight(.bold)
+                                            .foregroundColor(.accentColor)
+                                        Spacer()
+                                    }
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 12)
+                                    .frame(maxWidth: .infinity)
+                                    .liquidGlassStyle(cornerRadius: 12, fillOpacity: 0.015, borderOpacity: 0.25)
                                 }
                             }
-                            
-                            if expandedPDFs.contains(file), store.downloadedFiles.contains(file), let url = store.getLocalFileURL(forFilename: file) {
-                                PDFKitRepresentable(url: url)
-                                    .frame(height: 320)
-                                    .cornerRadius(10)
-                                    .shadow(color: Color.black.opacity(0.08), radius: 5, x: 0, y: 3)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 10)
-                                            .stroke(Color.primary.opacity(0.12), lineWidth: 1)
-                                    )
-                                    .padding(.top, 4)
-                                    .transition(.opacity.combined(with: .scale(scale: 0.95, anchor: .top)))
-                            }
                         }
-                        .padding(8)
-                        .liquidGlassStyle(cornerRadius: 10, fillOpacity: 0.015, borderOpacity: 0.25)
+                    }
+                } else {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Attachments")
+                            .font(.caption)
+                            .fontWeight(.bold)
+                            .foregroundColor(.secondary)
+                        
+                        ForEach(applicableFiles, id: \.self) { file in
+                            VStack(alignment: .leading, spacing: 8) {
+                                HStack {
+                                    Image(systemName: "doc.text.fill")
+                                        .foregroundColor(.red)
+                                    
+                                    Text(file.replacingOccurrences(of: "tickets/", with: "").replacingOccurrences(of: "permits/", with: ""))
+                                        .font(.caption)
+                                        .foregroundColor(.primary)
+                                        .lineLimit(1)
+                                    
+                                    Spacer()
+                                    
+                                    if store.downloadedFiles.contains(file) {
+                                        if let url = store.getLocalFileURL(forFilename: file) {
+                                            HStack(spacing: 10) {
+                                                ShareLink(item: url) {
+                                                    Image(systemName: "square.and.arrow.up")
+                                                        .font(.caption)
+                                                }
+                                                
+                                                Button {
+                                                    withAnimation(.easeInOut(duration: 0.25)) {
+                                                        if expandedPDFs.contains(file) {
+                                                            expandedPDFs.remove(file)
+                                                        } else {
+                                                            expandedPDFs.insert(file)
+                                                        }
+                                                    }
+                                                } label: {
+                                                    HStack(spacing: 3) {
+                                                        Image(systemName: expandedPDFs.contains(file) ? "eye.slash" : "eye")
+                                                            .font(.system(size: 10))
+                                                        Text(expandedPDFs.contains(file) ? "Hide" : "Show")
+                                                            .font(.caption)
+                                                            .bold()
+                                                    }
+                                                }
+                                                
+                                                Button {
+                                                    fileViewTitle = file.components(separatedBy: "/").last ?? "Ticket"
+                                                    selectedFileToView = IdentifiableURL(url: url)
+                                                } label: {
+                                                    HStack(spacing: 3) {
+                                                        Image(systemName: "arrow.up.left.and.arrow.down.right")
+                                                            .font(.system(size: 10))
+                                                        Text("Open")
+                                                            .font(.caption)
+                                                            .bold()
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    } else {
+                                        Button {
+                                            Task {
+                                                if let tripURL = URL(string: store.serverURLString) {
+                                                    let remoteURL = tripURL.deletingLastPathComponent().appendingPathComponent(file)
+                                                    try? await store.downloadFile(from: remoteURL, originalFilename: file)
+                                                }
+                                            }
+                                        } label: {
+                                            Label("Download PDF", systemImage: "arrow.down.circle")
+                                                .font(.caption)
+                                        }
+                                        .buttonStyle(.bordered)
+                                    }
+                                }
+                                
+                                if expandedPDFs.contains(file), store.downloadedFiles.contains(file), let url = store.getLocalFileURL(forFilename: file) {
+                                    PDFKitRepresentable(url: url)
+                                        .frame(height: 320)
+                                        .cornerRadius(10)
+                                        .shadow(color: Color.black.opacity(0.08), radius: 5, x: 0, y: 3)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 10)
+                                                .stroke(Color.primary.opacity(0.12), lineWidth: 1)
+                                        )
+                                        .padding(.top, 4)
+                                        .transition(.opacity.combined(with: .scale(scale: 0.95, anchor: .top)))
+                                }
+                            }
+                            .padding(8)
+                            .liquidGlassStyle(cornerRadius: 10, fillOpacity: 0.015, borderOpacity: 0.25)
+                        }
                     }
                 }
             }
@@ -747,6 +814,8 @@ public struct TimelineView: View {
             return "🌲"
         } else if title.contains("car") || title.contains("rental") || title.contains("drive") {
             return "🚗"
+        } else if title.contains("train") || title.contains("transit") || title.contains("subway") || title.contains("rail") {
+            return "🚇"
         } else if title.contains("city") || title.contains("york") || title.contains("citypass") {
             return "🗽"
         } else if title.contains("disney") || title.contains("universal") || title.contains("gardens") {

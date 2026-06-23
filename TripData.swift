@@ -27,6 +27,7 @@ public enum TripItemType: String, Codable, CaseIterable {
     case hotel = "hotel"
     case activity = "activity"
     case transit = "transit"
+    case train = "train"
     
     public var iconName: String {
         switch self {
@@ -34,6 +35,7 @@ public enum TripItemType: String, Codable, CaseIterable {
         case .hotel: return "house.fill"
         case .activity: return "ticket.fill"
         case .transit: return "car.fill"
+        case .train: return "tram.fill"
         }
     }
 }
