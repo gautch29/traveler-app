@@ -475,7 +475,7 @@ public struct TimelineView: View {
                     .liquidGlassStyle(cornerRadius: 16, fillOpacity: 0.03, borderOpacity: 0.45)
             } else {
                 ForEach(step.items) { item in
-                    activityItemCard(item)
+                    activityItemCard(item, date: step.date)
                 }
             }
         }
@@ -483,7 +483,7 @@ public struct TimelineView: View {
     
     // MARK: - Activity Card Component
     
-    private func activityItemCard(_ item: TripItem) -> some View {
+    private func activityItemCard(_ item: TripItem, date: String) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top) {
                 Image(systemName: item.type.iconName)
@@ -513,7 +513,7 @@ public struct TimelineView: View {
             
             if item.type == .flight, let flightNo = item.flightNumber, !flightNo.isEmpty {
                 Divider()
-                FlightStatusTrackerView(flightNumber: flightNo, store: store)
+                FlightStatusTrackerView(flightNumber: flightNo, date: date, store: store)
             }
             
             let user = store.selectedUser ?? ""
@@ -799,15 +799,61 @@ public struct TimelineView: View {
 
 struct FlightStatusTrackerView: View {
     let flightNumber: String
+    let date: String
     let store: TripStore
     
     @State private var status: FlightStatus? = nil
     @State private var isLoading = false
     @State private var errorOccurred = false
     
+    private func isFlightDateNearToday() -> Bool {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        guard let flightDate = formatter.date(from: date) else { return false }
+        
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        let target = calendar.startOfDay(for: flightDate)
+        
+        guard let dayDiff = calendar.dateComponents([.day], from: today, to: target).day else { return false }
+        return abs(dayDiff) <= 1
+    }
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            if isLoading {
+            if !isFlightDateNearToday() {
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack {
+                        Image(systemName: "clock.badge.exclamationmark")
+                            .foregroundColor(.secondary)
+                        Text("Scheduled for \(formatDateString(date))")
+                            .font(.subheadline)
+                            .fontWeight(.bold)
+                    }
+                    
+                    Text("Live status, gate, and delay tracking will become available on the day of departure.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    if let flightradarURL = URL(string: "https://www.flightradar24.com/data/flights/\(flightNumber.lowercased())") {
+                        Link(destination: flightradarURL) {
+                            HStack {
+                                Image(systemName: "safari")
+                                Text("Check Schedule on FlightRadar24")
+                                    .font(.caption)
+                                    .bold()
+                                Spacer()
+                                Image(systemName: "arrow.up.right.square")
+                            }
+                            .padding(8)
+                            .foregroundColor(.accentColor)
+                            .liquidGlassStyle(cornerRadius: 8, fillOpacity: 0.015, borderOpacity: 0.25)
+                        }
+                    }
+                }
+                .padding(10)
+                .liquidGlassStyle(cornerRadius: 12, fillOpacity: 0.015, borderOpacity: 0.25)
+            } else if isLoading {
                 HStack {
                     ProgressView()
                         .padding(.trailing, 6)
@@ -997,7 +1043,9 @@ struct FlightStatusTrackerView: View {
             }
         }
         .task(id: flightNumber) {
-            loadStatus()
+            if isFlightDateNearToday() {
+                loadStatus()
+            }
         }
     }
     
