@@ -1,4 +1,5 @@
 import SwiftUI
+import MapKit
 
 public struct ExpenseTrackerView: View {
     @ObservedObject var store: TripStore
@@ -10,6 +11,7 @@ public struct ExpenseTrackerView: View {
     @State private var splitAmong = Set<String>()
     
     @State private var activeTab = 0 // 0: Expenses, 1: Balances & Settlements
+    @State private var mapPosition: MapCameraPosition = .automatic
     
     public init(store: TripStore) {
         self.store = store
@@ -17,31 +19,74 @@ public struct ExpenseTrackerView: View {
     
     public var body: some View {
         NavigationStack {
-            VStack {
-                Picker("Tab", selection: $activeTab) {
-                    Text("Expenses").tag(0)
-                    Text("Balances & Settlements").tag(1)
-                }
-                .pickerStyle(.segmented)
-                .padding()
+            ZStack(alignment: .top) {
+                // 1. Map Background (shows overview of the trip region)
+                Map(position: $mapPosition)
+                    .disabled(true)
+                    .ignoresSafeArea()
+                    .opacity(0.4)
+                    .blur(radius: 0.8)
                 
-                if activeTab == 0 {
-                    expensesListTab
-                } else {
-                    balancesTab
+                Color(.systemBackground)
+                    .opacity(0.15)
+                    .ignoresSafeArea()
+                
+                // 2. Main Content
+                VStack(spacing: 0) {
+                    Picker("Tab", selection: $activeTab) {
+                        Text("Expenses").tag(0)
+                        Text("Balances & Settlements").tag(1)
+                    }
+                    .pickerStyle(.segmented)
+                    .padding()
+                    
+                    if activeTab == 0 {
+                        expensesListTab
+                    } else {
+                        balancesTab
+                    }
                 }
+                
+                // 3. Top Gradient Blur Overlay (smoothly fades content as it scrolls up)
+                Rectangle()
+                    .fill(.ultraThinMaterial)
+                    .mask(
+                        LinearGradient(
+                            colors: [.black, .black.opacity(0.85), .black.opacity(0.5), .clear],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .frame(height: 110)
+                    .ignoresSafeArea(edges: .top)
+                    .allowsHitTesting(false)
             }
             .navigationTitle("Expenses 💸")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(.hidden, for: .navigationBar)
             .sheet(isPresented: $showingAddExpense) {
                 addExpenseSheet
             }
+            .onAppear {
+                setInitialMapPosition()
+            }
+        }
+    }
+    
+    private func setInitialMapPosition() {
+        if let firstStep = store.trip?.steps.first {
+            let region = MKCoordinateRegion(
+                center: firstStep.location.coordinate,
+                span: MKCoordinateSpan(latitudeDelta: 12, longitudeDelta: 12)
+            )
+            mapPosition = .region(region)
         }
     }
     
     // MARK: - Expenses List Tab
     
     private var expensesListTab: some View {
-        VStack {
+        VStack(spacing: 0) {
             if store.expenses.isEmpty {
                 VStack(spacing: 12) {
                     Image(systemName: "creditcard.and.123")
@@ -58,33 +103,60 @@ public struct ExpenseTrackerView: View {
                     Spacer()
                 }
             } else {
-                List {
-                    ForEach(store.expenses) { expense in
-                        HStack {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(expense.title)
-                                    .font(.headline)
-                                Text("Paid by \(expense.paidBy)")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
+                ScrollView(showsIndicators: false) {
+                    LazyVStack(spacing: 12) {
+                        Spacer()
+                            .frame(height: 12)
+                        
+                        ForEach(store.expenses) { expense in
+                            HStack {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(expense.title)
+                                        .font(.headline)
+                                        .foregroundColor(.primary)
+                                    Text("Paid by \(expense.paidBy)")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                
+                                Spacer()
+                                
+                                HStack(spacing: 12) {
+                                    VStack(alignment: .trailing, spacing: 4) {
+                                        Text(String(format: "$%.2f", expense.amount))
+                                            .font(.headline)
+                                            .foregroundColor(.primary)
+                                        Text("\(expense.splitAmong.count) split")
+                                            .font(.caption2)
+                                            .foregroundColor(.secondary)
+                                    }
+                                    
+                                    Button {
+                                        if let idx = store.expenses.firstIndex(where: { $0.id == expense.id }) {
+                                            store.deleteExpense(at: IndexSet(integer: idx))
+                                        }
+                                    } label: {
+                                        Image(systemName: "trash")
+                                            .foregroundColor(.red.opacity(0.8))
+                                            .font(.system(size: 14))
+                                            .padding(8)
+                                            .background(Color.red.opacity(0.1))
+                                            .clipShape(Circle())
+                                    }
+                                }
                             }
-                            Spacer()
-                            VStack(alignment: .trailing, spacing: 4) {
-                                Text(String(format: "$%.2f", expense.amount))
-                                    .font(.headline)
-                                    .foregroundColor(.primary)
-                                Text("\(expense.splitAmong.count) split")
-                                    .font(.caption2)
-                                    .foregroundColor(.secondary)
-                            }
+                            .padding()
+                            .liquidGlassStyle(cornerRadius: 14, fillOpacity: 0.03, borderOpacity: 0.45)
+                            .padding(.horizontal)
                         }
+                        
+                        Spacer()
+                            .frame(height: 20)
                     }
-                    .onDelete(perform: store.deleteExpense)
                 }
             }
             
             Button {
-                // Initialize default values for the sheet
                 if let users = store.trip?.users {
                     paidBy = store.selectedUser ?? users.first ?? ""
                     splitAmong = Set(users)
@@ -106,8 +178,11 @@ public struct ExpenseTrackerView: View {
     // MARK: - Balances & Settlements Tab
     
     private var balancesTab: some View {
-        ScrollView {
+        ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 20) {
+                Spacer()
+                    .frame(height: 12)
+                
                 // 1. Group Balances
                 VStack(alignment: .leading, spacing: 12) {
                     Text("Group Balances")
@@ -128,8 +203,7 @@ public struct ExpenseTrackerView: View {
                                 .foregroundColor(balance >= 0 ? .green : .red)
                         }
                         .padding()
-                        .background(Color(.secondarySystemGroupedBackground))
-                        .cornerRadius(12)
+                        .liquidGlassStyle(cornerRadius: 12, fillOpacity: 0.03, borderOpacity: 0.45)
                         .padding(.horizontal)
                     }
                 }
@@ -148,8 +222,7 @@ public struct ExpenseTrackerView: View {
                             .foregroundColor(.secondary)
                             .padding()
                             .frame(maxWidth: .infinity)
-                            .background(Color(.secondarySystemGroupedBackground))
-                            .cornerRadius(12)
+                            .liquidGlassStyle(cornerRadius: 12, fillOpacity: 0.03, borderOpacity: 0.45)
                             .padding(.horizontal)
                     } else {
                         ForEach(settlements) { settlement in
@@ -171,21 +244,21 @@ public struct ExpenseTrackerView: View {
                                     .fontWeight(.bold)
                                     .padding(.vertical, 6)
                                     .padding(.horizontal, 12)
-                                    .background(Color.accentColor.opacity(0.1))
+                                    .background(Color.accentColor.opacity(0.15))
                                     .foregroundColor(Color.accentColor)
                                     .cornerRadius(8)
                             }
                             .padding()
-                            .background(Color(.secondarySystemGroupedBackground))
-                            .cornerRadius(12)
+                            .liquidGlassStyle(cornerRadius: 12, fillOpacity: 0.03, borderOpacity: 0.45)
                             .padding(.horizontal)
                         }
                     }
                 }
+                
+                Spacer()
+                    .frame(height: 20)
             }
-            .padding(.vertical)
         }
-        .background(Color(.systemGroupedBackground))
     }
     
     // MARK: - Add Expense Sheet
