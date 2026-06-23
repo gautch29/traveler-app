@@ -36,7 +36,7 @@ public class TripStore: ObservableObject {
     public init() {
         // Load defaults
         self.serverToken = UserDefaults.standard.string(forKey: serverTokenKey) ?? "traveler_secret_token_2026"
-        self.serverURLString = UserDefaults.standard.string(forKey: serverURLKey) ?? "http://localhost:8000/trip.json"
+        self.serverURLString = UserDefaults.standard.string(forKey: serverURLKey) ?? "https://usa.gautch.fr/trip.json"
         self.selectedUser = UserDefaults.standard.string(forKey: userKey)
         
         self.session = URLSession(configuration: .default, delegate: SelfSignedSessionDelegate(), delegateQueue: nil)
