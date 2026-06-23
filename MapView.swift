@@ -123,7 +123,7 @@ public struct MapView: View {
                     zoomToStep(first, animated: false)
                 }
             }
-            .onChange(of: selectedStep) { newStep in
+            .onChange(of: selectedStep) { _, newStep in
                 if let step = newStep {
                     zoomToStep(step)
                 }

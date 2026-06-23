@@ -137,10 +137,10 @@ public struct TimelineView: View {
             .onAppear {
                 setInitialMapPosition()
             }
-            .onChange(of: store.trip) { _ in
+            .onChange(of: store.trip) { _, _ in
                 setInitialMapPosition()
             }
-            .onChange(of: activeDayIndex) { newIndex in
+            .onChange(of: activeDayIndex) { _, newIndex in
                 updateMapPosition(forIndex: newIndex)
             }
         }
