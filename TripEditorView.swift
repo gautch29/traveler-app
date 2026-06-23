@@ -11,56 +11,131 @@ public struct TripEditorView: View {
     @State private var uploadMessage = ""
     @State private var isUploading = false
     
+    @State private var mapPosition: MapCameraPosition = .automatic
+    
     public init(store: TripStore) {
         self.store = store
     }
     
     public var body: some View {
         NavigationStack {
-            Group {
+            ZStack {
+                // Background Map
+                Map(position: $mapPosition)
+                    .disabled(true)
+                    .ignoresSafeArea()
+                    .opacity(0.3)
+                    .blur(radius: 1.0)
+                
+                Color(.systemBackground)
+                    .opacity(0.2)
+                    .ignoresSafeArea()
+                
                 if let trip = editedTrip {
-                    Form {
-                        Section("Trip Settings") {
-                            TextField("Trip Name", text: Binding(
-                                get: { trip.tripName },
-                                set: { editedTrip = Trip(tripName: $0, startDate: trip.startDate, endDate: trip.endDate, users: trip.users, emergencyInfo: trip.emergencyInfo, steps: trip.steps) }
-                            ))
-                            TextField("Start Date (YYYY-MM-DD)", text: Binding(
-                                get: { trip.startDate },
-                                set: { editedTrip = Trip(tripName: trip.tripName, startDate: $0, endDate: trip.endDate, users: trip.users, emergencyInfo: trip.emergencyInfo, steps: trip.steps) }
-                            ))
-                            TextField("End Date (YYYY-MM-DD)", text: Binding(
-                                get: { trip.endDate },
-                                set: { editedTrip = Trip(tripName: trip.tripName, startDate: trip.startDate, endDate: $0, users: trip.users, emergencyInfo: trip.emergencyInfo, steps: trip.steps) }
-                            ))
+                    List {
+                        Section {
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("Trip Name")
+                                    .font(.caption2)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.secondary)
+                                TextField("Trip Name", text: Binding(
+                                    get: { trip.tripName },
+                                    set: { editedTrip = Trip(tripName: $0, startDate: trip.startDate, endDate: trip.endDate, users: trip.users, emergencyInfo: trip.emergencyInfo, steps: trip.steps) }
+                                ))
+                                .textFieldStyle(.roundedBorder)
+                            }
+                            
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("Start Date")
+                                    .font(.caption2)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.secondary)
+                                TextField("Start Date (YYYY-MM-DD)", text: Binding(
+                                    get: { trip.startDate },
+                                    set: { editedTrip = Trip(tripName: trip.tripName, startDate: $0, endDate: trip.endDate, users: trip.users, emergencyInfo: trip.emergencyInfo, steps: trip.steps) }
+                                ))
+                                .textFieldStyle(.roundedBorder)
+                            }
+                            
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("End Date")
+                                    .font(.caption2)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.secondary)
+                                TextField("End Date (YYYY-MM-DD)", text: Binding(
+                                    get: { trip.endDate },
+                                    set: { editedTrip = Trip(tripName: trip.tripName, startDate: trip.startDate, endDate: $0, users: trip.users, emergencyInfo: trip.emergencyInfo, steps: trip.steps) }
+                                ))
+                                .textFieldStyle(.roundedBorder)
+                            }
+                        } header: {
+                            Text("Trip Settings")
+                                .foregroundColor(.primary)
+                                .fontWeight(.bold)
                         }
+                        .listRowBackground(Color.white.opacity(0.03))
                         
-                        Section("Users / Profiles") {
+                        Section {
                             Text(trip.users.joined(separator: ", "))
                                 .foregroundColor(.secondary)
                                 .font(.subheadline)
+                        } header: {
+                            Text("Users / Profiles")
+                                .foregroundColor(.primary)
+                                .fontWeight(.bold)
                         }
+                        .listRowBackground(Color.white.opacity(0.03))
                         
-                        Section("Days / Steps") {
-                            List {
-                                ForEach(trip.steps) { step in
-                                    NavigationLink(destination: DayEditorView(step: step, users: trip.users, store: store, onSave: { updatedStep in
-                                        updateStep(updatedStep)
-                                    })) {
-                                        HStack {
-                                            Text("Day \(step.dayNumber)")
-                                                .fontWeight(.bold)
-                                                .foregroundColor(.accentColor)
+                        Section {
+                            ForEach(trip.steps) { step in
+                                NavigationLink(destination: DayEditorView(step: step, users: trip.users, store: store, onSave: { updatedStep in
+                                    updateStep(updatedStep)
+                                })) {
+                                    HStack(spacing: 12) {
+                                        Text("Day \(step.dayNumber)")
+                                            .font(.subheadline)
+                                            .fontWeight(.black)
+                                            .foregroundColor(.white)
+                                            .padding(.horizontal, 10)
+                                            .padding(.vertical, 6)
+                                            .background(
+                                                LinearGradient(colors: [Color.accentColor, Color.accentColor.opacity(0.7)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                                            )
+                                            .cornerRadius(8)
+                                        
+                                        VStack(alignment: .leading, spacing: 2) {
                                             Text(step.title)
-                                                .lineLimit(1)
+                                                .font(.subheadline)
+                                                .fontWeight(.semibold)
+                                                .foregroundColor(.primary)
+                                            
+                                            Text(step.location.name)
+                                                .font(.caption2)
+                                                .foregroundColor(.secondary)
                                         }
                                     }
+                                    .padding(.vertical, 4)
                                 }
-                                .onDelete(perform: deleteStep)
+                                .listRowBackground(Color.white.opacity(0.03))
                             }
+                            .onDelete(perform: deleteStep)
+                            .onMove(perform: moveStep)
                             
                             Button(action: addStep) {
                                 Label("Add Day", systemImage: "calendar.badge.plus")
+                                    .fontWeight(.bold)
+                            }
+                            .listRowBackground(Color.white.opacity(0.03))
+                        } header: {
+                            HStack {
+                                Text("Days / Steps")
+                                    .foregroundColor(.primary)
+                                    .fontWeight(.bold)
+                                Spacer()
+                                Text("Drag to Reorder")
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
                             }
                         }
                         
@@ -80,7 +155,10 @@ public struct TripEditorView: View {
                             .frame(maxWidth: .infinity)
                             .alignmentGuide(.leading) { _ in 0 }
                         }
+                        .listRowBackground(Color.accentColor.opacity(0.2))
                     }
+                    .scrollContentBackground(.hidden)
+                    .background(Color.clear)
                 } else {
                     VStack(spacing: 20) {
                         Image(systemName: "square.and.pencil.circle")
@@ -97,10 +175,16 @@ public struct TripEditorView: View {
                 }
             }
             .navigationTitle("Itinerary Editor ✍️")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    EditButton()
+                }
+            }
             .onAppear {
                 if editedTrip == nil {
                     editedTrip = store.trip
                 }
+                setInitialMapPosition()
             }
             .alert(uploadSuccess ? "Upload Succeeded" : "Upload Failed", isPresented: $showingUploadAlert) {
                 Button("OK", role: .cancel) {}
@@ -111,6 +195,16 @@ public struct TripEditorView: View {
     }
     
     // MARK: - Editor Operations
+    
+    private func setInitialMapPosition() {
+        if let firstStep = editedTrip?.steps.first {
+            let region = MKCoordinateRegion(
+                center: firstStep.location.coordinate,
+                span: MKCoordinateSpan(latitudeDelta: 12, longitudeDelta: 12)
+            )
+            mapPosition = .region(region)
+        }
+    }
     
     private func updateStep(_ updatedStep: Step) {
         guard let trip = editedTrip else { return }
@@ -157,29 +251,18 @@ public struct TripEditorView: View {
         editedTrip = Trip(tripName: trip.tripName, startDate: trip.startDate, endDate: trip.endDate, users: trip.users, emergencyInfo: trip.emergencyInfo, steps: updatedSteps)
     }
     
-    private func saveAndUpload() {
+    private func moveStep(from source: IndexSet, to destination: Int) {
         guard let trip = editedTrip else { return }
-        isUploading = true
+        var updatedSteps = trip.steps
+        updatedSteps.move(fromOffsets: source, toOffset: destination)
         
-        Task {
-            // 1. Update the store's copy locally
-            store.trip = trip
-            
-            // 2. Upload to server
-            let success = await store.uploadTrip()
-            
-            isUploading = false
-            uploadSuccess = success
-            if success {
-                uploadMessage = "The updated itinerary has been successfully saved to the server and synchronized!"
-                
-                // Re-download assets based on newly modified config
-                await store.downloadAllFilesForCurrentConfig()
-            } else {
-                uploadMessage = "Failed to upload to the server. Please verify the mock server is running and the connection URL is correct."
-            }
-            showingUploadAlert = true
+        // Re-index day numbers sequentially
+        for i in 0..<updatedSteps.count {
+            let step = updatedSteps[i]
+            updatedSteps[i] = Step(id: step.id, dayNumber: i + 1, title: step.title, date: step.date, location: step.location, description: step.description, items: step.items)
         }
+        
+        editedTrip = Trip(tripName: trip.tripName, startDate: trip.startDate, endDate: trip.endDate, users: trip.users, emergencyInfo: trip.emergencyInfo, steps: updatedSteps)
     }
 }
 
@@ -198,95 +281,203 @@ struct DayEditorView: View {
     @State private var isGenerating = false
     @State private var isAnimating = false
     
+    @State private var mapPosition: MapCameraPosition = .automatic
+    
     var body: some View {
-        Form {
-            Section("Day Properties") {
-                TextField("Step Title", text: $step.title)
-                TextField("Date", text: $step.date)
-                TextField("Description", text: $step.description, axis: .vertical)
-                    .lineLimit(3...6)
-                
-                Button(action: generateDetail) {
-                    HStack(spacing: 8) {
-                        if isGenerating {
-                            ProgressView()
-                                .tint(.white)
-                            Text("Generating Summary...")
-                                .font(.subheadline)
-                                .fontWeight(.semibold)
-                        } else {
-                            Image(systemName: "sparkles")
-                                .font(.system(size: 16, weight: .semibold))
-                            Text("Generate Day Detail")
-                                .font(.subheadline)
-                                .fontWeight(.semibold)
-                        }
+        ZStack {
+            // Background Map showing the active day location
+            Map(position: $mapPosition)
+                .disabled(true)
+                .ignoresSafeArea()
+                .opacity(0.3)
+                .blur(radius: 1.0)
+            
+            Color(.systemBackground)
+                .opacity(0.2)
+                .ignoresSafeArea()
+            
+            List {
+                Section {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Step Title")
+                            .font(.caption2)
+                            .fontWeight(.bold)
+                            .foregroundColor(.secondary)
+                        TextField("Step Title", text: $step.title)
+                            .textFieldStyle(.roundedBorder)
                     }
-                    .foregroundColor(.white)
-                    .padding(.vertical, 10)
-                    .padding(.horizontal, 16)
-                    .frame(maxWidth: .infinity)
-                    .background(
-                        LinearGradient(
-                            colors: [
-                                Color(red: 0.6, green: 0.3, blue: 0.9), // Purple
-                                Color(red: 0.95, green: 0.3, blue: 0.6), // Pink
-                                Color(red: 0.3, green: 0.6, blue: 0.9)  // Blue
-                            ],
-                            startPoint: .leading,
-                            endPoint: .trailing
+                    
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Date")
+                            .font(.caption2)
+                            .fontWeight(.bold)
+                            .foregroundColor(.secondary)
+                        TextField("Date", text: $step.date)
+                            .textFieldStyle(.roundedBorder)
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Description")
+                            .font(.caption2)
+                            .fontWeight(.bold)
+                            .foregroundColor(.secondary)
+                        TextField("Description", text: $step.description, axis: .vertical)
+                            .textFieldStyle(.roundedBorder)
+                            .lineLimit(3...6)
+                    }
+                    
+                    Button(action: generateDetail) {
+                        HStack(spacing: 8) {
+                            if isGenerating {
+                                ProgressView()
+                                    .tint(.white)
+                                Text("Generating Summary...")
+                                    .font(.subheadline)
+                                    .fontWeight(.semibold)
+                            } else {
+                                Image(systemName: "sparkles")
+                                    .font(.system(size: 16, weight: .semibold))
+                                Text("Generate Day Detail")
+                                    .font(.subheadline)
+                                    .fontWeight(.semibold)
+                            }
+                        }
+                        .foregroundColor(.white)
+                        .padding(.vertical, 10)
+                        .padding(.horizontal, 16)
+                        .frame(maxWidth: .infinity)
+                        .background(
+                            LinearGradient(
+                                colors: [
+                                    Color(red: 0.6, green: 0.3, blue: 0.9), // Purple
+                                    Color(red: 0.95, green: 0.3, blue: 0.6), // Pink
+                                    Color(red: 0.3, green: 0.6, blue: 0.9)  // Blue
+                                ],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
                         )
-                    )
-                    .cornerRadius(10)
-                    .shadow(color: Color.purple.opacity(isGenerating ? 0.5 : 0.2), radius: isGenerating ? 6 : 3)
-                    .scaleEffect(isGenerating && isAnimating ? 0.98 : 1.0)
-                    .opacity(isGenerating && isAnimating ? 0.8 : 1.0)
+                        .cornerRadius(10)
+                        .shadow(color: Color.purple.opacity(isGenerating ? 0.5 : 0.2), radius: isGenerating ? 6 : 3)
+                        .scaleEffect(isGenerating && isAnimating ? 0.98 : 1.0)
+                        .opacity(isGenerating && isAnimating ? 0.8 : 1.0)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(isGenerating)
+                    .padding(.vertical, 4)
+                } header: {
+                    Text("Day Properties")
+                        .foregroundColor(.primary)
+                        .fontWeight(.bold)
                 }
-                .buttonStyle(.plain)
-                .disabled(isGenerating)
-                .padding(.vertical, 4)
-            }
-            
-            Section("Location (Map integration)") {
-                TextField("Location Name", text: $locName)
-                TextField("Latitude", text: $locLat)
-                    .keyboardType(.decimalPad)
-                TextField("Longitude", text: $locLng)
-                    .keyboardType(.decimalPad)
-            }
-            
-            Section("Schedule & Activities") {
-                List {
+                .listRowBackground(Color.white.opacity(0.03))
+                
+                Section {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Location Name")
+                            .font(.caption2)
+                            .fontWeight(.bold)
+                            .foregroundColor(.secondary)
+                        TextField("Location Name", text: $locName)
+                            .textFieldStyle(.roundedBorder)
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Latitude")
+                            .font(.caption2)
+                            .fontWeight(.bold)
+                            .foregroundColor(.secondary)
+                        TextField("Latitude", text: $locLat)
+                            .textFieldStyle(.roundedBorder)
+                            .keyboardType(.decimalPad)
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Longitude")
+                            .font(.caption2)
+                            .fontWeight(.bold)
+                            .foregroundColor(.secondary)
+                        TextField("Longitude", text: $locLng)
+                            .textFieldStyle(.roundedBorder)
+                            .keyboardType(.decimalPad)
+                    }
+                } header: {
+                    Text("Location (Map integration)")
+                        .foregroundColor(.primary)
+                        .fontWeight(.bold)
+                }
+                .listRowBackground(Color.white.opacity(0.03))
+                
+                Section {
                     ForEach(step.items) { item in
                         NavigationLink(destination: ActivityEditorView(item: item, users: users, store: store, onSave: { updatedItem in
                             updateItem(updatedItem)
                         })) {
-                            HStack {
+                            HStack(spacing: 12) {
                                 Image(systemName: item.type.iconName)
-                                    .foregroundColor(.accentColor)
-                                VStack(alignment: .leading) {
-                                    Text(item.title)
-                                        .font(.subheadline)
-                                    Text(item.time)
+                                    .font(.system(size: 14, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .padding(8)
+                                    .background(Color.accentColor)
+                                    .cornerRadius(8)
+                                
+                                VStack(alignment: .leading, spacing: 2) {
+                                    HStack {
+                                        Text(item.title)
+                                            .font(.subheadline)
+                                            .fontWeight(.semibold)
+                                            .foregroundColor(.primary)
+                                        Spacer()
+                                        Text(item.time)
+                                            .font(.caption2)
+                                            .fontWeight(.bold)
+                                            .foregroundColor(.accentColor)
+                                    }
+                                    
+                                    Text(item.details)
                                         .font(.caption)
                                         .foregroundColor(.secondary)
+                                        .lineLimit(1)
                                 }
                             }
+                            .padding(.vertical, 4)
                         }
+                        .listRowBackground(Color.white.opacity(0.03))
                     }
                     .onDelete(perform: deleteItem)
-                }
-                
-                Button(action: addItem) {
-                    Label("Add Activity", systemImage: "plus.circle")
+                    .onMove(perform: moveItem)
+                    
+                    Button(action: addItem) {
+                        Label("Add Activity", systemImage: "plus.circle")
+                            .fontWeight(.bold)
+                    }
+                    .listRowBackground(Color.white.opacity(0.03))
+                } header: {
+                    HStack {
+                        Text("Schedule & Activities")
+                            .foregroundColor(.primary)
+                            .fontWeight(.bold)
+                        Spacer()
+                        Text("Drag to Reorder")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
                 }
             }
+            .scrollContentBackground(.hidden)
+            .background(Color.clear)
         }
         .navigationTitle("Day \(step.dayNumber) Editor")
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                EditButton()
+            }
+        }
         .onAppear {
             locName = step.location.name
             locLat = String(step.location.latitude)
             locLng = String(step.location.longitude)
+            setInitialMapPosition()
         }
         .onDisappear {
             // Save location parameters
@@ -303,6 +494,16 @@ struct DayEditorView: View {
             )
             onSave(updatedStep)
         }
+    }
+    
+    private func setInitialMapPosition() {
+        let lat = Double(locLat) ?? step.location.latitude
+        let lng = Double(locLng) ?? step.location.longitude
+        let region = MKCoordinateRegion(
+            center: CLLocationCoordinate2D(latitude: lat, longitude: lng),
+            span: MKCoordinateSpan(latitudeDelta: 2.0, longitudeDelta: 2.0)
+        )
+        mapPosition = .region(region)
     }
     
     private func updateItem(_ updatedItem: TripItem) {
@@ -334,6 +535,12 @@ struct DayEditorView: View {
     private func deleteItem(at offsets: IndexSet) {
         var items = step.items
         items.remove(atOffsets: offsets)
+        step = Step(id: step.id, dayNumber: step.dayNumber, title: step.title, date: step.date, location: step.location, description: step.description, items: items)
+    }
+    
+    private func moveItem(from source: IndexSet, to destination: Int) {
+        var items = step.items
+        items.move(fromOffsets: source, toOffset: destination)
         step = Step(id: step.id, dayNumber: step.dayNumber, title: step.title, date: step.date, location: step.location, description: step.description, items: items)
     }
     
@@ -391,129 +598,152 @@ struct ActivityEditorView: View {
     @State private var uploadErrorMsg = ""
     @State private var showingUploadError = false
     
+    @State private var mapPosition: MapCameraPosition = .automatic
+    
     var body: some View {
-        Form {
-            Section("Properties") {
-                TextField("Activity Title", text: $item.title)
-                TextField("Time", text: $item.time)
-                TextField("Details", text: $item.details, axis: .vertical)
-                
-                Picker("Activity Type", selection: $typeIndex) {
-                    ForEach(0..<TripItemType.allCases.count, id: \.self) { idx in
-                        Text(TripItemType.allCases[idx].rawValue.capitalized).tag(idx)
-                    }
-                }
-            }
+        ZStack {
+            // Background Map showing the active day location
+            Map(position: $mapPosition)
+                .disabled(true)
+                .ignoresSafeArea()
+                .opacity(0.3)
+                .blur(radius: 1.0)
             
-            if TripItemType.allCases[typeIndex] == .flight {
-                Section("Flight Status Tracking") {
-                    TextField("Flight Number (e.g. AF372)", text: $flightNumberInput)
-                        .autocapitalization(.allCharacters)
-                        .disableAutocorrection(true)
-                }
-            }
+            Color(.systemBackground)
+                .opacity(0.2)
+                .ignoresSafeArea()
             
-            Section("Links") {
-                TextField("Website URL", text: $websiteURLInput)
-                    .keyboardType(.URL)
-                    .autocapitalization(.none)
-            }
-            
-            Section("PDF Ticket Files") {
-                HStack {
-                    TextField("Shared PDFs (e.g. tickets/hotel.pdf)", text: $sharedFilesInput)
-                        .autocapitalization(.none)
+            Form {
+                Section("Properties") {
+                    TextField("Activity Title", text: $item.title)
+                    TextField("Time", text: $item.time)
+                    TextField("Details", text: $item.details, axis: .vertical)
                     
-                    Button {
-                        uploadingTarget = .sharedPDF
-                        showingFilePicker = true
-                    } label: {
-                        Image(systemName: "icloud.and.arrow.up")
+                    Picker("Activity Type", selection: $typeIndex) {
+                        ForEach(0..<TripItemType.allCases.count, id: \.self) { idx in
+                            Text(TripItemType.allCases[idx].rawValue.capitalized).tag(idx)
+                        }
                     }
                 }
+                .listRowBackground(Color.white.opacity(0.03))
                 
-                Text("Personal PDFs (per User):")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                if TripItemType.allCases[typeIndex] == .flight {
+                    Section("Flight Status Tracking") {
+                        TextField("Flight Number (e.g. AF372)", text: $flightNumberInput)
+                            .autocapitalization(.allCharacters)
+                            .disableAutocorrection(true)
+                    }
+                    .listRowBackground(Color.white.opacity(0.03))
+                }
                 
-                ForEach(users, id: \.self) { user in
-                    HStack {
-                        Text(user)
-                            .frame(width: 80, alignment: .leading)
-                        TextField("tickets/ticket.pdf", text: Binding(
-                            get: { profileFiles[user] ?? "" },
-                            set: { newValue in
-                                if newValue.isEmpty {
-                                    profileFiles.removeValue(forKey: user)
-                                } else {
-                                    profileFiles[user] = newValue
-                                }
-                            }
-                        ))
+                Section("Links") {
+                    TextField("Website URL", text: $websiteURLInput)
+                        .keyboardType(.URL)
                         .autocapitalization(.none)
+                }
+                .listRowBackground(Color.white.opacity(0.03))
+                
+                Section("PDF Ticket Files") {
+                    HStack {
+                        TextField("Shared PDFs (e.g. tickets/hotel.pdf)", text: $sharedFilesInput)
+                            .autocapitalization(.none)
                         
                         Button {
-                            uploadingTarget = .profilePDF(user: user)
+                            uploadingTarget = .sharedPDF
                             showingFilePicker = true
                         } label: {
                             Image(systemName: "icloud.and.arrow.up")
                         }
                     }
-                }
-            }
-            
-            Section("Apple Wallet Passes") {
-                HStack {
-                    TextField("Shared Passes (e.g. passes/ticket.pkpass)", text: $sharedPassesInput)
-                        .autocapitalization(.none)
                     
-                    Button {
-                        uploadingTarget = .sharedPass
-                        showingFilePicker = true
-                    } label: {
-                        Image(systemName: "icloud.and.arrow.up")
+                    Text("Personal PDFs (per User):")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    ForEach(users, id: \.self) { user in
+                        HStack {
+                            Text(user)
+                                .frame(width: 80, alignment: .leading)
+                            TextField("tickets/ticket.pdf", text: Binding(
+                                get: { profileFiles[user] ?? "" },
+                                set: { newValue in
+                                    if newValue.isEmpty {
+                                        profileFiles.removeValue(forKey: user)
+                                    } else {
+                                        profileFiles[user] = newValue
+                                    }
+                                }
+                            ))
+                            .autocapitalization(.none)
+                            
+                            Button {
+                                uploadingTarget = .profilePDF(user: user)
+                                showingFilePicker = true
+                            } label: {
+                                Image(systemName: "icloud.and.arrow.up")
+                            }
+                        }
                     }
                 }
+                .listRowBackground(Color.white.opacity(0.03))
                 
-                Text("Personal Passes (per User):")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                ForEach(users, id: \.self) { user in
+                Section("Apple Wallet Passes") {
                     HStack {
-                        Text(user)
-                            .frame(width: 80, alignment: .leading)
-                        TextField("passes/pass.pkpass", text: Binding(
-                            get: { profilePasses[user] ?? "" },
-                            set: { newValue in
-                                if newValue.isEmpty {
-                                    profilePasses.removeValue(forKey: user)
-                                } else {
-                                    profilePasses[user] = newValue
-                                }
-                            }
-                        ))
-                        .autocapitalization(.none)
+                        TextField("Shared Passes (e.g. passes/ticket.pkpass)", text: $sharedPassesInput)
+                            .autocapitalization(.none)
                         
                         Button {
-                            uploadingTarget = .profilePass(user: user)
+                            uploadingTarget = .sharedPass
                             showingFilePicker = true
                         } label: {
                             Image(systemName: "icloud.and.arrow.up")
                         }
                     }
-                }
-            }
-            
-            if isUploadingFile {
-                Section {
-                    HStack {
-                        ProgressView()
-                        Text("Uploading file to server...")
-                            .padding(.leading, 8)
+                    
+                    Text("Personal Passes (per User):")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    ForEach(users, id: \.self) { user in
+                        HStack {
+                            Text(user)
+                                .frame(width: 80, alignment: .leading)
+                            TextField("passes/pass.pkpass", text: Binding(
+                                get: { profilePasses[user] ?? "" },
+                                set: { newValue in
+                                    if newValue.isEmpty {
+                                        profilePasses.removeValue(forKey: user)
+                                    } else {
+                                        profilePasses[user] = newValue
+                                    }
+                                }
+                            ))
+                            .autocapitalization(.none)
+                            
+                            Button {
+                                uploadingTarget = .profilePass(user: user)
+                                showingFilePicker = true
+                            } label: {
+                                Image(systemName: "icloud.and.arrow.up")
+                            }
+                        }
                     }
                 }
+                .listRowBackground(Color.white.opacity(0.03))
+                
+                if isUploadingFile {
+                    Section {
+                        HStack {
+                            ProgressView()
+                            Text("Uploading file to server...")
+                                .padding(.leading, 8)
+                        }
+                    }
+                    .listRowBackground(Color.white.opacity(0.03))
+                }
             }
+            .scrollContentBackground(.hidden)
+            .background(Color.clear)
         }
         .navigationTitle("Activity Editor")
         .fileImporter(
@@ -542,6 +772,8 @@ struct ActivityEditorView: View {
                 profileFiles[user] = item.profileFiles?[user] ?? ""
                 profilePasses[user] = item.profileWalletPasses?[user] ?? ""
             }
+            
+            setInitialMapPosition()
         }
         .onDisappear {
             // Save state back with normalization to ensure proper parent directories exist
@@ -602,6 +834,16 @@ struct ActivityEditorView: View {
                 flightNumber: flightNum.isEmpty ? nil : flightNum
             )
             onSave(updatedItem)
+        }
+    }
+    
+    private func setInitialMapPosition() {
+        if let firstStep = store.trip?.steps.first {
+            let region = MKCoordinateRegion(
+                center: firstStep.location.coordinate,
+                span: MKCoordinateSpan(latitudeDelta: 12, longitudeDelta: 12)
+            )
+            mapPosition = .region(region)
         }
     }
     
