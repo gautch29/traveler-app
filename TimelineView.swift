@@ -821,3 +821,84 @@ public struct TimelineView: View {
         .padding()
     }
 }
+
+// MARK: - Wallet Pass Representable
+
+struct WalletPassView: UIViewControllerRepresentable {
+    let passURL: URL
+    
+    func makeUIViewController(context: Context) -> UIViewController {
+        guard let passData = try? Data(contentsOf: passURL),
+              let pass = try? PKPass(data: passData) else {
+            let vc = UIViewController()
+            let label = UILabel()
+            label.text = "Failed to load Apple Wallet Pass.\n(Requires valid signed .pkpass signature)"
+            label.numberOfLines = 0
+            label.textAlignment = .center
+            label.textColor = .secondaryLabel
+            vc.view.addSubview(label)
+            label.translatesAutoresizingMaskIntoConstraints = false
+            NSLayoutConstraint.activate([
+                label.centerXAnchor.constraint(equalTo: vc.view.centerXAnchor),
+                label.centerYAnchor.constraint(equalTo: vc.view.centerYAnchor),
+                label.leadingAnchor.constraint(equalTo: vc.view.leadingAnchor, constant: 20),
+                label.trailingAnchor.constraint(equalTo: vc.view.trailingAnchor, constant: -20)
+            ])
+            return vc
+        }
+        
+        guard let addPassVC = PKAddPassesViewController(pass: pass) else {
+            let vc = UIViewController()
+            let label = UILabel()
+            label.text = "Pass already added or is invalid."
+            label.textAlignment = .center
+            label.textColor = .secondaryLabel
+            vc.view.addSubview(label)
+            label.translatesAutoresizingMaskIntoConstraints = false
+            NSLayoutConstraint.activate([
+                label.centerXAnchor.constraint(equalTo: vc.view.centerXAnchor),
+                label.centerYAnchor.constraint(equalTo: vc.view.centerYAnchor)
+            ])
+            return vc
+        }
+        return addPassVC
+    }
+    
+    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}
+}
+
+// MARK: - Date Formatting Helpers
+
+func formatDateString(_ dateStr: String) -> String {
+    let formatter = DateFormatter()
+    formatter.dateFormat = "yyyy-MM-dd"
+    guard let date = formatter.date(from: dateStr) else { return dateStr }
+    
+    formatter.dateFormat = "MMMM d"
+    let basicDate = formatter.string(from: date)
+    
+    let calendar = Calendar.current
+    let day = calendar.component(.day, from: date)
+    let suffix: String
+    switch day {
+    case 1, 21, 31: suffix = "st"
+    case 2, 22: suffix = "nd"
+    case 3, 23: suffix = "rd"
+    default: suffix = "th"
+    }
+    return "\(basicDate)\(suffix)"
+}
+
+func formatDateStringShort(_ dateStr: String) -> String {
+    let formatter = DateFormatter()
+    formatter.dateFormat = "yyyy-MM-dd"
+    guard let date = formatter.date(from: dateStr) else { return dateStr }
+    
+    formatter.dateFormat = "MMM d"
+    return formatter.string(from: date)
+}
+
+public struct IdentifiableURL: Identifiable {
+    public var id: String { url.absoluteString }
+    public let url: URL
+}
