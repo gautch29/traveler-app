@@ -40,6 +40,21 @@ public enum TripItemType: String, Codable, CaseIterable {
     }
 }
 
+public struct MapPlaceInfo: Codable, Hashable, Equatable {
+    public let name: String
+    public let address: String
+    public let phoneNumber: String?
+    public let websiteURL: String?
+    public let latitude: Double
+    public let longitude: Double
+    public let openingHours: String?
+    public let description: String?
+    
+    public var coordinate: CLLocationCoordinate2D {
+        CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
+    }
+}
+
 public struct TripItem: Codable, Identifiable, Hashable, Equatable {
     public var id: String
     public var type: TripItemType
@@ -52,6 +67,7 @@ public struct TripItem: Codable, Identifiable, Hashable, Equatable {
     public var profileWalletPasses: [String: String]? // Maps username to personal .pkpass file
     public var websiteURL: String? // Optional website link
     public var flightNumber: String? // Optional flight code
+    public var mapPlace: MapPlaceInfo? // Optional Apple Maps Place details
     
     // Helper to get applicable files for a user
     public func getFiles(forUser username: String) -> [String] {

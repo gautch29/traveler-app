@@ -516,6 +516,118 @@ public struct TimelineView: View {
                 FlightStatusTrackerView(flightNumber: flightNo, date: date, store: store)
             }
             
+            if let place = item.mapPlace {
+                Divider()
+                
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(alignment: .top) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(place.name)
+                                .font(.headline)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.primary)
+                            
+                            HStack(alignment: .top, spacing: 4) {
+                                Image(systemName: "mappin.circle.fill")
+                                    .foregroundColor(.red)
+                                    .font(.footnote)
+                                Text(place.address)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
+                        
+                        Spacer()
+                    }
+                    
+                    if let desc = place.description, !desc.isEmpty {
+                        Text(desc)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    
+                    if let hours = place.openingHours, !hours.isEmpty {
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "clock")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                Text("Opening Hours")
+                                    .font(.caption)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.secondary)
+                            }
+                            
+                            Text(hours)
+                                .font(.system(size: 11))
+                                .foregroundColor(.secondary)
+                                .lineSpacing(2)
+                                .padding(.leading, 18)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                    
+                    HStack(spacing: 12) {
+                        Button {
+                            openInMaps(coordinate: place.coordinate, name: place.name)
+                        } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: "arrow.triangle.turn.up.right.diamond.fill")
+                                    .font(.footnote)
+                                Text("Directions")
+                            }
+                            .font(.caption)
+                            .fontWeight(.bold)
+                            .foregroundColor(.white)
+                            .padding(.vertical, 8)
+                            .padding(.horizontal, 12)
+                            .background(Color.blue)
+                            .cornerRadius(8)
+                        }
+                        
+                        if let phone = place.phoneNumber, let phoneURL = URL(string: "tel://\(phone.replacingOccurrences(of: " ", with: ""))") {
+                            Button {
+                                UIApplication.shared.open(phoneURL)
+                            } label: {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "phone.fill")
+                                        .font(.footnote)
+                                    Text("Call")
+                                }
+                                .font(.caption)
+                                .fontWeight(.bold)
+                                .foregroundColor(.primary)
+                                .padding(.vertical, 8)
+                                .padding(.horizontal, 12)
+                                .liquidGlassStyle(cornerRadius: 8, fillOpacity: 0.05, borderOpacity: 0.3)
+                            }
+                        }
+                        
+                        if let webString = place.websiteURL, let webURL = URL(string: webString) {
+                            Link(destination: webURL) {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "safari.fill")
+                                        .font(.footnote)
+                                    Text("Website")
+                                }
+                                .font(.caption)
+                                .fontWeight(.bold)
+                                .foregroundColor(.primary)
+                                .padding(.vertical, 8)
+                                .padding(.horizontal, 12)
+                                .liquidGlassStyle(cornerRadius: 8, fillOpacity: 0.05, borderOpacity: 0.3)
+                            }
+                        }
+                    }
+                    .padding(.top, 4)
+                }
+                .padding(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .liquidGlassStyle(cornerRadius: 14, fillOpacity: 0.015, borderOpacity: 0.3)
+            }
+            
             let user = store.selectedUser ?? ""
             let applicableFiles = item.getFiles(forUser: user)
             

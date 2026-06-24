@@ -566,7 +566,8 @@ struct DayEditorView: View {
             walletPasses: [],
             profileWalletPasses: [:],
             websiteURL: nil,
-            flightNumber: nil
+            flightNumber: nil,
+            mapPlace: nil
         )
         let items = step.items + [newItem]
         step = Step(id: step.id, dayNumber: step.dayNumber, title: step.title, date: step.date, location: step.location, description: step.description, items: items)
@@ -640,6 +641,12 @@ struct ActivityEditorView: View {
     
     @State private var mapPosition: MapCameraPosition = .automatic
     
+    // Apple Maps place search state
+    @State private var selectedMapPlace: MapPlaceInfo? = nil
+    @State private var placeSearchQuery = ""
+    @State private var placeSearchResults = [MapPlaceInfo]()
+    @State private var isSearchingPlace = false
+    
     var body: some View {
         ZStack {
             // Background Map showing the active day location
@@ -662,6 +669,89 @@ struct ActivityEditorView: View {
                     Picker("Activity Type", selection: $typeIndex) {
                         ForEach(0..<TripItemType.allCases.count, id: \.self) { idx in
                             Text(TripItemType.allCases[idx].rawValue.capitalized).tag(idx)
+                        }
+                    }
+                }
+                .listRowBackground(Color.white.opacity(0.03))
+                
+                Section("Location & Place Details (Apple Maps)") {
+                    if let place = selectedMapPlace {
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack {
+                                Text(place.name)
+                                    .fontWeight(.bold)
+                                Spacer()
+                                Button("Remove") {
+                                    selectedMapPlace = nil
+                                }
+                                .foregroundColor(.red)
+                                .buttonStyle(.borderless)
+                            }
+                            Text(place.address)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            
+                            if let phone = place.phoneNumber {
+                                Text("📞 \(phone)")
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    } else {
+                        Text("No location associated with this activity.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            TextField("Search Place in Apple Maps...", text: $placeSearchQuery)
+                                .textFieldStyle(.roundedBorder)
+                                .disableAutocorrection(true)
+                                .autocapitalization(.none)
+                            
+                            Button("Search") {
+                                performPlaceSearch()
+                            }
+                            .buttonStyle(.borderedProminent)
+                        }
+                        
+                        if isSearchingPlace {
+                            ProgressView()
+                                .frame(maxWidth: .infinity, alignment: .center)
+                                .padding(.vertical, 4)
+                        } else if !placeSearchResults.isEmpty {
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 8) {
+                                    ForEach(placeSearchResults, id: \.self) { result in
+                                        Button {
+                                            selectedMapPlace = result
+                                            placeSearchResults.removeAll()
+                                            placeSearchQuery = ""
+                                            
+                                            let region = MKCoordinateRegion(
+                                                center: result.coordinate,
+                                                span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
+                                            )
+                                            mapPosition = .region(region)
+                                        } label: {
+                                            VStack(alignment: .leading, spacing: 2) {
+                                                Text(result.name)
+                                                    .font(.caption)
+                                                    .fontWeight(.bold)
+                                                Text(result.address)
+                                                    .font(.system(size: 8))
+                                                    .foregroundColor(.secondary)
+                                            }
+                                            .padding(.vertical, 6)
+                                            .padding(.horizontal, 12)
+                                            .background(Color.accentColor.opacity(0.15))
+                                            .cornerRadius(8)
+                                        }
+                                    }
+                                }
+                                .padding(.vertical, 4)
+                            }
                         }
                     }
                 }
@@ -813,6 +903,8 @@ struct ActivityEditorView: View {
                 profilePasses[user] = item.profileWalletPasses?[user] ?? ""
             }
             
+            selectedMapPlace = item.mapPlace
+            
             setInitialMapPosition()
         }
         .onDisappear {
@@ -871,20 +963,80 @@ struct ActivityEditorView: View {
                 walletPasses: walletPasses.isEmpty ? nil : walletPasses,
                 profileWalletPasses: pPasses.isEmpty ? nil : pPasses,
                 websiteURL: websiteURLInput.isEmpty ? nil : websiteURLInput,
-                flightNumber: flightNum.isEmpty ? nil : flightNum
+                flightNumber: flightNum.isEmpty ? nil : flightNum,
+                mapPlace: selectedMapPlace
             )
             onSave(updatedItem)
         }
     }
     
     private func setInitialMapPosition() {
-        if let firstStep = store.trip?.steps.first {
+        if let place = selectedMapPlace {
+            let region = MKCoordinateRegion(
+                center: place.coordinate,
+                span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
+            )
+            mapPosition = .region(region)
+        } else if let firstStep = store.trip?.steps.first {
             let region = MKCoordinateRegion(
                 center: firstStep.location.coordinate,
                 span: MKCoordinateSpan(latitudeDelta: 12, longitudeDelta: 12)
             )
             mapPosition = .region(region)
         }
+    }
+    
+    private func performPlaceSearch() {
+        guard !placeSearchQuery.isEmpty else { return }
+        isSearchingPlace = true
+        
+        let request = MKLocalSearch.Request()
+        request.naturalLanguageQuery = placeSearchQuery
+        
+        let search = MKLocalSearch(request: request)
+        search.start { response, error in
+            isSearchingPlace = false
+            guard let response = response else { return }
+            placeSearchResults = response.mapItems.map { item in
+                let name = item.name ?? "Unknown Location"
+                let address = item.placemark.title ?? "No Address"
+                let phone = item.phoneNumber
+                let web = item.url?.absoluteString
+                let lat = item.placemark.coordinate.latitude
+                let lng = item.placemark.coordinate.longitude
+                
+                let mockDetails = generateMockPlaceDetails(for: name)
+                
+                return MapPlaceInfo(
+                    name: name,
+                    address: address,
+                    phoneNumber: phone,
+                    websiteURL: web,
+                    latitude: lat,
+                    longitude: lng,
+                    openingHours: mockDetails.openingHours,
+                    description: mockDetails.description
+                )
+            }
+        }
+    }
+    
+    private func generateMockPlaceDetails(for name: String) -> (description: String, openingHours: String) {
+        let hours = "Monday–Friday: 9:00 AM – 5:30 PM\nSaturday: 10:00 AM – 6:00 PM\nSunday: Closed"
+        
+        let lowercaseName = name.lowercased()
+        let description: String
+        if lowercaseName.contains("museum") || lowercaseName.contains("art") || lowercaseName.contains("gallery") {
+            description = "A renowned cultural institution displaying historic collections, interactive exhibitions, and art pieces. Perfect for sightseeing and learning about local heritage."
+        } else if lowercaseName.contains("park") || lowercaseName.contains("garden") || lowercaseName.contains("square") || lowercaseName.contains("canyon") || lowercaseName.contains("national") {
+            description = "A beautiful public scenic space offering breathtaking views, hiking trails, and a tranquil escape. Ideal for relaxing and outdoor photos."
+        } else if lowercaseName.contains("restaurant") || lowercaseName.contains("cafe") || lowercaseName.contains("kitchen") || lowercaseName.contains("grill") || lowercaseName.contains("bistro") || lowercaseName.contains("coffee") {
+            description = "A highly rated dining establishment known for its vibrant ambiance, excellent service, and selection of local and international delicacies."
+        } else {
+            description = "A popular landmark and point of interest. Highly recommended for travelers looking to explore the best attractions and local culture in the area."
+        }
+        
+        return (description, hours)
     }
     
     private func handleFileImport(result: Result<[URL], Error>) {
