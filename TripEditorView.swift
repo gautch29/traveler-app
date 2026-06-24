@@ -308,6 +308,18 @@ public struct TripEditorView: View {
 
 // MARK: - Day Editor View
 
+struct DayLocationSearchResult: Hashable, Identifiable {
+    let id = UUID()
+    let name: String
+    let address: String
+    let latitude: Double
+    let longitude: Double
+    
+    var coordinate: CLLocationCoordinate2D {
+        CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
+    }
+}
+
 struct DayEditorView: View {
     @State var step: Step
     let users: [String]
@@ -322,6 +334,10 @@ struct DayEditorView: View {
     @State private var isAnimating = false
     
     @State private var mapPosition: MapCameraPosition = .automatic
+    
+    @State private var locationSearchQuery = ""
+    @State private var locationSearchResults = [DayLocationSearchResult]()
+    @State private var isSearchingLocation = false
     
     var body: some View {
         ZStack {
@@ -422,24 +438,72 @@ struct DayEditorView: View {
                             .textFieldStyle(.roundedBorder)
                     }
                     
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Latitude")
-                            .font(.caption2)
-                            .fontWeight(.bold)
-                            .foregroundColor(.secondary)
-                        TextField("Latitude", text: $locLat)
-                            .textFieldStyle(.roundedBorder)
-                            .keyboardType(.decimalPad)
+                    if !locLat.isEmpty && !locLng.isEmpty {
+                        HStack {
+                            Text("Coordinates:")
+                                .font(.caption2)
+                                .fontWeight(.bold)
+                                .foregroundColor(.secondary)
+                            Spacer()
+                            Text("\(locLat), \(locLng)")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        .padding(.vertical, 2)
                     }
                     
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Longitude")
-                            .font(.caption2)
-                            .fontWeight(.bold)
-                            .foregroundColor(.secondary)
-                        TextField("Longitude", text: $locLng)
-                            .textFieldStyle(.roundedBorder)
-                            .keyboardType(.decimalPad)
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            TextField("Search Location in Apple Maps...", text: $locationSearchQuery)
+                                .textFieldStyle(.roundedBorder)
+                                .disableAutocorrection(true)
+                                .autocapitalization(.none)
+                            
+                            Button("Search") {
+                                performLocationSearch()
+                            }
+                            .buttonStyle(.borderedProminent)
+                        }
+                        
+                        if isSearchingLocation {
+                            ProgressView()
+                                .frame(maxWidth: .infinity, alignment: .center)
+                                .padding(.vertical, 4)
+                        } else if !locationSearchResults.isEmpty {
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 8) {
+                                    ForEach(locationSearchResults) { result in
+                                        Button {
+                                            locName = result.name
+                                            locLat = String(result.latitude)
+                                            locLng = String(result.longitude)
+                                            locationSearchResults.removeAll()
+                                            locationSearchQuery = ""
+                                            
+                                            let region = MKCoordinateRegion(
+                                                center: result.coordinate,
+                                                span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
+                                            )
+                                            mapPosition = .region(region)
+                                        } label: {
+                                            VStack(alignment: .leading, spacing: 2) {
+                                                Text(result.name)
+                                                    .font(.caption)
+                                                    .fontWeight(.bold)
+                                                Text(result.address)
+                                                    .font(.system(size: 8))
+                                                    .foregroundColor(.secondary)
+                                            }
+                                            .padding(.vertical, 6)
+                                            .padding(.horizontal, 12)
+                                            .background(Color.accentColor.opacity(0.15))
+                                            .cornerRadius(8)
+                                        }
+                                    }
+                                }
+                                .padding(.vertical, 4)
+                            }
+                        }
                     }
                 } header: {
                     Text("Location (Map integration)")
@@ -544,6 +608,28 @@ struct DayEditorView: View {
             span: MKCoordinateSpan(latitudeDelta: 2.0, longitudeDelta: 2.0)
         )
         mapPosition = .region(region)
+    }
+    
+    private func performLocationSearch() {
+        guard !locationSearchQuery.isEmpty else { return }
+        isSearchingLocation = true
+        
+        let request = MKLocalSearch.Request()
+        request.naturalLanguageQuery = locationSearchQuery
+        
+        let search = MKLocalSearch(request: request)
+        search.start { response, error in
+            isSearchingLocation = false
+            guard let response = response else { return }
+            locationSearchResults = response.mapItems.map { item in
+                DayLocationSearchResult(
+                    name: item.name ?? "Unknown Location",
+                    address: item.placemark.title ?? "No Address",
+                    latitude: item.placemark.coordinate.latitude,
+                    longitude: item.placemark.coordinate.longitude
+                )
+            }
+        }
     }
     
     private func updateItem(_ updatedItem: TripItem) {
