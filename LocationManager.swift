@@ -1,7 +1,6 @@
 import Foundation
 import CoreLocation
 
-@MainActor
 public class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     private let manager = CLLocationManager()
     @Published public var location: CLLocation?
@@ -26,14 +25,21 @@ public class LocationManager: NSObject, ObservableObject, CLLocationManagerDeleg
     }
     
     public func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
-        self.authorizationStatus = manager.authorizationStatus
-        if manager.authorizationStatus == .authorizedWhenInUse || manager.authorizationStatus == .authorizedAlways {
-            manager.requestLocation()
+        let newStatus = manager.authorizationStatus
+        DispatchQueue.main.async {
+            self.authorizationStatus = newStatus
+            if newStatus == .authorizedWhenInUse || newStatus == .authorizedAlways {
+                manager.requestLocation()
+            }
         }
     }
     
     public func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-        self.location = locations.last
+        if let last = locations.last {
+            DispatchQueue.main.async {
+                self.location = last
+            }
+        }
     }
     
     public func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {

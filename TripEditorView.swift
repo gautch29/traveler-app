@@ -33,129 +33,10 @@ public struct TripEditorView: View {
                 
                 if let trip = editedTrip {
                     List {
-                        Section {
-                            VStack(alignment: .leading, spacing: 6) {
-                                Text("Trip Name")
-                                    .font(.caption2)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(.secondary)
-                                TextField("Trip Name", text: Binding(
-                                    get: { trip.tripName },
-                                    set: { editedTrip = Trip(tripName: $0, startDate: trip.startDate, endDate: trip.endDate, users: trip.users, emergencyInfo: trip.emergencyInfo, steps: trip.steps) }
-                                ))
-                                .textFieldStyle(.roundedBorder)
-                            }
-                            
-                            VStack(alignment: .leading, spacing: 6) {
-                                Text("Start Date")
-                                    .font(.caption2)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(.secondary)
-                                TextField("Start Date (YYYY-MM-DD)", text: Binding(
-                                    get: { trip.startDate },
-                                    set: { editedTrip = Trip(tripName: trip.tripName, startDate: $0, endDate: trip.endDate, users: trip.users, emergencyInfo: trip.emergencyInfo, steps: trip.steps) }
-                                ))
-                                .textFieldStyle(.roundedBorder)
-                            }
-                            
-                            VStack(alignment: .leading, spacing: 6) {
-                                Text("End Date")
-                                    .font(.caption2)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(.secondary)
-                                TextField("End Date (YYYY-MM-DD)", text: Binding(
-                                    get: { trip.endDate },
-                                    set: { editedTrip = Trip(tripName: trip.tripName, startDate: trip.startDate, endDate: $0, users: trip.users, emergencyInfo: trip.emergencyInfo, steps: trip.steps) }
-                                ))
-                                .textFieldStyle(.roundedBorder)
-                            }
-                        } header: {
-                            Text("Trip Settings")
-                                .foregroundColor(.primary)
-                                .fontWeight(.bold)
-                        }
-                        .listRowBackground(Color.white.opacity(0.03))
-                        
-                        Section {
-                            Text(trip.users.joined(separator: ", "))
-                                .foregroundColor(.secondary)
-                                .font(.subheadline)
-                        } header: {
-                            Text("Users / Profiles")
-                                .foregroundColor(.primary)
-                                .fontWeight(.bold)
-                        }
-                        .listRowBackground(Color.white.opacity(0.03))
-                        
-                        Section {
-                            ForEach(trip.steps) { step in
-                                NavigationLink(destination: DayEditorView(step: step, users: trip.users, store: store, onSave: { updatedStep in
-                                    updateStep(updatedStep)
-                                })) {
-                                    HStack(spacing: 12) {
-                                        Text("Day \(step.dayNumber)")
-                                            .font(.subheadline)
-                                            .fontWeight(.black)
-                                            .foregroundColor(.white)
-                                            .padding(.horizontal, 10)
-                                            .padding(.vertical, 6)
-                                            .background(
-                                                LinearGradient(colors: [Color.accentColor, Color.accentColor.opacity(0.7)], startPoint: .topLeading, endPoint: .bottomTrailing)
-                                            )
-                                            .cornerRadius(8)
-                                        
-                                        VStack(alignment: .leading, spacing: 2) {
-                                            Text(step.title)
-                                                .font(.subheadline)
-                                                .fontWeight(.semibold)
-                                                .foregroundColor(.primary)
-                                            
-                                            Text(step.location.name)
-                                                .font(.caption2)
-                                                .foregroundColor(.secondary)
-                                        }
-                                    }
-                                    .padding(.vertical, 4)
-                                }
-                                .listRowBackground(Color.white.opacity(0.03))
-                            }
-                            .onDelete(perform: deleteStep)
-                            .onMove(perform: moveStep)
-                            
-                            Button(action: addStep) {
-                                Label("Add Day", systemImage: "calendar.badge.plus")
-                                    .fontWeight(.bold)
-                            }
-                            .listRowBackground(Color.white.opacity(0.03))
-                        } header: {
-                            HStack {
-                                Text("Days / Steps")
-                                    .foregroundColor(.primary)
-                                    .fontWeight(.bold)
-                                Spacer()
-                                Text("Drag to Reorder")
-                                    .font(.caption2)
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                        
-                        Section("Save Changes") {
-                            Button(action: saveAndUpload) {
-                                if isUploading {
-                                    HStack {
-                                        ProgressView()
-                                        Text("Uploading to Server...")
-                                            .padding(.leading, 8)
-                                    }
-                                } else {
-                                    Label("Upload Trip to Server ☁️", systemImage: "icloud.and.arrow.up.fill")
-                                }
-                            }
-                            .disabled(isUploading)
-                            .frame(maxWidth: .infinity)
-                            .alignmentGuide(.leading) { _ in 0 }
-                        }
-                        .listRowBackground(Color.accentColor.opacity(0.2))
+                        tripSettingsSection(trip: trip)
+                        usersSection(trip: trip)
+                        stepsSection(trip: trip)
+                        saveChangesSection()
                     }
                     .scrollContentBackground(.hidden)
                     .background(Color.clear)
@@ -192,6 +73,140 @@ public struct TripEditorView: View {
                 Text(uploadMessage)
             }
         }
+    }
+    
+    // MARK: - Subviews
+    
+    private func tripSettingsSection(trip: Trip) -> some View {
+        Section {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Trip Name")
+                    .font(.caption2)
+                    .fontWeight(.bold)
+                    .foregroundColor(.secondary)
+                TextField("Trip Name", text: Binding(
+                    get: { trip.tripName },
+                    set: { editedTrip = Trip(tripName: $0, startDate: trip.startDate, endDate: trip.endDate, users: trip.users, emergencyInfo: trip.emergencyInfo, steps: trip.steps) }
+                ))
+                .textFieldStyle(.roundedBorder)
+            }
+            
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Start Date")
+                    .font(.caption2)
+                    .fontWeight(.bold)
+                    .foregroundColor(.secondary)
+                TextField("Start Date (YYYY-MM-DD)", text: Binding(
+                    get: { trip.startDate },
+                    set: { editedTrip = Trip(tripName: trip.tripName, startDate: $0, endDate: trip.endDate, users: trip.users, emergencyInfo: trip.emergencyInfo, steps: trip.steps) }
+                ))
+                .textFieldStyle(.roundedBorder)
+            }
+            
+            VStack(alignment: .leading, spacing: 6) {
+                Text("End Date")
+                    .font(.caption2)
+                    .fontWeight(.bold)
+                    .foregroundColor(.secondary)
+                TextField("End Date (YYYY-MM-DD)", text: Binding(
+                    get: { trip.endDate },
+                    set: { editedTrip = Trip(tripName: trip.tripName, startDate: trip.startDate, endDate: $0, users: trip.users, emergencyInfo: trip.emergencyInfo, steps: trip.steps) }
+                ))
+                .textFieldStyle(.roundedBorder)
+            }
+        } header: {
+            Text("Trip Settings")
+                .foregroundColor(.primary)
+                .fontWeight(.bold)
+        }
+        .listRowBackground(Color.white.opacity(0.03))
+    }
+    
+    private func usersSection(trip: Trip) -> some View {
+        Section {
+            Text(trip.users.joined(separator: ", "))
+                .foregroundColor(.secondary)
+                .font(.subheadline)
+        } header: {
+            Text("Users / Profiles")
+                .foregroundColor(.primary)
+                .fontWeight(.bold)
+        }
+        .listRowBackground(Color.white.opacity(0.03))
+    }
+    
+    private func stepsSection(trip: Trip) -> some View {
+        Section {
+            ForEach(trip.steps) { step in
+                NavigationLink(destination: DayEditorView(step: step, users: trip.users, store: store, onSave: { updatedStep in
+                    updateStep(updatedStep)
+                })) {
+                    HStack(spacing: 12) {
+                        Text("Day \(step.dayNumber)")
+                            .font(.subheadline)
+                            .fontWeight(.black)
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(
+                                LinearGradient(colors: [Color.accentColor, Color.accentColor.opacity(0.7)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                            )
+                            .cornerRadius(8)
+                        
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(step.title)
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.primary)
+                            
+                            Text(step.location.name)
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+                .listRowBackground(Color.white.opacity(0.03))
+            }
+            .onDelete(perform: deleteStep)
+            .onMove(perform: moveStep)
+            
+            Button(action: addStep) {
+                Label("Add Day", systemImage: "calendar.badge.plus")
+                    .fontWeight(.bold)
+            }
+            .listRowBackground(Color.white.opacity(0.03))
+        } header: {
+            HStack {
+                Text("Days / Steps")
+                    .foregroundColor(.primary)
+                    .fontWeight(.bold)
+                Spacer()
+                Text("Drag to Reorder")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
+        }
+    }
+    
+    private func saveChangesSection() -> some View {
+        Section("Save Changes") {
+            Button(action: saveAndUpload) {
+                if isUploading {
+                    HStack {
+                        ProgressView()
+                        Text("Uploading to Server...")
+                            .padding(.leading, 8)
+                    }
+                } else {
+                    Label("Upload Trip to Server ☁️", systemImage: "icloud.and.arrow.up.fill")
+                }
+            }
+            .disabled(isUploading)
+            .frame(maxWidth: .infinity)
+            .alignmentGuide(.leading) { _ in 0 }
+        }
+        .listRowBackground(Color.accentColor.opacity(0.2))
     }
     
     // MARK: - Editor Operations
@@ -263,6 +278,31 @@ public struct TripEditorView: View {
         }
         
         editedTrip = Trip(tripName: trip.tripName, startDate: trip.startDate, endDate: trip.endDate, users: trip.users, emergencyInfo: trip.emergencyInfo, steps: updatedSteps)
+    }
+    
+    private func saveAndUpload() {
+        guard let trip = editedTrip else { return }
+        isUploading = true
+        
+        Task {
+            // 1. Update the store's copy locally
+            store.trip = trip
+            
+            // 2. Upload to server
+            let success = await store.uploadTrip()
+            
+            isUploading = false
+            uploadSuccess = success
+            if success {
+                uploadMessage = "The updated itinerary has been successfully saved to the server and synchronized!"
+                
+                // Re-download assets based on newly modified config
+                await store.downloadAllFilesForCurrentConfig()
+            } else {
+                uploadMessage = "Failed to upload to the server. Please verify the mock server is running and the connection URL is correct."
+            }
+            showingUploadAlert = true
+        }
     }
 }
 
