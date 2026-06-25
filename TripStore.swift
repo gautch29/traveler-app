@@ -255,6 +255,31 @@ public class TripStore: ObservableObject {
         }
     }
     
+    public func fetchServerFiles() async -> [String] {
+        guard let tripURL = URL(string: serverURLString) else { return [] }
+        let baseURL = tripURL.deletingLastPathComponent()
+        let listURL = baseURL.appendingPathComponent("list-files")
+        
+        var request = URLRequest(url: listURL)
+        if !serverToken.isEmpty {
+            request.setValue("Bearer \(serverToken)", forHTTPHeaderField: "Authorization")
+        }
+        
+        do {
+            let (data, response) = try await self.session.data(for: request)
+            guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+                return []
+            }
+            
+            let decoder = JSONDecoder()
+            let files = try decoder.decode([String].self, from: data)
+            return files.sorted()
+        } catch {
+            print("Failed to fetch server files: \(error)")
+            return []
+        }
+    }
+    
     public func selectUser(_ username: String) {
         self.selectedUser = username
         UserDefaults.standard.set(username, forKey: userKey)
