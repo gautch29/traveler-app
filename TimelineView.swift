@@ -474,7 +474,10 @@ public struct TimelineView: View {
             }
             .padding()
             .liquidGlassStyle(cornerRadius: 20, fillOpacity: 0.03, borderOpacity: 0.45)
-        // MARK: - Flight & Stay Card Views
+        }
+    }
+    
+    // MARK: - Flight & Stay Card Views
     
     private func getStepTitle(_ step: Step) -> String {
         switch step.type {
