@@ -44,10 +44,11 @@ public struct TimelineView: View {
                                     Marker(flight.arrivalAirport.name, systemImage: trip.steps[activeDayIndex - 1].type == .flight ? "airplane.arrival" : "train.side.rear.car", coordinate: flight.arrivalAirport.coordinate)
                                         .tint(.red)
                                     
-                                    MapPolyline(coordinates: getRouteCoordinates(from: flight.departureAirport.coordinate, to: flight.arrivalAirport.coordinate))
+                                    let isCurved = trip.steps[activeDayIndex - 1].type == .flight
+                                    MapPolyline(coordinates: getRouteCoordinates(from: flight.departureAirport.coordinate, to: flight.arrivalAirport.coordinate, isCurved: isCurved))
                                         .stroke(.blue.opacity(0.8), lineWidth: 4)
                                     
-                                    Annotation("Vehicle", coordinate: getPlaneCoordinate(from: flight.departureAirport.coordinate, to: flight.arrivalAirport.coordinate, progress: planeProgress), anchor: .center) {
+                                    Annotation("Vehicle", coordinate: getPlaneCoordinate(from: flight.departureAirport.coordinate, to: flight.arrivalAirport.coordinate, progress: planeProgress, isCurved: isCurved), anchor: .center) {
                                         Image(systemName: trip.steps[activeDayIndex - 1].type == .flight ? "airplane" : "train.side.front.car")
                                             .font(.title2)
                                             .foregroundColor(.white)
@@ -518,19 +519,19 @@ public struct TimelineView: View {
         return radians * 180 / .pi
     }
     
-    private func getPlaneCoordinate(from start: CLLocationCoordinate2D, to end: CLLocationCoordinate2D, progress: Double) -> CLLocationCoordinate2D {
+    private func getPlaneCoordinate(from start: CLLocationCoordinate2D, to end: CLLocationCoordinate2D, progress: Double, isCurved: Bool = true) -> CLLocationCoordinate2D {
         let lat = start.latitude + (end.latitude - start.latitude) * progress
         let lng = start.longitude + (end.longitude - start.longitude) * progress
-        let arcHeight = sin(progress * .pi) * 1.5
+        let arcHeight = isCurved ? (sin(progress * .pi) * 1.5) : 0.0
         return CLLocationCoordinate2D(latitude: lat + arcHeight, longitude: lng)
     }
     
-    private func getRouteCoordinates(from start: CLLocationCoordinate2D, to end: CLLocationCoordinate2D) -> [CLLocationCoordinate2D] {
+    private func getRouteCoordinates(from start: CLLocationCoordinate2D, to end: CLLocationCoordinate2D, isCurved: Bool = true) -> [CLLocationCoordinate2D] {
         var coords: [CLLocationCoordinate2D] = []
         let steps = 40
         for i in 0...steps {
             let progress = Double(i) / Double(steps)
-            coords.append(getPlaneCoordinate(from: start, to: end, progress: progress))
+            coords.append(getPlaneCoordinate(from: start, to: end, progress: progress, isCurved: isCurved))
         }
         return coords
     }
