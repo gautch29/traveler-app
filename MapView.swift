@@ -2,13 +2,6 @@ import SwiftUI
 import MapKit
 
 public struct MapView: View {
-    enum MapMode: String, CaseIterable, Identifiable {
-        case wholeTrip = "Whole Trip"
-        case stayDetails = "Stay Details"
-        
-        var id: String { self.rawValue }
-    }
-
     struct LocalActivityMarker: Identifiable {
         let id: String
         let title: String
@@ -19,7 +12,7 @@ public struct MapView: View {
     
     @State private var position: MapCameraPosition = .automatic
     @State private var selectedStep: Step? = nil
-    @State private var mapMode: MapMode = .wholeTrip
+    @State private var isShowingLocalStayDetails = false
     
     public init(steps: [Step]) {
         self.steps = steps
@@ -28,7 +21,7 @@ public struct MapView: View {
     public var body: some View {
         NavigationStack {
             Map(position: $position, selection: $selectedStep) {
-                if mapMode == .wholeTrip {
+                if !isShowingLocalStayDetails {
                     ForEach(0..<steps.count, id: \.self) { index in
                         let step = steps[index]
                         Marker(
@@ -74,17 +67,6 @@ public struct MapView: View {
             .mapStyle(.standard(elevation: .realistic))
             .navigationTitle("Route Map 🗺️")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .principal) {
-                    Picker("Map Mode", selection: $mapMode) {
-                        ForEach(MapMode.allCases) { mode in
-                            Text(mode.rawValue).tag(mode)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                    .frame(width: 220)
-                }
-            }
             .safeAreaInset(edge: .bottom) {
                 if let step = selectedStep {
                     VStack(alignment: .leading, spacing: 12) {
@@ -148,20 +130,48 @@ public struct MapView: View {
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                                     .lineLimit(1)
+                                
+                                if step.type == .stay && !isShowingLocalStayDetails {
+                                    Text("Tap card to view stay activities 📍")
+                                        .font(.system(size: 10, weight: .semibold))
+                                        .foregroundColor(.accentColor)
+                                }
                             }
                             
                             Spacer()
                             
-                            Button {
-                                openInMaps(coordinate: step.coordinate, name: getStepLocationName(step))
-                            } label: {
-                                Image(systemName: "arrow.triangle.turn.up.right.diamond.fill")
-                                    .font(.system(size: 14, weight: .bold))
+                            if step.type == .stay && isShowingLocalStayDetails {
+                                Button {
+                                    withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
+                                        isShowingLocalStayDetails = false
+                                    }
+                                } label: {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "arrow.uturn.backward.circle.fill")
+                                        Text("Whole Trip")
+                                    }
+                                    .font(.caption)
+                                    .fontWeight(.bold)
                                     .foregroundColor(.white)
-                                    .frame(width: 32, height: 32)
-                                    .background(Color.blue)
-                                    .clipShape(Circle())
-                                    .shadow(color: Color.blue.opacity(0.3), radius: 3, x: 0, y: 1.5)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 6)
+                                    .background(Color.accentColor)
+                                    .cornerRadius(8)
+                                }
+                                .buttonStyle(.borderless)
+                            } else {
+                                Button {
+                                    openInMaps(coordinate: step.coordinate, name: getStepLocationName(step))
+                                } label: {
+                                    Image(systemName: "arrow.triangle.turn.up.right.diamond.fill")
+                                        .font(.system(size: 14, weight: .bold))
+                                        .foregroundColor(.white)
+                                        .frame(width: 32, height: 32)
+                                        .background(Color.blue)
+                                        .clipShape(Circle())
+                                        .shadow(color: Color.blue.opacity(0.3), radius: 3, x: 0, y: 1.5)
+                                }
+                                .buttonStyle(.borderless)
                             }
                         }
                     }
@@ -169,6 +179,14 @@ public struct MapView: View {
                     .liquidGlassStyle(cornerRadius: 20, fillOpacity: 0.04, borderOpacity: 0.45)
                     .padding(.horizontal)
                     .padding(.bottom, 8)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        if step.type == .stay && !isShowingLocalStayDetails {
+                            withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
+                                isShowingLocalStayDetails = true
+                            }
+                        }
+                    }
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
@@ -182,19 +200,12 @@ public struct MapView: View {
             }
             .onChange(of: selectedStep) { _, newStep in
                 if let step = newStep {
-                    if step.type != .stay {
-                        mapMode = .wholeTrip
-                    }
-                    
-                    if mapMode == .stayDetails, let stay = step.stayInfo {
-                        zoomToStay(stay)
-                    } else {
-                        zoomToStep(step)
-                    }
+                    isShowingLocalStayDetails = false
+                    zoomToStep(step)
                 }
             }
-            .onChange(of: mapMode) { _, newMode in
-                if newMode == .stayDetails, let step = selectedStep, step.type == .stay, let stay = step.stayInfo {
+            .onChange(of: isShowingLocalStayDetails) { _, newValue in
+                if newValue, let step = selectedStep, step.type == .stay, let stay = step.stayInfo {
                     zoomToStay(stay)
                 } else if let step = selectedStep {
                     zoomToStep(step)
