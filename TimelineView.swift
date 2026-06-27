@@ -97,9 +97,8 @@ public struct TimelineView: View {
                             
                             // Pages 1 to N: Stays & Flights Steps
                             ForEach(0..<trip.steps.count, id: \.self) { index in
-                                let step = trip.steps[index]
-                                
                                 ScrollView(showsIndicators: false) {
+                                    let step = trip.steps[index]
                                     VStack(spacing: 20) {
                                         Spacer()
                                             .frame(height: 20)
@@ -941,9 +940,8 @@ public struct TimelineView: View {
     private func stayDaysSection(_ stay: StayStepInfo) -> some View {
         VStack(alignment: .leading, spacing: 16) {
             ForEach(stay.days) { day in
-                let isExpanded = expandedDays.contains(day.id)
-                
                 VStack(alignment: .leading, spacing: 0) {
+                    let isExpanded = expandedDays.contains(day.id)
                     Button {
                         withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                             if isExpanded {
@@ -1465,7 +1463,14 @@ public struct TimelineView: View {
     
     private func getEmojiForStep(_ step: Step) -> String {
         let title = step.title.lowercased()
-        let desc = step.description.lowercased()
+        let desc: String
+        if step.type == .flight || step.type == .train, let flight = step.flightInfo {
+            desc = flight.details.lowercased()
+        } else if step.type == .stay, let stay = step.stayInfo {
+            desc = stay.cityName.lowercased()
+        } else {
+            desc = ""
+        }
         
         if title.contains("flight") || title.contains("airport") || desc.contains("flight") {
             return "✈️"
