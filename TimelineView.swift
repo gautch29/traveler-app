@@ -612,7 +612,16 @@ public struct TimelineView: View {
     }
     
     private func flightDetailsSection(_ flight: FlightStepInfo, type: StepType) -> some View {
-        VStack(alignment: .leading, spacing: 14) {
+        let user = store.selectedUser ?? ""
+        var flightFiles: [String] = []
+        if let shared = flight.sharedFiles { flightFiles.append(contentsOf: shared) }
+        if let profile = flight.profileFiles?[user] { flightFiles.append(profile) }
+        
+        var flightPasses: [String] = []
+        if let walletShared = flight.walletPasses { flightPasses.append(contentsOf: walletShared) }
+        if let walletProfile = flight.profileWalletPasses?[user] { flightPasses.append(walletProfile) }
+        
+        return VStack(alignment: .leading, spacing: 14) {
             if type == .flight {
                 Text("Live Flight Tracker")
                     .font(.headline)
@@ -621,15 +630,6 @@ public struct TimelineView: View {
                 
                 FlightStatusTrackerView(flightNumber: flight.flightNumber, date: flight.date, store: store)
             }
-            
-            let user = store.selectedUser ?? ""
-            var flightFiles: [String] = []
-            if let shared = flight.sharedFiles { flightFiles.append(contentsOf: shared) }
-            if let profile = flight.profileFiles?[user] { flightFiles.append(profile) }
-            
-            var flightPasses: [String] = []
-            if let walletShared = flight.walletPasses { flightPasses.append(contentsOf: walletShared) }
-            if let walletProfile = flight.profileWalletPasses?[user] { flightPasses.append(walletProfile) }
             
             if !flightFiles.isEmpty || !flightPasses.isEmpty {
                 Text("Tickets & Boarding Passes")
@@ -773,7 +773,10 @@ public struct TimelineView: View {
     }
     
     private func staySummaryCard(_ step: Step, stay: StayStepInfo) -> some View {
-        VStack(alignment: .leading, spacing: 14) {
+        let user = store.selectedUser ?? ""
+        let hotelFiles = stay.hotel?.getFiles(forUser: user) ?? []
+        
+        return VStack(alignment: .leading, spacing: 14) {
             HStack {
                 Text("STAY")
                     .font(.caption2)
@@ -876,8 +879,6 @@ public struct TimelineView: View {
                         .liquidGlassStyle(cornerRadius: 12, fillOpacity: 0.015, borderOpacity: 0.25)
                     }
                     
-                    let user = store.selectedUser ?? ""
-                    let hotelFiles = hotel.getFiles(forUser: user)
                     ForEach(hotelFiles, id: \.self) { file in
                         if store.downloadedFiles.contains(file) {
                             Button {
