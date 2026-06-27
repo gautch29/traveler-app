@@ -332,6 +332,13 @@ struct StepEditorView: View {
 }
 
 struct FlightStepEditorView: View {
+    enum UploadTarget: Equatable {
+        case sharedPDF
+        case profilePDF(user: String)
+        case sharedPass
+        case profilePass(user: String)
+    }
+
     @State var step: Step
     let users: [String]
     let store: TripStore
@@ -350,6 +357,24 @@ struct FlightStepEditorView: View {
     @State private var date = ""
     @State private var details = ""
     
+    // File Attachments state
+    @State private var sharedFilesInput = ""
+    @State private var sharedPassesInput = ""
+    @State private var profileFiles = [String: String]()
+    @State private var profilePasses = [String: String]()
+    
+    // Upload state
+    @State private var showingFilePicker = false
+    @State private var uploadingTarget: UploadTarget? = nil
+    @State private var isUploadingFile = false
+    @State private var uploadErrorMsg = ""
+    @State private var showingUploadError = false
+    
+    // Server files list & selector
+    @State private var serverFiles = [String]()
+    @State private var showingFileSelector = false
+    @State private var fileSelectorTarget: UploadTarget? = nil
+
     var body: some View {
         Form {
             Section("Flight / Train Basics") {
@@ -373,8 +398,323 @@ struct FlightStepEditorView: View {
                 TextField("Latitude", text: $arrLat)
                 TextField("Longitude", text: $arrLng)
             }
+            
+            Section("PDF Ticket Files") {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Shared Tickets (PDFs, Images):")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    let sharedFiles = sharedFilesInput.components(separatedBy: ",")
+                        .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                        .filter { !$0.isEmpty }
+                    
+                    if sharedFiles.isEmpty {
+                        Text("No files selected")
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                            .padding(.vertical, 4)
+                    } else {
+                        ForEach(sharedFiles, id: \.self) { file in
+                            HStack {
+                                Image(systemName: "doc.text.fill")
+                                    .foregroundColor(.accentColor)
+                                Text(file.components(separatedBy: "/").last ?? file)
+                                    .font(.footnote)
+                                    .lineLimit(1)
+                                Spacer()
+                                Button(role: .destructive) {
+                                    let updated = sharedFiles.filter { $0 != file }.joined(separator: ", ")
+                                    sharedFilesInput = updated
+                                } label: {
+                                    Image(systemName: "trash")
+                                        .font(.caption)
+                                        .foregroundColor(.red)
+                                }
+                                .buttonStyle(.borderless)
+                            }
+                            .padding(8)
+                            .background(Color.secondary.opacity(0.1))
+                            .cornerRadius(8)
+                        }
+                    }
+                    
+                    HStack(spacing: 12) {
+                        Button {
+                            uploadingTarget = .sharedPDF
+                            showingFilePicker = true
+                        } label: {
+                            Label("Upload New", systemImage: "icloud.and.arrow.up")
+                                .font(.caption)
+                        }
+                        .buttonStyle(.bordered)
+                        
+                        Button {
+                            fileSelectorTarget = .sharedPDF
+                            Task {
+                                serverFiles = await store.fetchServerFiles()
+                                showingFileSelector = true
+                            }
+                        } label: {
+                            Label("Select Existing", systemImage: "folder")
+                                .font(.caption)
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                    .padding(.top, 4)
+                }
+                .padding(.vertical, 4)
+                
+                Text("Personal Tickets (per User):")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .padding(.top, 6)
+                
+                ForEach(users, id: \.self) { user in
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack {
+                            Text(user)
+                                .frame(width: 80, alignment: .leading)
+                            
+                            if let file = profileFiles[user], !file.isEmpty {
+                                HStack {
+                                    Image(systemName: "doc.text.fill")
+                                        .foregroundColor(.accentColor)
+                                    Text(file.components(separatedBy: "/").last ?? file)
+                                        .font(.footnote)
+                                        .lineLimit(1)
+                                    Spacer()
+                                    Button(role: .destructive) {
+                                        profileFiles.removeValue(forKey: user)
+                                    } label: {
+                                        Image(systemName: "trash")
+                                            .font(.caption)
+                                            .foregroundColor(.red)
+                                    }
+                                    .buttonStyle(.borderless)
+                                }
+                                .padding(6)
+                                .background(Color.secondary.opacity(0.1))
+                                .cornerRadius(8)
+                            } else {
+                                Text("No ticket selected")
+                                    .font(.footnote)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        
+                        HStack(spacing: 12) {
+                            Spacer()
+                                .frame(width: 80)
+                            
+                            Button {
+                                uploadingTarget = .profilePDF(user: user)
+                                showingFilePicker = true
+                            } label: {
+                                Label("Upload", systemImage: "icloud.and.arrow.up")
+                                    .font(.system(size: 11))
+                            }
+                            .buttonStyle(.bordered)
+                            
+                            Button {
+                                fileSelectorTarget = .profilePDF(user: user)
+                                Task {
+                                    serverFiles = await store.fetchServerFiles()
+                                    showingFileSelector = true
+                                }
+                            } label: {
+                                Label("Select", systemImage: "folder")
+                                    .font(.system(size: 11))
+                            }
+                            .buttonStyle(.bordered)
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+            }
+            
+            Section("Apple Wallet Passes") {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Shared Passes (e.g. passes/ticket.pkpass):")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    let sharedPasses = sharedPassesInput.components(separatedBy: ",")
+                        .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                        .filter { !$0.isEmpty }
+                    
+                    if sharedPasses.isEmpty {
+                        Text("No passes selected")
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                            .padding(.vertical, 4)
+                    } else {
+                        ForEach(sharedPasses, id: \.self) { passFile in
+                            HStack {
+                                Image(systemName: "wallet.pass.fill")
+                                    .foregroundColor(.orange)
+                                Text(passFile.components(separatedBy: "/").last ?? passFile)
+                                    .font(.footnote)
+                                    .lineLimit(1)
+                                Spacer()
+                                Button(role: .destructive) {
+                                    let updated = sharedPasses.filter { $0 != passFile }.joined(separator: ", ")
+                                    sharedPassesInput = updated
+                                } label: {
+                                    Image(systemName: "trash")
+                                        .font(.caption)
+                                        .foregroundColor(.red)
+                                }
+                                .buttonStyle(.borderless)
+                            }
+                            .padding(8)
+                            .background(Color.secondary.opacity(0.1))
+                            .cornerRadius(8)
+                        }
+                    }
+                    
+                    HStack(spacing: 12) {
+                        Button {
+                            uploadingTarget = .sharedPass
+                            showingFilePicker = true
+                        } label: {
+                            Label("Upload New", systemImage: "icloud.and.arrow.up")
+                                .font(.caption)
+                        }
+                        .buttonStyle(.bordered)
+                        
+                        Button {
+                            fileSelectorTarget = .sharedPass
+                            Task {
+                                serverFiles = await store.fetchServerFiles()
+                                showingFileSelector = true
+                            }
+                        } label: {
+                            Label("Select Existing", systemImage: "folder")
+                                .font(.caption)
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                    .padding(.top, 4)
+                }
+                .padding(.vertical, 4)
+                
+                Text("Personal Passes (per User):")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .padding(.top, 6)
+                
+                ForEach(users, id: \.self) { user in
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack {
+                            Text(user)
+                                .frame(width: 80, alignment: .leading)
+                            
+                            if let pass = profilePasses[user], !pass.isEmpty {
+                                HStack {
+                                    Image(systemName: "wallet.pass.fill")
+                                        .foregroundColor(.orange)
+                                    Text(pass.components(separatedBy: "/").last ?? pass)
+                                        .font(.footnote)
+                                        .lineLimit(1)
+                                    Spacer()
+                                    Button(role: .destructive) {
+                                        profilePasses.removeValue(forKey: user)
+                                    } label: {
+                                        Image(systemName: "trash")
+                                            .font(.caption)
+                                            .foregroundColor(.red)
+                                    }
+                                    .buttonStyle(.borderless)
+                                }
+                                .padding(6)
+                                .background(Color.secondary.opacity(0.1))
+                                .cornerRadius(8)
+                            } else {
+                                Text("No pass selected")
+                                    .font(.footnote)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        
+                        HStack(spacing: 12) {
+                            Spacer()
+                                .frame(width: 80)
+                            
+                            Button {
+                                uploadingTarget = .profilePass(user: user)
+                                showingFilePicker = true
+                            } label: {
+                                Label("Upload", systemImage: "icloud.and.arrow.up")
+                                    .font(.system(size: 11))
+                            }
+                            .buttonStyle(.bordered)
+                            
+                            Button {
+                                fileSelectorTarget = .profilePass(user: user)
+                                Task {
+                                    serverFiles = await store.fetchServerFiles()
+                                    showingFileSelector = true
+                                }
+                            } label: {
+                                Label("Select", systemImage: "folder")
+                                    .font(.system(size: 11))
+                            }
+                            .buttonStyle(.bordered)
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+            }
+            
+            if isUploadingFile {
+                Section {
+                    HStack {
+                        ProgressView()
+                        Text("Uploading file to server...")
+                            .padding(.leading, 8)
+                    }
+                }
+            }
         }
         .navigationTitle(step.type == .flight ? "Edit Flight" : "Edit Train")
+        .fileImporter(
+            isPresented: $showingFilePicker,
+            allowedContentTypes: [.pdf, .data],
+            allowsMultipleSelection: false
+        ) { result in
+            handleFileImport(result: result)
+        }
+        .alert("Upload Failed", isPresented: $showingUploadError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(uploadErrorMsg)
+        }
+        .sheet(isPresented: $showingFileSelector) {
+            let isPassTarget: Bool = {
+                if let target = fileSelectorTarget {
+                    switch target {
+                    case .sharedPass, .profilePass:
+                        return true
+                    default:
+                        return false
+                    }
+                }
+                return false
+            }()
+            
+            FileSelectorView(
+                files: serverFiles,
+                filterPattern: isPassTarget ? ".pkpass" : ".pdf",
+                onSelect: { selectedFile in
+                    handleFileSelection(selectedFile)
+                    showingFileSelector = false
+                },
+                onCancel: {
+                    showingFileSelector = false
+                }
+            )
+        }
         .onAppear {
             if let flight = step.flightInfo {
                 flightNumber = flight.flightNumber
@@ -389,11 +729,60 @@ struct FlightStepEditorView: View {
                 arrTime = flight.arrivalTime
                 date = flight.date
                 details = flight.details
+                
+                sharedFilesInput = (flight.sharedFiles ?? []).joined(separator: ", ")
+                sharedPassesInput = (flight.walletPasses ?? []).joined(separator: ", ")
+                for user in users {
+                    profileFiles[user] = flight.profileFiles?[user] ?? ""
+                    profilePasses[user] = flight.profileWalletPasses?[user] ?? ""
+                }
             }
         }
         .onDisappear {
             let depCoord = LocationInfo(name: depName, latitude: Double(depLat) ?? 0.0, longitude: Double(depLng) ?? 0.0)
             let arrCoord = LocationInfo(name: arrName, latitude: Double(arrLat) ?? 0.0, longitude: Double(arrLng) ?? 0.0)
+            
+            let sharedFiles = sharedFilesInput.components(separatedBy: ",")
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
+                .map { file -> String in
+                    if !file.contains("/") {
+                        return "tickets/\(file)"
+                    }
+                    return file
+                }
+                
+            let walletPasses = sharedPassesInput.components(separatedBy: ",")
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
+                .map { pass -> String in
+                    if !pass.contains("/") {
+                        return "passes/\(pass)"
+                    }
+                    return pass
+                }
+            
+            var pFiles = [String: String]()
+            var pPasses = [String: String]()
+            
+            for user in users {
+                if let file = profileFiles[user], !file.isEmpty {
+                    let trimmed = file.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !trimmed.contains("/") {
+                        pFiles[user] = "tickets/\(trimmed)"
+                    } else {
+                        pFiles[user] = trimmed
+                    }
+                }
+                if let pass = profilePasses[user], !pass.isEmpty {
+                    let trimmed = pass.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !trimmed.contains("/") {
+                        pPasses[user] = "passes/\(trimmed)"
+                    } else {
+                        pPasses[user] = trimmed
+                    }
+                }
+            }
             
             let updatedFlight = FlightStepInfo(
                 flightNumber: flightNumber,
@@ -404,13 +793,107 @@ struct FlightStepEditorView: View {
                 arrivalTime: arrTime,
                 date: date,
                 details: details,
-                sharedFiles: step.flightInfo?.sharedFiles,
-                profileFiles: step.flightInfo?.profileFiles,
-                walletPasses: step.flightInfo?.walletPasses,
-                profileWalletPasses: step.flightInfo?.profileWalletPasses
+                sharedFiles: sharedFiles.isEmpty ? nil : sharedFiles,
+                profileFiles: pFiles.isEmpty ? nil : pFiles,
+                walletPasses: walletPasses.isEmpty ? nil : walletPasses,
+                profileWalletPasses: pPasses.isEmpty ? nil : pPasses
             )
             step.flightInfo = updatedFlight
             onSave(step)
+        }
+    }
+    
+    private func handleFileImport(result: Result<[URL], Error>) {
+        guard let target = uploadingTarget else { return }
+        
+        switch result {
+        case .success(let urls):
+            guard let selectedURL = urls.first else { return }
+            let gotAccess = selectedURL.startAccessingSecurityScopedResource()
+            defer {
+                if gotAccess {
+                    selectedURL.stopAccessingSecurityScopedResource()
+                }
+            }
+            
+            do {
+                let fileData = try Data(contentsOf: selectedURL)
+                let rawFilename = selectedURL.lastPathComponent
+                
+                let isPass = {
+                    switch target {
+                    case .sharedPass, .profilePass: return true
+                    default: return false
+                    }
+                }()
+                let folderName = isPass ? "passes" : "tickets"
+                
+                let serverPath = "\(folderName)/\(rawFilename)"
+                isUploadingFile = true
+                Task {
+                    let success = await store.uploadFile(data: fileData, filename: serverPath)
+                    isUploadingFile = false
+                    
+                    if success {
+                        switch target {
+                        case .sharedPDF:
+                            if sharedFilesInput.isEmpty {
+                                sharedFilesInput = serverPath
+                            } else {
+                                sharedFilesInput += ", \(serverPath)"
+                            }
+                        case .profilePDF(let user):
+                            profileFiles[user] = serverPath
+                        case .sharedPass:
+                            if sharedPassesInput.isEmpty {
+                                sharedPassesInput = serverPath
+                            } else {
+                                sharedPassesInput += ", \(serverPath)"
+                            }
+                        case .profilePass(let user):
+                            profilePasses[user] = serverPath
+                        }
+                    } else {
+                        uploadErrorMsg = "Failed to upload file to the server."
+                        showingUploadError = true
+                    }
+                }
+            } catch {
+                uploadErrorMsg = "Error reading local file: \(error.localizedDescription)"
+                showingUploadError = true
+            }
+        case .failure(let error):
+            uploadErrorMsg = "Error picking file: \(error.localizedDescription)"
+            showingUploadError = true
+        }
+    }
+    
+    private func handleFileSelection(_ file: String) {
+        guard let target = fileSelectorTarget else { return }
+        
+        switch target {
+        case .sharedPDF:
+            let current = sharedFilesInput.components(separatedBy: ",")
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
+            if !current.contains(file) {
+                var updated = current
+                updated.append(file)
+                sharedFilesInput = updated.joined(separator: ", ")
+            }
+        case .profilePDF(let user):
+            profileFiles[user] = file
+        case .sharedPass:
+            let current = sharedPassesInput.components(separatedBy: ",")
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
+            if !current.contains(file) {
+                var updated = current
+                updated.append(file)
+                sharedPassesInput = updated.joined(separator: ", ")
+            }
+        case .profilePass(let user):
+            profilePasses[user] = file
         }
     }
 }
