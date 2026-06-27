@@ -37,11 +37,11 @@ public struct TimelineView: View {
                                 }
                             }
                         } else if activeDayIndex - 1 < trip.steps.count {
-                            if trip.steps[activeDayIndex - 1].type == .flight || trip.steps[activeDayIndex - 1].type == .train {
+                            if trip.steps[activeDayIndex - 1].type == .flight || trip.steps[activeDayIndex - 1].type == .train || trip.steps[activeDayIndex - 1].type == .car {
                                 if let flight = trip.steps[activeDayIndex - 1].flightInfo {
-                                    Marker(flight.departureAirport.name, systemImage: trip.steps[activeDayIndex - 1].type == .flight ? "airplane.departure" : "train.side.front.car", coordinate: flight.departureAirport.coordinate)
+                                    Marker(flight.departureAirport.name, systemImage: trip.steps[activeDayIndex - 1].type == .flight ? "airplane.departure" : (trip.steps[activeDayIndex - 1].type == .train ? "train.side.front.car" : "car.fill"), coordinate: flight.departureAirport.coordinate)
                                         .tint(.blue)
-                                    Marker(flight.arrivalAirport.name, systemImage: trip.steps[activeDayIndex - 1].type == .flight ? "airplane.arrival" : "train.side.rear.car", coordinate: flight.arrivalAirport.coordinate)
+                                    Marker(flight.arrivalAirport.name, systemImage: trip.steps[activeDayIndex - 1].type == .flight ? "airplane.arrival" : (trip.steps[activeDayIndex - 1].type == .train ? "train.side.rear.car" : "car.fill"), coordinate: flight.arrivalAirport.coordinate)
                                         .tint(.red)
                                     
                                     let isCurved = trip.steps[activeDayIndex - 1].type == .flight
@@ -49,14 +49,14 @@ public struct TimelineView: View {
                                         .stroke(.blue.opacity(0.8), lineWidth: 4)
                                     
                                     Annotation("Vehicle", coordinate: getPlaneCoordinate(from: flight.departureAirport.coordinate, to: flight.arrivalAirport.coordinate, progress: planeProgress, isCurved: isCurved), anchor: .center) {
-                                        Image(systemName: trip.steps[activeDayIndex - 1].type == .flight ? "airplane" : "train.side.front.car")
+                                        Image(systemName: trip.steps[activeDayIndex - 1].type == .flight ? "airplane" : (trip.steps[activeDayIndex - 1].type == .train ? "train.side.front.car" : "car.side.fill"))
                                             .font(.title2)
                                             .foregroundColor(.white)
                                             .padding(8)
                                             .background(Color.blue)
                                             .clipShape(Circle())
                                             .shadow(radius: 4)
-                                            .rotationEffect(.degrees(getBearing(from: flight.departureAirport.coordinate, to: flight.arrivalAirport.coordinate) - (trip.steps[activeDayIndex - 1].type == .flight ? 90 : 0)))
+                                            .rotationEffect(.degrees(getBearing(from: flight.departureAirport.coordinate, to: flight.arrivalAirport.coordinate) - (trip.steps[activeDayIndex - 1].type == .flight || trip.steps[activeDayIndex - 1].type == .car ? 90 : 0)))
                                     }
                                 }
                             } else if trip.steps[activeDayIndex - 1].type == .stay, let stay = trip.steps[activeDayIndex - 1].stayInfo {
@@ -101,7 +101,7 @@ public struct TimelineView: View {
                                         Spacer()
                                             .frame(height: 20)
                                         
-                                        if step.type == .flight || step.type == .train {
+                                        if step.type == .flight || step.type == .train || step.type == .car {
                                             if let flight = step.flightInfo {
                                                 flightSummaryCard(flight, type: step.type)
                                                     .padding(.horizontal)
@@ -243,7 +243,7 @@ public struct TimelineView: View {
             )
         } else if index - 1 < trip.steps.count {
             let step = trip.steps[index - 1]
-            if step.type == .flight || step.type == .train, let flight = step.flightInfo {
+            if step.type == .flight || step.type == .train || step.type == .car, let flight = step.flightInfo {
                 let centerLat = (flight.departureAirport.latitude + flight.arrivalAirport.latitude) / 2
                 let centerLng = (flight.departureAirport.longitude + flight.arrivalAirport.longitude) / 2
                 let latDelta = abs(flight.departureAirport.latitude - flight.arrivalAirport.latitude) * 1.5 + 2.0
@@ -482,6 +482,8 @@ public struct TimelineView: View {
             return "Flight \(step.flightInfo?.flightNumber ?? "")"
         case .train:
             return "Train \(step.flightInfo?.flightNumber ?? "")"
+        case .car:
+            return "Drive: \(step.flightInfo?.flightNumber ?? "")"
         case .stay:
             return "Stay: \(step.stayInfo?.cityName ?? "")"
         }
@@ -539,13 +541,13 @@ public struct TimelineView: View {
     private func flightSummaryCard(_ flight: FlightStepInfo, type: StepType) -> some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Text(type == .flight ? "FLIGHT" : "TRAIN")
+                Text(type == .flight ? "FLIGHT" : (type == .train ? "TRAIN" : "ROAD TRIP"))
                     .font(.caption2)
                     .fontWeight(.black)
                     .foregroundColor(.white)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(type == .flight ? Color.blue : Color.orange)
+                    .background(type == .flight ? Color.blue : (type == .train ? Color.orange : Color.green))
                     .cornerRadius(6)
                 
                 Spacer()
@@ -576,7 +578,7 @@ public struct TimelineView: View {
                 Spacer()
                 
                 VStack(spacing: 4) {
-                    Image(systemName: type == .flight ? "airplane" : "train.side.front.car")
+                    Image(systemName: type == .flight ? "airplane" : (type == .train ? "train.side.front.car" : "car.fill"))
                         .font(.headline)
                         .foregroundColor(.accentColor)
                     
@@ -632,7 +634,57 @@ public struct TimelineView: View {
                 FlightStatusTrackerView(flightNumber: flight.flightNumber, date: flight.date, store: store)
             }
             
-            if !flightFiles.isEmpty || !flightPasses.isEmpty {
+            if type == .car {
+                Text("Road Trip Route")
+                    .font(.headline)
+                    .fontWeight(.bold)
+                    .padding(.leading, 4)
+                
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack(spacing: 12) {
+                        Image(systemName: "mappin.circle.fill")
+                            .foregroundColor(.green)
+                            .font(.title3)
+                        VStack(alignment: .leading) {
+                            Text("Start Point")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            Text(flight.departureAirport.name)
+                                .font(.subheadline)
+                                .fontWeight(.bold)
+                        }
+                    }
+                    
+                    HStack(spacing: 12) {
+                        Image(systemName: "arrow.down")
+                            .foregroundColor(.secondary)
+                            .font(.caption)
+                            .padding(.leading, 6)
+                        Text("Florida's Turnpike South (Approx. 4 hours)")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    HStack(spacing: 12) {
+                        Image(systemName: "mappin.circle.fill")
+                            .foregroundColor(.red)
+                            .font(.title3)
+                        VStack(alignment: .leading) {
+                            Text("End Point")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            Text(flight.arrivalAirport.name)
+                                .font(.subheadline)
+                                .fontWeight(.bold)
+                        }
+                    }
+                }
+                .padding()
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .liquidGlassStyle(cornerRadius: 16, fillOpacity: 0.015, borderOpacity: 0.25)
+            }
+            
+            if type != .car && (!flightFiles.isEmpty || !flightPasses.isEmpty) {
                 Text("Tickets & Boarding Passes")
                     .font(.headline)
                     .fontWeight(.bold)
@@ -1911,6 +1963,8 @@ public struct LiquidGlassModifier: ViewModifier {
         content
             .background(
                 ZStack {
+                    RoundedRectangle(cornerRadius: cornerRadius)
+                        .fill(.thinMaterial)
                     RoundedRectangle(cornerRadius: cornerRadius)
                         .fill(Color.white.opacity(fillOpacity))
                     RoundedRectangle(cornerRadius: cornerRadius)

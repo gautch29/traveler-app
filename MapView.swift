@@ -173,7 +173,7 @@ public struct MapView: View {
                     id: step.id,
                     title: "Step \(index + 1): \(step.title)",
                     coordinate: step.coordinate,
-                    systemImage: step.type == .stay ? "house.fill" : (step.type == .flight ? "airplane" : "tram.fill"),
+                    systemImage: step.type == .stay ? "house.fill" : (step.type == .flight ? "airplane" : (step.type == .train ? "tram.fill" : "car.fill")),
                     color: .blue,
                     step: step
                 )
@@ -270,7 +270,7 @@ public struct MapView: View {
     }
     
     private func getStepLocationName(_ step: Step) -> String {
-        if step.type == .flight || step.type == .train, let flight = step.flightInfo {
+        if step.type == .flight || step.type == .train || step.type == .car, let flight = step.flightInfo {
             return "\(flight.departureAirport.name) ➔ \(flight.arrivalAirport.name)"
         } else if step.type == .stay, let stay = step.stayInfo {
             return stay.cityName
@@ -441,7 +441,7 @@ struct StaySheetContent: View {
                     Spacer()
                     
                     VStack(spacing: 2) {
-                        Text(step.type == .stay ? "STAY" : (step.type == .flight ? "FLIGHT" : "TRAIN"))
+                        Text(step.type == .stay ? "STAY" : (step.type == .flight ? "FLIGHT" : (step.type == .train ? "TRAIN" : "ROAD TRIP")))
                             .font(.caption2)
                             .fontWeight(.black)
                             .foregroundColor(.accentColor)

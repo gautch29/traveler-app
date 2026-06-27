@@ -142,13 +142,13 @@ public struct TripEditorView: View {
                     updateStep(updatedStep)
                 })) {
                     HStack(spacing: 12) {
-                        Text(step.type == .stay ? "STAY" : (step.type == .flight ? "FLIGHT" : "TRAIN"))
+                        Text(step.type == .stay ? "STAY" : (step.type == .flight ? "FLIGHT" : (step.type == .train ? "TRAIN" : "ROAD TRIP")))
                             .font(.caption2)
                             .fontWeight(.black)
                             .foregroundColor(.white)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 4)
-                            .background(step.type == .stay ? Color.purple : (step.type == .flight ? Color.blue : Color.orange))
+                            .background(step.type == .stay ? Color.purple : (step.type == .flight ? Color.blue : (step.type == .train ? Color.orange : Color.green)))
                             .cornerRadius(6)
                         
                         VStack(alignment: .leading, spacing: 2) {
@@ -219,7 +219,7 @@ public struct TripEditorView: View {
     private func setInitialMapPosition() {
         if let firstStep = editedTrip?.steps.first {
             let coord: CLLocationCoordinate2D
-            if firstStep.type == .flight || firstStep.type == .train, let flight = firstStep.flightInfo {
+            if firstStep.type == .flight || firstStep.type == .train || firstStep.type == .car, let flight = firstStep.flightInfo {
                 coord = flight.departureAirport.coordinate
             } else if firstStep.type == .stay, let stay = firstStep.stayInfo, let hotelPlace = stay.hotel?.mapPlace {
                 coord = CLLocationCoordinate2D(latitude: hotelPlace.latitude, longitude: hotelPlace.longitude)
@@ -323,7 +323,7 @@ struct StepEditorView: View {
     let onSave: (Step) -> Void
     
     var body: some View {
-        if step.type == .flight || step.type == .train {
+        if step.type == .flight || step.type == .train || step.type == .car {
             FlightStepEditorView(step: step, users: users, store: store, onSave: onSave)
         } else {
             StayStepEditorView(step: step, users: users, store: store, onSave: onSave)
@@ -677,7 +677,7 @@ struct FlightStepEditorView: View {
                 }
             }
         }
-        .navigationTitle(step.type == .flight ? "Edit Flight" : "Edit Train")
+        .navigationTitle(step.type == .flight ? "Edit Flight" : (step.type == .train ? "Edit Train" : "Edit Road Trip"))
         .fileImporter(
             isPresented: $showingFilePicker,
             allowedContentTypes: [.pdf, .data],

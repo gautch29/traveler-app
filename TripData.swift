@@ -110,6 +110,7 @@ public enum StepType: String, Codable {
     case flight = "flight"
     case train = "train"
     case stay = "stay"
+    case car = "car"
 }
 
 public struct DayInfo: Codable, Identifiable, Hashable, Equatable {
@@ -190,7 +191,7 @@ public struct Step: Codable, Identifiable, Hashable, Equatable {
     }
     
     public var coordinate: CLLocationCoordinate2D {
-        if type == .flight || type == .train, let flight = flightInfo {
+        if type == .flight || type == .train || type == .car, let flight = flightInfo {
             return flight.departureAirport.coordinate
         } else if type == .stay, let stay = stayInfo, let hotelPlace = stay.hotel?.mapPlace {
             return CLLocationCoordinate2D(latitude: hotelPlace.latitude, longitude: hotelPlace.longitude)
