@@ -37,30 +37,28 @@ public struct TimelineView: View {
                                 }
                             }
                         } else if activeDayIndex - 1 < trip.steps.count {
-                            let step = trip.steps[activeDayIndex - 1]
-                            
-                            if step.type == .flight || step.type == .train {
-                                if let flight = step.flightInfo {
-                                    Marker(flight.departureAirport.name, systemImage: step.type == .flight ? "airplane.departure" : "train.side.front.car", coordinate: flight.departureAirport.coordinate)
+                            if trip.steps[activeDayIndex - 1].type == .flight || trip.steps[activeDayIndex - 1].type == .train {
+                                if let flight = trip.steps[activeDayIndex - 1].flightInfo {
+                                    Marker(flight.departureAirport.name, systemImage: trip.steps[activeDayIndex - 1].type == .flight ? "airplane.departure" : "train.side.front.car", coordinate: flight.departureAirport.coordinate)
                                         .tint(.blue)
-                                    Marker(flight.arrivalAirport.name, systemImage: step.type == .flight ? "airplane.arrival" : "train.side.rear.car", coordinate: flight.arrivalAirport.coordinate)
+                                    Marker(flight.arrivalAirport.name, systemImage: trip.steps[activeDayIndex - 1].type == .flight ? "airplane.arrival" : "train.side.rear.car", coordinate: flight.arrivalAirport.coordinate)
                                         .tint(.red)
                                     
                                     MapPolyline(coordinates: getRouteCoordinates(from: flight.departureAirport.coordinate, to: flight.arrivalAirport.coordinate))
                                         .stroke(.blue.opacity(0.8), lineWidth: 4)
                                     
                                     Annotation("Vehicle", coordinate: getPlaneCoordinate(from: flight.departureAirport.coordinate, to: flight.arrivalAirport.coordinate, progress: planeProgress), anchor: .center) {
-                                        Image(systemName: step.type == .flight ? "airplane" : "train.side.front.car")
+                                        Image(systemName: trip.steps[activeDayIndex - 1].type == .flight ? "airplane" : "train.side.front.car")
                                             .font(.title2)
                                             .foregroundColor(.white)
                                             .padding(8)
                                             .background(Color.blue)
                                             .clipShape(Circle())
                                             .shadow(radius: 4)
-                                            .rotationEffect(.degrees(getBearing(from: flight.departureAirport.coordinate, to: flight.arrivalAirport.coordinate) - (step.type == .flight ? 90 : 0)))
+                                            .rotationEffect(.degrees(getBearing(from: flight.departureAirport.coordinate, to: flight.arrivalAirport.coordinate) - (trip.steps[activeDayIndex - 1].type == .flight ? 90 : 0)))
                                     }
                                 }
-                            } else if step.type == .stay, let stay = step.stayInfo {
+                            } else if trip.steps[activeDayIndex - 1].type == .stay, let stay = trip.steps[activeDayIndex - 1].stayInfo {
                                 if let hotelPlace = stay.hotel?.mapPlace {
                                     Marker(hotelPlace.name, systemImage: "bed.double.fill", coordinate: CLLocationCoordinate2D(latitude: hotelPlace.latitude, longitude: hotelPlace.longitude))
                                         .tint(.purple)
@@ -96,9 +94,8 @@ public struct TimelineView: View {
                                 .tag(0)
                             
                             // Pages 1 to N: Stays & Flights Steps
-                            ForEach(0..<trip.steps.count, id: \.self) { index in
+                            ForEach(Array(trip.steps.enumerated()), id: \.element.id) { index, step in
                                 ScrollView(showsIndicators: false) {
-                                    let step = trip.steps[index]
                                     VStack(spacing: 20) {
                                         Spacer()
                                             .frame(height: 20)
@@ -941,10 +938,9 @@ public struct TimelineView: View {
         VStack(alignment: .leading, spacing: 16) {
             ForEach(stay.days) { day in
                 VStack(alignment: .leading, spacing: 0) {
-                    let isExpanded = expandedDays.contains(day.id)
                     Button {
                         withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                            if isExpanded {
+                            if expandedDays.contains(day.id) {
                                 expandedDays.remove(day.id)
                             } else {
                                 expandedDays.insert(day.id)
@@ -979,14 +975,14 @@ public struct TimelineView: View {
                             Image(systemName: "chevron.right")
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
-                                .rotationEffect(.degrees(isExpanded ? 90 : 0))
+                                .rotationEffect(.degrees(expandedDays.contains(day.id) ? 90 : 0))
                         }
                         .padding()
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .background(Color.white.opacity(0.02))
                     }
                     
-                    if isExpanded {
+                    if expandedDays.contains(day.id) {
                         Divider()
                             .padding(.horizontal)
                         
