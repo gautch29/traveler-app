@@ -413,19 +413,37 @@ public class TripStore: ObservableObject {
     private func getAllReferencedFiles(forTrip trip: Trip) -> Set<String> {
         var files = Set<String>()
         for step in trip.steps {
-            for item in step.items {
-                files.formUnion(item.sharedFiles)
-                if let profileFiles = item.profileFiles {
-                    for (_, file) in profileFiles {
-                        files.insert(file)
+            if let flight = step.flightInfo {
+                if let shared = flight.sharedFiles { files.formUnion(shared) }
+                if let profile = flight.profileFiles {
+                    for (_, file) in profile { files.insert(file) }
+                }
+                if let walletShared = flight.walletPasses { files.formUnion(walletShared) }
+                if let walletProfile = flight.profileWalletPasses {
+                    for (_, file) in walletProfile { files.insert(file) }
+                }
+            }
+            if let stay = step.stayInfo {
+                if let hotel = stay.hotel {
+                    files.formUnion(hotel.sharedFiles)
+                    if let profileFiles = hotel.profileFiles {
+                        for (_, file) in profileFiles { files.insert(file) }
+                    }
+                    if let walletShared = hotel.walletPasses { files.formUnion(walletShared) }
+                    if let walletProfile = hotel.profileWalletPasses {
+                        for (_, file) in walletProfile { files.insert(file) }
                     }
                 }
-                if let walletShared = item.walletPasses {
-                    files.formUnion(walletShared)
-                }
-                if let walletProfile = item.profileWalletPasses {
-                    for (_, file) in walletProfile {
-                        files.insert(file)
+                for day in stay.days {
+                    for item in day.items {
+                        files.formUnion(item.sharedFiles)
+                        if let profileFiles = item.profileFiles {
+                            for (_, file) in profileFiles { files.insert(file) }
+                        }
+                        if let walletShared = item.walletPasses { files.formUnion(walletShared) }
+                        if let walletProfile = item.profileWalletPasses {
+                            for (_, file) in walletProfile { files.insert(file) }
+                        }
                     }
                 }
             }
@@ -441,16 +459,26 @@ public class TripStore: ObservableObject {
         let user = selectedUser ?? ""
         
         for step in trip.steps {
-            for item in step.items {
-                filesToDownload.formUnion(item.sharedFiles)
-                if let profileFile = item.profileFiles?[user] {
-                    filesToDownload.insert(profileFile)
+            if let flight = step.flightInfo {
+                if let shared = flight.sharedFiles { filesToDownload.formUnion(shared) }
+                if let profileFile = flight.profileFiles?[user] { filesToDownload.insert(profileFile) }
+                if let walletShared = flight.walletPasses { filesToDownload.formUnion(walletShared) }
+                if let walletProfile = flight.profileWalletPasses?[user] { filesToDownload.insert(walletProfile) }
+            }
+            if let stay = step.stayInfo {
+                if let hotel = stay.hotel {
+                    filesToDownload.formUnion(hotel.sharedFiles)
+                    if let profileFile = hotel.profileFiles?[user] { filesToDownload.insert(profileFile) }
+                    if let walletShared = hotel.walletPasses { filesToDownload.formUnion(walletShared) }
+                    if let walletProfile = hotel.profileWalletPasses?[user] { filesToDownload.insert(walletProfile) }
                 }
-                if let walletShared = item.walletPasses {
-                    filesToDownload.formUnion(walletShared)
-                }
-                if let walletProfile = item.profileWalletPasses?[user] {
-                    filesToDownload.insert(walletProfile)
+                for day in stay.days {
+                    for item in day.items {
+                        filesToDownload.formUnion(item.sharedFiles)
+                        if let profileFile = item.profileFiles?[user] { filesToDownload.insert(profileFile) }
+                        if let walletShared = item.walletPasses { filesToDownload.formUnion(walletShared) }
+                        if let walletProfile = item.profileWalletPasses?[user] { filesToDownload.insert(walletProfile) }
+                    }
                 }
             }
         }

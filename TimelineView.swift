@@ -14,6 +14,10 @@ public struct TimelineView: View {
     @State private var fileViewTitle = ""
     @State private var expandedPDFs: Set<String> = []
     
+    // Stays & Flights animation and presentation states
+    @State private var planeProgress: Double = 0.0
+    @State private var expandedDays: Set<String> = []
+    
     public init(store: TripStore) {
         self.store = store
     }
@@ -21,12 +25,62 @@ public struct TimelineView: View {
     public var body: some View {
         NavigationStack {
             ZStack(alignment: .top) {
-                // 1. Dynamic Map Background (smoothly pans & zooms depending on activeDayIndex)
-                Map(position: $mapPosition)
-                    .disabled(true)
-                    .ignoresSafeArea()
-                    .opacity(0.4)
-                    .blur(radius: 0.8)
+                // 1. Dynamic Map Background (drawn content, route paths, animated vehicles)
+                Map(position: $mapPosition) {
+                    if let trip = store.trip {
+                        if activeDayIndex == 0 {
+                            // USA overview mode: show all hotels
+                            ForEach(trip.steps) { step in
+                                if step.type == .stay, let stay = step.stayInfo, let hotelPlace = stay.hotel?.mapPlace {
+                                    Marker(hotelPlace.name, systemImage: "bed.double.fill", coordinate: CLLocationCoordinate2D(latitude: hotelPlace.latitude, longitude: hotelPlace.longitude))
+                                        .tint(.purple)
+                                }
+                            }
+                        } else if activeDayIndex - 1 < trip.steps.count {
+                            let step = trip.steps[activeDayIndex - 1]
+                            
+                            if step.type == .flight || step.type == .train {
+                                if let flight = step.flightInfo {
+                                    Marker(flight.departureAirport.name, systemImage: step.type == .flight ? "airplane.departure" : "train.side.front.car", coordinate: flight.departureAirport.coordinate)
+                                        .tint(.blue)
+                                    Marker(flight.arrivalAirport.name, systemImage: step.type == .flight ? "airplane.arrival" : "train.side.rear.car", coordinate: flight.arrivalAirport.coordinate)
+                                        .tint(.red)
+                                    
+                                    MapPolyline(coordinates: getRouteCoordinates(from: flight.departureAirport.coordinate, to: flight.arrivalAirport.coordinate))
+                                        .stroke(.blue.opacity(0.8), lineWidth: 4)
+                                    
+                                    Annotation("Vehicle", coordinate: getPlaneCoordinate(from: flight.departureAirport.coordinate, to: flight.arrivalAirport.coordinate, progress: planeProgress), anchor: .center) {
+                                        Image(systemName: step.type == .flight ? "airplane" : "train.side.front.car")
+                                            .font(.title2)
+                                            .foregroundColor(.white)
+                                            .padding(8)
+                                            .background(Color.blue)
+                                            .clipShape(Circle())
+                                            .shadow(radius: 4)
+                                            .rotationEffect(.degrees(getBearing(from: flight.departureAirport.coordinate, to: flight.arrivalAirport.coordinate) - (step.type == .flight ? 90 : 0)))
+                                    }
+                                }
+                            } else if step.type == .stay, let stay = step.stayInfo {
+                                if let hotelPlace = stay.hotel?.mapPlace {
+                                    Marker(hotelPlace.name, systemImage: "bed.double.fill", coordinate: CLLocationCoordinate2D(latitude: hotelPlace.latitude, longitude: hotelPlace.longitude))
+                                        .tint(.purple)
+                                }
+                                ForEach(stay.days) { day in
+                                    ForEach(day.items) { item in
+                                        if let place = item.mapPlace {
+                                            Marker(place.name, systemImage: "mappin.and.ellipse", coordinate: CLLocationCoordinate2D(latitude: place.latitude, longitude: place.longitude))
+                                                .tint(.orange)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                .disabled(true)
+                .ignoresSafeArea()
+                .opacity(0.45)
+                .blur(radius: 0.8)
                 
                 // Dark mode / light mode tint overlay
                 Color(.systemBackground)
@@ -35,13 +89,13 @@ public struct TimelineView: View {
                 
                 Group {
                     if let trip = store.trip {
-                        // 2. TabView for horizontal "Tinder card" swiping (Day 0 + steps)
+                        // 2. TabView for horizontal "Tinder card" swiping
                         TabView(selection: $activeDayIndex) {
                             // Page 0: Day 0 Welcome Hello Screen
                             dayZeroView(trip)
                                 .tag(0)
                             
-                            // Pages 1 to N: Daily Steps
+                            // Pages 1 to N: Stays & Flights Steps
                             ForEach(0..<trip.steps.count, id: \.self) { index in
                                 let step = trip.steps[index]
                                 
@@ -50,13 +104,21 @@ public struct TimelineView: View {
                                         Spacer()
                                             .frame(height: 20)
                                         
-                                        // Floating Glassmorphic Card
-                                        daySummaryCard(step)
-                                            .padding(.horizontal)
-                                        
-                                        // Schedule & Tickets
-                                        dayDetailsSection(step)
-                                            .padding(.horizontal)
+                                        if step.type == .flight || step.type == .train {
+                                            if let flight = step.flightInfo {
+                                                flightSummaryCard(flight, type: step.type)
+                                                    .padding(.horizontal)
+                                                
+                                                flightDetailsSection(flight, type: step.type)
+                                                    .padding(.horizontal)
+                                            }
+                                        } else if step.type == .stay, let stay = step.stayInfo {
+                                            staySummaryCard(step, stay: stay)
+                                                .padding(.horizontal)
+                                            
+                                            stayDaysSection(stay)
+                                                .padding(.horizontal)
+                                        }
                                         
                                         Spacer()
                                             .frame(height: 50)
@@ -71,7 +133,7 @@ public struct TimelineView: View {
                     }
                 }
                 
-                // 3. Top Gradient Blur Overlay (smoothly fades content as it scrolls up)
+                // 3. Top Gradient Blur Overlay
                 Rectangle()
                     .fill(.ultraThinMaterial)
                     .mask(
@@ -88,7 +150,6 @@ public struct TimelineView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {
-                // Custom Emoji & Gradient Header Title
                 ToolbarItem(placement: .principal) {
                     HStack(spacing: 6) {
                         if activeDayIndex == 0 {
@@ -107,7 +168,7 @@ public struct TimelineView: View {
                             let step = trip.steps[activeDayIndex - 1]
                             Text(getEmojiForStep(step))
                                 .font(.title3)
-                            Text("Day \(step.dayNumber)")
+                            Text(getStepTitle(step))
                                 .font(.system(size: 18, weight: .black, design: .rounded))
                                 .foregroundColor(.primary)
                         }
@@ -137,23 +198,31 @@ public struct TimelineView: View {
             }
             .onAppear {
                 setInitialMapPosition()
+                startPlaneAnimation()
             }
             .onChange(of: store.trip) { _, _ in
                 setInitialMapPosition()
             }
             .onChange(of: activeDayIndex) { _, newIndex in
                 updateMapPosition(forIndex: newIndex)
+                startPlaneAnimation()
             }
         }
     }
     
     // MARK: - Map Panning Animation
     
+    private func startPlaneAnimation() {
+        planeProgress = 0.0
+        withAnimation(.linear(duration: 8.0).repeatForever(autoreverses: false)) {
+            planeProgress = 1.0
+        }
+    }
+    
     private func setInitialMapPosition() {
         guard let trip = store.trip, !trip.steps.isEmpty, !initialMapSet else { return }
-        // If today matches a trip day, auto-slide to it
         if let todayIndex = todayStepIndex(for: trip) {
-            activeDayIndex = todayIndex + 1 // +1 because page 0 is the welcome card
+            activeDayIndex = todayIndex + 1
         }
         updateMapPosition(forIndex: activeDayIndex, animated: false)
         initialMapSet = true
@@ -171,18 +240,35 @@ public struct TimelineView: View {
         
         let targetRegion: MKCoordinateRegion
         if index == 0 {
-            // Wide USA Overview
             targetRegion = MKCoordinateRegion(
                 center: CLLocationCoordinate2D(latitude: 37.0902, longitude: -95.7129),
                 span: MKCoordinateSpan(latitudeDelta: 24, longitudeDelta: 44)
             )
         } else if index - 1 < trip.steps.count {
-            // Zoomed on specific location
             let step = trip.steps[index - 1]
-            targetRegion = MKCoordinateRegion(
-                center: step.location.coordinate,
-                span: MKCoordinateSpan(latitudeDelta: 0.22, longitudeDelta: 0.22)
-            )
+            if step.type == .flight || step.type == .train, let flight = step.flightInfo {
+                let centerLat = (flight.departureAirport.latitude + flight.arrivalAirport.latitude) / 2
+                let centerLng = (flight.departureAirport.longitude + flight.arrivalAirport.longitude) / 2
+                let latDelta = abs(flight.departureAirport.latitude - flight.arrivalAirport.latitude) * 1.5 + 2.0
+                let lngDelta = abs(flight.departureAirport.longitude - flight.arrivalAirport.longitude) * 1.5 + 2.0
+                targetRegion = MKCoordinateRegion(
+                    center: CLLocationCoordinate2D(latitude: centerLat, longitude: centerLng),
+                    span: MKCoordinateSpan(latitudeDelta: max(latDelta, 0.5), longitudeDelta: max(lngDelta, 0.5))
+                )
+            } else if step.type == .stay, let stay = step.stayInfo {
+                let coord: CLLocationCoordinate2D
+                if let hotelPlace = stay.hotel?.mapPlace {
+                    coord = CLLocationCoordinate2D(latitude: hotelPlace.latitude, longitude: hotelPlace.longitude)
+                } else {
+                    coord = getCenterCoordinate(forCityName: stay.cityName)
+                }
+                targetRegion = MKCoordinateRegion(
+                    center: coord,
+                    span: MKCoordinateSpan(latitudeDelta: 0.22, longitudeDelta: 0.22)
+                )
+            } else {
+                return
+            }
         } else {
             return
         }
@@ -388,94 +474,556 @@ public struct TimelineView: View {
             }
             .padding()
             .liquidGlassStyle(cornerRadius: 20, fillOpacity: 0.03, borderOpacity: 0.45)
+        // MARK: - Flight & Stay Card Views
+    
+    private func getStepTitle(_ step: Step) -> String {
+        switch step.type {
+        case .flight:
+            return "Flight \(step.flightInfo?.flightNumber ?? "")"
+        case .train:
+            return "Train \(step.flightInfo?.flightNumber ?? "")"
+        case .stay:
+            return "Stay: \(step.stayInfo?.cityName ?? "")"
         }
     }
     
-    // MARK: - Day Summary Card
+    private func getCenterCoordinate(forCityName city: String) -> CLLocationCoordinate2D {
+        switch city.lowercased() {
+        case "new york":
+            return CLLocationCoordinate2D(latitude: 40.7128, longitude: -74.0060)
+        case "washington":
+            return CLLocationCoordinate2D(latitude: 38.9072, longitude: -77.0369)
+        case "orlando":
+            return CLLocationCoordinate2D(latitude: 28.5383, longitude: -81.3792)
+        case "miami":
+            return CLLocationCoordinate2D(latitude: 25.7617, longitude: -80.1918)
+        case "key west":
+            return CLLocationCoordinate2D(latitude: 24.5551, longitude: -81.7800)
+        case "paris":
+            return CLLocationCoordinate2D(latitude: 48.8566, longitude: 2.3522)
+        default:
+            return CLLocationCoordinate2D(latitude: 37.0902, longitude: -95.7129)
+        }
+    }
     
-    private func daySummaryCard(_ step: Step) -> some View {
-        VStack(alignment: .leading, spacing: 14) {
+    private func getBearing(from start: CLLocationCoordinate2D, to end: CLLocationCoordinate2D) -> Double {
+        let lat1 = start.latitude * .pi / 180
+        let lon1 = start.longitude * .pi / 180
+        let lat2 = end.latitude * .pi / 180
+        let lon2 = end.longitude * .pi / 180
+        
+        let dLon = lon2 - lon1
+        let y = sin(dLon) * cos(lat2)
+        let x = cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(dLon)
+        let radians = atan2(y, x)
+        return radians * 180 / .pi
+    }
+    
+    private func getPlaneCoordinate(from start: CLLocationCoordinate2D, to end: CLLocationCoordinate2D, progress: Double) -> CLLocationCoordinate2D {
+        let lat = start.latitude + (end.latitude - start.latitude) * progress
+        let lng = start.longitude + (end.longitude - start.longitude) * progress
+        let arcHeight = sin(progress * .pi) * 1.5
+        return CLLocationCoordinate2D(latitude: lat + arcHeight, longitude: lng)
+    }
+    
+    private func getRouteCoordinates(from start: CLLocationCoordinate2D, to end: CLLocationCoordinate2D) -> [CLLocationCoordinate2D] {
+        var coords: [CLLocationCoordinate2D] = []
+        let steps = 40
+        for i in 0...steps {
+            let progress = Double(i) / Double(steps)
+            coords.append(getPlaneCoordinate(from: start, to: end, progress: progress))
+        }
+        return coords
+    }
+    
+    private func flightSummaryCard(_ flight: FlightStepInfo, type: StepType) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Text("DAY \(step.dayNumber)")
+                Text(type == .flight ? "FLIGHT" : "TRAIN")
                     .font(.caption2)
                     .fontWeight(.black)
                     .foregroundColor(.white)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(Color.accentColor)
+                    .background(type == .flight ? Color.blue : Color.orange)
                     .cornerRadius(6)
                 
                 Spacer()
                 
-                Text(formatDateString(step.date))
+                Text(formatDateString(flight.date))
                     .font(.caption)
                     .fontWeight(.bold)
                     .foregroundColor(.secondary)
             }
             
-            Text(step.title)
+            Text("\(flight.airline) \(flight.flightNumber)")
                 .font(.title2)
                 .fontWeight(.bold)
                 .foregroundColor(.primary)
             
-            HStack {
-                Image(systemName: "mappin.and.ellipse")
-                    .foregroundColor(.accentColor)
-                    .font(.subheadline)
-                
-                Text(step.location.name)
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .lineLimit(1)
+            HStack(alignment: .center) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(flight.departureAirport.name.components(separatedBy: " (").first ?? "DEP")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+                    Text(flight.departureTime)
+                        .font(.subheadline)
+                        .fontWeight(.bold)
+                        .foregroundColor(.secondary)
+                }
                 
                 Spacer()
                 
-                Button {
-                    openInMaps(coordinate: step.location.coordinate, name: step.location.name)
-                } label: {
-                    Image(systemName: "arrow.triangle.turn.up.right.diamond.fill")
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(.white)
-                        .frame(width: 36, height: 36)
-                        .background(Color.blue)
-                        .clipShape(Circle())
-                        .shadow(color: Color.blue.opacity(0.3), radius: 4, x: 0, y: 2)
+                VStack(spacing: 4) {
+                    Image(systemName: type == .flight ? "airplane" : "train.side.front.car")
+                        .font(.headline)
+                        .foregroundColor(.accentColor)
+                    
+                    Rectangle()
+                        .fill(Color.accentColor.opacity(0.4))
+                        .frame(height: 1)
+                        .frame(width: 80)
+                }
+                
+                Spacer()
+                
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text(flight.arrivalAirport.name.components(separatedBy: " (").first ?? "ARR")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+                    Text(flight.arrivalTime)
+                        .font(.subheadline)
+                        .fontWeight(.bold)
+                        .foregroundColor(.secondary)
                 }
             }
+            .padding(.vertical, 8)
             
             Divider()
-                .padding(.vertical, 4)
             
-            Text(step.description)
+            Text(flight.details)
                 .font(.subheadline)
                 .foregroundColor(.secondary)
-                .multilineTextAlignment(.leading)
-                .lineLimit(4)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(20)
         .liquidGlassStyle(cornerRadius: 24, fillOpacity: 0.03, borderOpacity: 0.45)
     }
     
-    // MARK: - Day Details Section
-    
-    private func dayDetailsSection(_ step: Step) -> some View {
+    private func flightDetailsSection(_ flight: FlightStepInfo, type: StepType) -> some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Schedule & Bookings")
-                .font(.headline)
-                .fontWeight(.bold)
-                .padding(.leading, 4)
+            if type == .flight {
+                Text("Live Flight Tracker")
+                    .font(.headline)
+                    .fontWeight(.bold)
+                    .padding(.leading, 4)
+                
+                FlightStatusTrackerView(flightNumber: flight.flightNumber, date: flight.date, store: store)
+            }
             
-            if step.items.isEmpty {
-                Text("No specific schedule details for this day. Free exploration!")
+            let user = store.selectedUser ?? ""
+            var flightFiles: [String] = []
+            if let shared = flight.sharedFiles { flightFiles.append(contentsOf: shared) }
+            if let profile = flight.profileFiles?[user] { flightFiles.append(profile) }
+            
+            var flightPasses: [String] = []
+            if let walletShared = flight.walletPasses { flightPasses.append(contentsOf: walletShared) }
+            if let walletProfile = flight.profileWalletPasses?[user] { flightPasses.append(walletProfile) }
+            
+            if !flightFiles.isEmpty || !flightPasses.isEmpty {
+                Text("Tickets & Boarding Passes")
+                    .font(.headline)
+                    .fontWeight(.bold)
+                    .padding(.leading, 4)
+                    .padding(.top, 10)
+                
+                ForEach(flightFiles, id: \.self) { file in
+                    if store.downloadedFiles.contains(file) {
+                        HStack(spacing: 8) {
+                            Button {
+                                if let url = store.getLocalFileURL(forFilename: file) {
+                                    fileViewTitle = type == .flight ? "Boarding Pass" : "Train Ticket"
+                                    selectedFileToView = IdentifiableURL(url: url)
+                                }
+                            } label: {
+                                HStack {
+                                    Image(systemName: type == .flight ? "airplane" : "tram.fill")
+                                        .foregroundColor(.accentColor)
+                                    Text(type == .flight ? "View Boarding Pass" : "View Train Ticket")
+                                        .font(.subheadline)
+                                        .fontWeight(.bold)
+                                        .foregroundColor(.primary)
+                                    Spacer()
+                                    Image(systemName: "arrow.up.left.and.arrow.down.right")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 12)
+                                .frame(maxWidth: .infinity)
+                                .liquidGlassStyle(cornerRadius: 12, fillOpacity: 0.015, borderOpacity: 0.25)
+                            }
+                            
+                            if let url = store.getLocalFileURL(forFilename: file) {
+                                ShareLink(item: url) {
+                                    Image(systemName: "square.and.arrow.up")
+                                        .font(.subheadline)
+                                        .padding(.horizontal, 14)
+                                        .padding(.vertical, 12)
+                                        .liquidGlassStyle(cornerRadius: 12, fillOpacity: 0.015, borderOpacity: 0.25)
+                                }
+                            }
+                        }
+                    } else {
+                        Button {
+                            Task {
+                                if let tripURL = URL(string: store.serverURLString) {
+                                    let remoteURL = tripURL.deletingLastPathComponent().appendingPathComponent(file)
+                                    try? await store.downloadFile(from: remoteURL, originalFilename: file)
+                                }
+                            }
+                        } label: {
+                            HStack {
+                                Image(systemName: "arrow.down.circle")
+                                    .foregroundColor(.accentColor)
+                                Text(type == .flight ? "Download Boarding Pass" : "Download Train Ticket")
+                                    .font(.subheadline)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.accentColor)
+                                Spacer()
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                            .frame(maxWidth: .infinity)
+                            .liquidGlassStyle(cornerRadius: 12, fillOpacity: 0.015, borderOpacity: 0.25)
+                        }
+                    }
+                }
+                
+                ForEach(flightPasses, id: \.self) { passFile in
+                    HStack {
+                        Image(systemName: "wallet.pass.fill")
+                            .foregroundColor(.orange)
+                        
+                        Text(passFile.replacingOccurrences(of: "tickets/", with: "").replacingOccurrences(of: "passes/", with: ""))
+                            .font(.caption)
+                            .foregroundColor(.primary)
+                            .lineLimit(1)
+                        
+                        Spacer()
+                        
+                        if store.downloadedFiles.contains(passFile) {
+                            HStack(spacing: 8) {
+                                Button {
+                                    if let url = store.getLocalFileURL(forFilename: passFile) {
+                                        fileViewTitle = passFile.components(separatedBy: "/").last ?? "Pass"
+                                        selectedFileToView = IdentifiableURL(url: url)
+                                    }
+                                } label: {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "plus.circle")
+                                        Text("Add")
+                                    }
+                                    .font(.system(size: 11, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 6)
+                                    .background(Color.black)
+                                    .cornerRadius(6)
+                                }
+                                
+                                Button {
+                                    if let walletURL = URL(string: "shoebox://") {
+                                        UIApplication.shared.open(walletURL)
+                                    }
+                                } label: {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "wallet.pass.fill")
+                                        Text("Open")
+                                    }
+                                    .font(.system(size: 11, weight: .bold))
+                                    .foregroundColor(.primary)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 6)
+                                    .background(Color(.systemGray5))
+                                    .cornerRadius(6)
+                                }
+                            }
+                        } else {
+                            Button {
+                                Task {
+                                    if let tripURL = URL(string: store.serverURLString) {
+                                        let remoteURL = tripURL.deletingLastPathComponent().appendingPathComponent(passFile)
+                                        try? await store.downloadFile(from: remoteURL, originalFilename: passFile)
+                                    }
+                                }
+                            } label: {
+                                Label("Download", systemImage: "arrow.down.circle")
+                                    .font(.caption)
+                            }
+                            .buttonStyle(.bordered)
+                        }
+                    }
+                    .padding(8)
+                    .liquidGlassStyle(cornerRadius: 10, fillOpacity: 0.015, borderOpacity: 0.25)
+                }
+            }
+        }
+    }
+    
+    private func staySummaryCard(_ step: Step, stay: StayStepInfo) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Text("STAY")
+                    .font(.caption2)
+                    .fontWeight(.black)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.purple)
+                    .cornerRadius(6)
+                
+                Spacer()
+                
+                Text("\(stay.days.count) Days")
+                    .font(.caption)
+                    .fontWeight(.bold)
+                    .foregroundColor(.secondary)
+            }
+            
+            Text("Stay in \(stay.cityName)")
+                .font(.title2)
+                .fontWeight(.bold)
+                .foregroundColor(.primary)
+            
+            if let firstDay = stay.days.first, let lastDay = stay.days.last {
+                Text("\(formatDateStringShort(firstDay.date)) - \(formatDateStringShort(lastDay.date))")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
-                    .padding()
-                    .frame(maxWidth: .infinity)
-                    .liquidGlassStyle(cornerRadius: 16, fillOpacity: 0.03, borderOpacity: 0.45)
-            } else {
-                ForEach(step.items) { item in
-                    activityItemCard(item, date: step.date)
+            }
+            
+            if let hotel = stay.hotel {
+                Divider()
+                    .padding(.vertical, 4)
+                
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Image(systemName: "bed.double.fill")
+                            .foregroundColor(.purple)
+                            .font(.headline)
+                        
+                        Text("Hotel Accommodation")
+                            .font(.caption)
+                            .fontWeight(.black)
+                            .foregroundColor(.secondary)
+                        
+                        Spacer()
+                    }
+                    
+                    Text(hotel.title)
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                    
+                    Text(hotel.details)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    
+                    if let place = hotel.mapPlace {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(place.address)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                            
+                            if let phone = place.phoneNumber {
+                                Text("📞 \(phone)")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            
+                            HStack(spacing: 8) {
+                                Button {
+                                    openInMaps(coordinate: place.coordinate, name: place.name)
+                                } label: {
+                                    Label("Directions", systemImage: "arrow.triangle.turn.up.right.diamond.fill")
+                                        .font(.caption2)
+                                        .fontWeight(.bold)
+                                        .foregroundColor(.white)
+                                        .padding(.vertical, 6)
+                                        .padding(.horizontal, 10)
+                                        .background(Color.blue)
+                                        .cornerRadius(6)
+                                }
+                                
+                                if let webString = place.websiteURL, let webURL = URL(string: webString) {
+                                    Link(destination: webURL) {
+                                        Label("Website", systemImage: "safari.fill")
+                                            .font(.caption2)
+                                            .fontWeight(.bold)
+                                            .foregroundColor(.primary)
+                                            .padding(.vertical, 6)
+                                            .padding(.horizontal, 10)
+                                            .liquidGlassStyle(cornerRadius: 6, fillOpacity: 0.05, borderOpacity: 0.3)
+                                    }
+                                }
+                            }
+                            .padding(.top, 4)
+                        }
+                        .padding(10)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .liquidGlassStyle(cornerRadius: 12, fillOpacity: 0.015, borderOpacity: 0.25)
+                    }
+                    
+                    let user = store.selectedUser ?? ""
+                    let hotelFiles = hotel.getFiles(forUser: user)
+                    ForEach(hotelFiles, id: \.self) { file in
+                        if store.downloadedFiles.contains(file) {
+                            Button {
+                                if let url = store.getLocalFileURL(forFilename: file) {
+                                    fileViewTitle = "Hotel Reservation"
+                                    selectedFileToView = IdentifiableURL(url: url)
+                                }
+                            } label: {
+                                HStack {
+                                    Image(systemName: "doc.text.fill")
+                                        .foregroundColor(.purple)
+                                    Text("View Reservation PDF")
+                                        .font(.caption)
+                                        .fontWeight(.bold)
+                                        .foregroundColor(.primary)
+                                    Spacer()
+                                    Image(systemName: "arrow.up.left.and.arrow.down.right")
+                                        .font(.caption)
+                                }
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 8)
+                                .liquidGlassStyle(cornerRadius: 10, fillOpacity: 0.015, borderOpacity: 0.2)
+                            }
+                        } else {
+                            Button {
+                                Task {
+                                    if let tripURL = URL(string: store.serverURLString) {
+                                        let remoteURL = tripURL.deletingLastPathComponent().appendingPathComponent(file)
+                                        try? await store.downloadFile(from: remoteURL, originalFilename: file)
+                                    }
+                                }
+                            } label: {
+                                HStack {
+                                    Image(systemName: "arrow.down.circle")
+                                        .foregroundColor(.purple)
+                                    Text("Download Reservation PDF")
+                                        .font(.caption)
+                                        .fontWeight(.bold)
+                                        .foregroundColor(.purple)
+                                    Spacer()
+                                }
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 8)
+                                .liquidGlassStyle(cornerRadius: 10, fillOpacity: 0.015, borderOpacity: 0.2)
+                            }
+                        }
+                    }
+                }
+                .padding(14)
+                .liquidGlassStyle(cornerRadius: 16, fillOpacity: 0.01, borderOpacity: 0.3)
+            }
+        }
+        .padding(20)
+        .liquidGlassStyle(cornerRadius: 24, fillOpacity: 0.03, borderOpacity: 0.45)
+    }
+    
+    private func stayDaysSection(_ stay: StayStepInfo) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            ForEach(stay.days) { day in
+                let isExpanded = expandedDays.contains(day.id)
+                
+                VStack(alignment: .leading, spacing: 0) {
+                    Button {
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                            if isExpanded {
+                                expandedDays.remove(day.id)
+                            } else {
+                                expandedDays.insert(day.id)
+                            }
+                        }
+                    } label: {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("DAY \(day.dayNumber)")
+                                    .font(.caption2)
+                                    .fontWeight(.black)
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 3)
+                                    .background(Color.blue)
+                                    .cornerRadius(4)
+                                
+                                Text(day.title)
+                                    .font(.headline)
+                                    .foregroundColor(.primary)
+                                    .multilineTextAlignment(.leading)
+                            }
+                            
+                            Spacer()
+                            
+                            Text(formatDateStringShort(day.date))
+                                .font(.caption)
+                                .fontWeight(.bold)
+                                .foregroundColor(.secondary)
+                                .padding(.trailing, 6)
+                            
+                            Image(systemName: "chevron.right")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                                .rotationEffect(.degrees(isExpanded ? 90 : 0))
+                        }
+                        .padding()
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color.white.opacity(0.02))
+                    }
+                    
+                    if isExpanded {
+                        Divider()
+                            .padding(.horizontal)
+                        
+                        VStack(alignment: .leading, spacing: 14) {
+                            if !day.description.isEmpty {
+                                Text(day.description)
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                    .padding(.horizontal)
+                                    .padding(.top, 12)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                            
+                            if day.items.isEmpty {
+                                Text("No activities planned. Free day!")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                    .italic()
+                                    .padding(.horizontal)
+                                    .padding(.bottom, 12)
+                            } else {
+                                VStack(spacing: 12) {
+                                    ForEach(day.items) { item in
+                                        activityItemCard(item, date: day.date)
+                                    }
+                                }
+                                .padding(.horizontal)
+                                .padding(.bottom, 16)
+                            }
+                        }
+                    }
+                }
+                .liquidGlassStyle(cornerRadius: 18, fillOpacity: 0.03, borderOpacity: 0.45)
+                .padding(.bottom, 6)
+                .onAppear {
+                    if expandedDays.isEmpty, let firstDay = stay.days.first {
+                        expandedDays.insert(firstDay.id)
+                    }
                 }
             }
         }
@@ -712,7 +1260,7 @@ public struct TimelineView: View {
                                     Image(systemName: "doc.text.fill")
                                         .foregroundColor(.red)
                                     
-                                    Text(file.replacingOccurrences(of: "tickets/", with: "").replacingOccurrences(of: "permits/", with: ""))
+                                    Text(file.replacingOccurrences(of: "tickets/", with: "").replacingOccurrences(of: "passes/", with: ""))
                                         .font(.caption)
                                         .foregroundColor(.primary)
                                         .lineLimit(1)

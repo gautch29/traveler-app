@@ -138,20 +138,18 @@ public struct TripEditorView: View {
     private func stepsSection(trip: Trip) -> some View {
         Section {
             ForEach(trip.steps) { step in
-                NavigationLink(destination: DayEditorView(step: step, users: trip.users, store: store, onSave: { updatedStep in
+                NavigationLink(destination: StepEditorView(step: step, users: trip.users, store: store, onSave: { updatedStep in
                     updateStep(updatedStep)
                 })) {
                     HStack(spacing: 12) {
-                        Text("Day \(step.dayNumber)")
-                            .font(.subheadline)
+                        Text(step.type == .stay ? "STAY" : (step.type == .flight ? "FLIGHT" : "TRAIN"))
+                            .font(.caption2)
                             .fontWeight(.black)
                             .foregroundColor(.white)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .background(
-                                LinearGradient(colors: [Color.accentColor, Color.accentColor.opacity(0.7)], startPoint: .topLeading, endPoint: .bottomTrailing)
-                            )
-                            .cornerRadius(8)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 4)
+                            .background(step.type == .stay ? Color.purple : (step.type == .flight ? Color.blue : Color.orange))
+                            .cornerRadius(6)
                         
                         VStack(alignment: .leading, spacing: 2) {
                             Text(step.title)
@@ -159,7 +157,7 @@ public struct TripEditorView: View {
                                 .fontWeight(.semibold)
                                 .foregroundColor(.primary)
                             
-                            Text(step.location.name)
+                            Text(step.date)
                                 .font(.caption2)
                                 .foregroundColor(.secondary)
                         }
@@ -171,14 +169,21 @@ public struct TripEditorView: View {
             .onDelete(perform: deleteStep)
             .onMove(perform: moveStep)
             
-            Button(action: addStep) {
-                Label("Add Day", systemImage: "calendar.badge.plus")
-                    .fontWeight(.bold)
+            HStack {
+                Button(action: addStayStep) {
+                    Label("Add Stay", systemImage: "house.circle")
+                        .fontWeight(.bold)
+                }
+                Spacer()
+                Button(action: addFlightStep) {
+                    Label("Add Travel", systemImage: "airplane.circle")
+                        .fontWeight(.bold)
+                }
             }
             .listRowBackground(Color.white.opacity(0.03))
         } header: {
             HStack {
-                Text("Days / Steps")
+                Text("Stays & Flights Steps")
                     .foregroundColor(.primary)
                     .fontWeight(.bold)
                 Spacer()
@@ -213,8 +218,16 @@ public struct TripEditorView: View {
     
     private func setInitialMapPosition() {
         if let firstStep = editedTrip?.steps.first {
+            let coord: CLLocationCoordinate2D
+            if firstStep.type == .flight || firstStep.type == .train, let flight = firstStep.flightInfo {
+                coord = flight.departureAirport.coordinate
+            } else if firstStep.type == .stay, let stay = firstStep.stayInfo, let hotelPlace = stay.hotel?.mapPlace {
+                coord = CLLocationCoordinate2D(latitude: hotelPlace.latitude, longitude: hotelPlace.longitude)
+            } else {
+                coord = CLLocationCoordinate2D(latitude: 37.0902, longitude: -95.7129)
+            }
             let region = MKCoordinateRegion(
-                center: firstStep.location.coordinate,
+                center: coord,
                 span: MKCoordinateSpan(latitudeDelta: 12, longitudeDelta: 12)
             )
             mapPosition = .region(region)
@@ -227,42 +240,44 @@ public struct TripEditorView: View {
         if let idx = updatedSteps.firstIndex(where: { $0.id == updatedStep.id }) {
             updatedSteps[idx] = updatedStep
         }
-        
-        // Resort steps by dayNumber just in case
-        updatedSteps.sort(by: { $0.dayNumber < $1.dayNumber })
-        
         editedTrip = Trip(tripName: trip.tripName, startDate: trip.startDate, endDate: trip.endDate, users: trip.users, emergencyInfo: trip.emergencyInfo, steps: updatedSteps)
     }
     
-    private func addStep() {
+    private func addStayStep() {
         guard let trip = editedTrip else { return }
-        let nextDayNum = (trip.steps.map { $0.dayNumber }.max() ?? 0) + 1
-        
         let newStep = Step(
-            id: UUID().uuidString.lowercased(),
-            dayNumber: nextDayNum,
-            title: "New Day Step",
-            date: "2026-08-\(String(format: "%02d", nextDayNum))",
-            location: LocationInfo(name: "New Destination", latitude: 37.0902, longitude: -95.7129),
-            description: "Describe the day activities here.",
-            items: []
+            type: .stay,
+            title: "New Stay in City",
+            date: "2026-08-06",
+            stayInfo: StayStepInfo(cityName: "New City", hotel: nil, days: [])
         )
-        
-        let updatedSteps = (trip.steps + [newStep]).sorted(by: { $0.dayNumber < $1.dayNumber })
-        editedTrip = Trip(tripName: trip.tripName, startDate: trip.startDate, endDate: trip.endDate, users: trip.users, emergencyInfo: trip.emergencyInfo, steps: updatedSteps)
+        editedTrip = Trip(tripName: trip.tripName, startDate: trip.startDate, endDate: trip.endDate, users: trip.users, emergencyInfo: trip.emergencyInfo, steps: trip.steps + [newStep])
+    }
+    
+    private func addFlightStep() {
+        guard let trip = editedTrip else { return }
+        let newStep = Step(
+            type: .flight,
+            title: "New Flight Route",
+            date: "2026-08-06",
+            flightInfo: FlightStepInfo(
+                flightNumber: "BF000",
+                airline: "New Airline",
+                departureAirport: LocationInfo(name: "Departure Airport", latitude: 37.0902, longitude: -95.7129),
+                arrivalAirport: LocationInfo(name: "Arrival Airport", latitude: 37.0902, longitude: -95.7129),
+                departureTime: "12:00 PM",
+                arrivalTime: "3:00 PM",
+                date: "2026-08-06",
+                details: "Edit flight details."
+            )
+        )
+        editedTrip = Trip(tripName: trip.tripName, startDate: trip.startDate, endDate: trip.endDate, users: trip.users, emergencyInfo: trip.emergencyInfo, steps: trip.steps + [newStep])
     }
     
     private func deleteStep(at offsets: IndexSet) {
         guard let trip = editedTrip else { return }
         var updatedSteps = trip.steps
         updatedSteps.remove(atOffsets: offsets)
-        
-        // Re-index day numbers sequentially
-        for i in 0..<updatedSteps.count {
-            let step = updatedSteps[i]
-            updatedSteps[i] = Step(id: step.id, dayNumber: i + 1, title: step.title, date: step.date, location: step.location, description: step.description, items: step.items)
-        }
-        
         editedTrip = Trip(tripName: trip.tripName, startDate: trip.startDate, endDate: trip.endDate, users: trip.users, emergencyInfo: trip.emergencyInfo, steps: updatedSteps)
     }
     
@@ -270,13 +285,6 @@ public struct TripEditorView: View {
         guard let trip = editedTrip else { return }
         var updatedSteps = trip.steps
         updatedSteps.move(fromOffsets: source, toOffset: destination)
-        
-        // Re-index day numbers sequentially
-        for i in 0..<updatedSteps.count {
-            let step = updatedSteps[i]
-            updatedSteps[i] = Step(id: step.id, dayNumber: i + 1, title: step.title, date: step.date, location: step.location, description: step.description, items: step.items)
-        }
-        
         editedTrip = Trip(tripName: trip.tripName, startDate: trip.startDate, endDate: trip.endDate, users: trip.users, emergencyInfo: trip.emergencyInfo, steps: updatedSteps)
     }
     
@@ -306,338 +314,388 @@ public struct TripEditorView: View {
     }
 }
 
-// MARK: - Day Editor View
+// MARK: - Step Editor Views
 
-struct DayLocationSearchResult: Hashable, Identifiable {
-    let id = UUID()
-    let name: String
-    let address: String
-    let latitude: Double
-    let longitude: Double
-    
-    var coordinate: CLLocationCoordinate2D {
-        CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
-    }
-}
-
-struct DayEditorView: View {
+struct StepEditorView: View {
     @State var step: Step
     let users: [String]
     let store: TripStore
     let onSave: (Step) -> Void
     
-    @State private var locName = ""
-    @State private var locLat = ""
-    @State private var locLng = ""
+    var body: some View {
+        if step.type == .flight || step.type == .train {
+            FlightStepEditorView(step: step, users: users, store: store, onSave: onSave)
+        } else {
+            StayStepEditorView(step: step, users: users, store: store, onSave: onSave)
+        }
+    }
+}
+
+struct FlightStepEditorView: View {
+    @State var step: Step
+    let users: [String]
+    let store: TripStore
+    let onSave: (Step) -> Void
     
-    @State private var isGenerating = false
-    @State private var isAnimating = false
-    
-    @State private var mapPosition: MapCameraPosition = .automatic
-    
-    @State private var locationSearchQuery = ""
-    @State private var locationSearchResults = [DayLocationSearchResult]()
-    @State private var isSearchingLocation = false
+    @State private var flightNumber = ""
+    @State private var airline = ""
+    @State private var depName = ""
+    @State private var depLat = ""
+    @State private var depLng = ""
+    @State private var arrName = ""
+    @State private var arrLat = ""
+    @State private var arrLng = ""
+    @State private var depTime = ""
+    @State private var arrTime = ""
+    @State private var date = ""
+    @State private var details = ""
     
     var body: some View {
-        ZStack {
-            // Background Map showing the active day location
-            Map(position: $mapPosition)
-                .disabled(true)
-                .ignoresSafeArea()
-                .opacity(0.3)
-                .blur(radius: 1.0)
+        Form {
+            Section("Flight / Train Basics") {
+                TextField("Flight/Train Number", text: $flightNumber)
+                TextField("Airline/Company Name", text: $airline)
+                TextField("Date", text: $date)
+                TextField("Departure Time", text: $depTime)
+                TextField("Arrival Time", text: $arrTime)
+                TextField("Details", text: $details, axis: .vertical)
+                    .lineLimit(3...6)
+            }
             
-            Color(.systemBackground)
-                .opacity(0.2)
-                .ignoresSafeArea()
+            Section("Departure Terminal / Airport") {
+                TextField("Departure Location Name", text: $depName)
+                TextField("Latitude", text: $depLat)
+                TextField("Longitude", text: $depLng)
+            }
             
-            List {
-                Section {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Step Title")
-                            .font(.caption2)
-                            .fontWeight(.bold)
-                            .foregroundColor(.secondary)
-                        TextField("Step Title", text: $step.title)
-                            .textFieldStyle(.roundedBorder)
-                    }
-                    
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Date")
-                            .font(.caption2)
-                            .fontWeight(.bold)
-                            .foregroundColor(.secondary)
-                        TextField("Date", text: $step.date)
-                            .textFieldStyle(.roundedBorder)
-                    }
-                    
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Description")
-                            .font(.caption2)
-                            .fontWeight(.bold)
-                            .foregroundColor(.secondary)
-                        TextField("Description", text: $step.description, axis: .vertical)
-                            .textFieldStyle(.roundedBorder)
-                            .lineLimit(3...6)
-                    }
-                    
-                    Button(action: generateDetail) {
-                        HStack(spacing: 8) {
-                            if isGenerating {
-                                ProgressView()
-                                    .tint(.white)
-                                Text("Generating Summary...")
-                                    .font(.subheadline)
-                                    .fontWeight(.semibold)
-                            } else {
-                                Image(systemName: "sparkles")
-                                    .font(.system(size: 16, weight: .semibold))
-                                Text("Generate Day Detail")
-                                    .font(.subheadline)
-                                    .fontWeight(.semibold)
-                            }
-                        }
-                        .foregroundColor(.white)
-                        .padding(.vertical, 10)
-                        .padding(.horizontal, 16)
-                        .frame(maxWidth: .infinity)
-                        .background(
-                            LinearGradient(
-                                colors: [
-                                    Color(red: 0.6, green: 0.3, blue: 0.9), // Purple
-                                    Color(red: 0.95, green: 0.3, blue: 0.6), // Pink
-                                    Color(red: 0.3, green: 0.6, blue: 0.9)  // Blue
-                                ],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
-                        .cornerRadius(10)
-                        .shadow(color: Color.purple.opacity(isGenerating ? 0.5 : 0.2), radius: isGenerating ? 6 : 3)
-                        .scaleEffect(isGenerating && isAnimating ? 0.98 : 1.0)
-                        .opacity(isGenerating && isAnimating ? 0.8 : 1.0)
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(isGenerating)
-                    .padding(.vertical, 4)
-                } header: {
-                    Text("Day Properties")
-                        .foregroundColor(.primary)
-                        .fontWeight(.bold)
-                }
-                .listRowBackground(Color.white.opacity(0.03))
-                
-                Section {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Location Name")
-                            .font(.caption2)
-                            .fontWeight(.bold)
-                            .foregroundColor(.secondary)
-                        TextField("Location Name", text: $locName)
-                            .textFieldStyle(.roundedBorder)
-                    }
-                    
-                    if !locLat.isEmpty && !locLng.isEmpty {
+            Section("Arrival Terminal / Airport") {
+                TextField("Arrival Location Name", text: $arrName)
+                TextField("Latitude", text: $arrLat)
+                TextField("Longitude", text: $arrLng)
+            }
+        }
+        .navigationTitle(step.type == .flight ? "Edit Flight" : "Edit Train")
+        .onAppear {
+            if let flight = step.flightInfo {
+                flightNumber = flight.flightNumber
+                airline = flight.airline
+                depName = flight.departureAirport.name
+                depLat = String(flight.departureAirport.latitude)
+                depLng = String(flight.departureAirport.longitude)
+                arrName = flight.arrivalAirport.name
+                arrLat = String(flight.arrivalAirport.latitude)
+                arrLng = String(flight.arrivalAirport.longitude)
+                depTime = flight.departureTime
+                arrTime = flight.arrivalTime
+                date = flight.date
+                details = flight.details
+            }
+        }
+        .onDisappear {
+            let depCoord = LocationInfo(name: depName, latitude: Double(depLat) ?? 0.0, longitude: Double(depLng) ?? 0.0)
+            let arrCoord = LocationInfo(name: arrName, latitude: Double(arrLat) ?? 0.0, longitude: Double(arrLng) ?? 0.0)
+            
+            let updatedFlight = FlightStepInfo(
+                flightNumber: flightNumber,
+                airline: airline,
+                departureAirport: depCoord,
+                arrivalAirport: arrCoord,
+                departureTime: depTime,
+                arrivalTime: arrTime,
+                date: date,
+                details: details,
+                sharedFiles: step.flightInfo?.sharedFiles,
+                profileFiles: step.flightInfo?.profileFiles,
+                walletPasses: step.flightInfo?.walletPasses,
+                profileWalletPasses: step.flightInfo?.profileWalletPasses
+            )
+            step.flightInfo = updatedFlight
+            onSave(step)
+        }
+    }
+}
+
+struct StayStepEditorView: View {
+    @State var step: Step
+    let users: [String]
+    let store: TripStore
+    let onSave: (Step) -> Void
+    
+    @State private var cityName = ""
+    @State private var stayDays = [DayInfo]()
+    @State private var hotel: TripItem? = nil
+    
+    var body: some View {
+        Form {
+            Section("Stay Properties") {
+                TextField("City Name", text: $cityName)
+            }
+            
+            Section("Hotel Accommodation") {
+                if let currentHotel = hotel {
+                    NavigationLink(destination: ActivityEditorView(item: currentHotel, users: users, store: store, onSave: { updatedHotel in
+                        self.hotel = updatedHotel
+                    })) {
                         HStack {
-                            Text("Coordinates:")
-                                .font(.caption2)
-                                .fontWeight(.bold)
-                                .foregroundColor(.secondary)
+                            Image(systemName: "bed.double.fill")
+                                .foregroundColor(.purple)
+                            Text(currentHotel.title)
                             Spacer()
-                            Text("\(locLat), \(locLng)")
+                            Text(currentHotel.time)
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
-                        .padding(.vertical, 2)
                     }
-                    
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            TextField("Search Location in Apple Maps...", text: $locationSearchQuery)
-                                .textFieldStyle(.roundedBorder)
-                                .disableAutocorrection(true)
-                                .autocapitalization(.none)
-                            
-                            Button("Search") {
-                                performLocationSearch()
-                            }
-                            .buttonStyle(.borderedProminent)
+                } else {
+                    Button {
+                        self.hotel = TripItem(
+                            id: UUID().uuidString.lowercased(),
+                            type: .hotel,
+                            title: "New Hotel",
+                            time: "4:00 PM",
+                            details: "Hotel Details",
+                            sharedFiles: [],
+                            profileFiles: [:],
+                            walletPasses: [],
+                            profileWalletPasses: [:],
+                            websiteURL: nil,
+                            flightNumber: nil,
+                            mapPlace: nil
+                        )
+                    } label: {
+                        Label("Add Hotel Reservation", systemImage: "plus.circle")
+                    }
+                }
+            }
+            
+            Section("Days in this Stay") {
+                ForEach(stayDays) { day in
+                    NavigationLink(destination: DayEditorView(day: day, users: users, store: store, onSave: { updatedDay in
+                        updateDay(updatedDay)
+                    })) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Day \(day.dayNumber): \(day.title)")
+                                .fontWeight(.semibold)
+                            Text(day.date)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
                         }
-                        
-                        if isSearchingLocation {
+                    }
+                }
+                .onDelete(perform: deleteDay)
+                .onMove(perform: moveDay)
+                
+                Button {
+                    addDay()
+                } label: {
+                    Label("Add Day to Stay", systemImage: "calendar.badge.plus")
+                }
+            }
+        }
+        .navigationTitle("Edit Stay Step")
+        .onAppear {
+            if let stay = step.stayInfo {
+                cityName = stay.cityName
+                hotel = stay.hotel
+                stayDays = stay.days
+            }
+        }
+        .onDisappear {
+            let updatedStay = StayStepInfo(
+                cityName: cityName,
+                hotel: hotel,
+                days: stayDays
+            )
+            step.stayInfo = updatedStay
+            onSave(step)
+        }
+    }
+    
+    private func updateDay(_ updatedDay: DayInfo) {
+        if let idx = stayDays.firstIndex(where: { $0.id == updatedDay.id }) {
+            stayDays[idx] = updatedDay
+        }
+    }
+    
+    private func addDay() {
+        let nextDayNum = (stayDays.map { $0.dayNumber }.max() ?? 0) + 1
+        let newDay = DayInfo(
+            dayNumber: nextDayNum,
+            date: "2026-08-01",
+            title: "New Day",
+            description: "",
+            items: []
+        )
+        stayDays.append(newDay)
+    }
+    
+    private func deleteDay(at offsets: IndexSet) {
+        stayDays.remove(atOffsets: offsets)
+        for i in 0..<stayDays.count {
+            stayDays[i].dayNumber = i + 1
+        }
+    }
+    
+    private func moveDay(from source: IndexSet, to destination: Int) {
+        stayDays.move(fromOffsets: source, toOffset: destination)
+        for i in 0..<stayDays.count {
+            stayDays[i].dayNumber = i + 1
+        }
+    }
+}
+
+// MARK: - Day Editor View
+
+struct DayEditorView: View {
+    @State var day: DayInfo
+    let users: [String]
+    let store: TripStore
+    let onSave: (DayInfo) -> Void
+    
+    @State private var isGenerating = false
+    
+    var body: some View {
+        Form {
+            Section("Day Properties") {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Day Title")
+                        .font(.caption2)
+                        .fontWeight(.bold)
+                        .foregroundColor(.secondary)
+                    TextField("Day Title", text: $day.title)
+                        .textFieldStyle(.roundedBorder)
+                }
+                
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Date")
+                        .font(.caption2)
+                        .fontWeight(.bold)
+                        .foregroundColor(.secondary)
+                    TextField("Date", text: $day.date)
+                        .textFieldStyle(.roundedBorder)
+                }
+                
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Description")
+                        .font(.caption2)
+                        .fontWeight(.bold)
+                        .foregroundColor(.secondary)
+                    TextField("Description", text: $day.description, axis: .vertical)
+                        .textFieldStyle(.roundedBorder)
+                        .lineLimit(3...6)
+                }
+                
+                Button(action: generateDetail) {
+                    HStack(spacing: 8) {
+                        if isGenerating {
                             ProgressView()
-                                .frame(maxWidth: .infinity, alignment: .center)
-                                .padding(.vertical, 4)
-                        } else if !locationSearchResults.isEmpty {
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: 8) {
-                                    ForEach(locationSearchResults) { result in
-                                        Button {
-                                            locName = result.name
-                                            locLat = String(result.latitude)
-                                            locLng = String(result.longitude)
-                                            locationSearchResults.removeAll()
-                                            locationSearchQuery = ""
-                                            
-                                            let region = MKCoordinateRegion(
-                                                center: result.coordinate,
-                                                span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
-                                            )
-                                            mapPosition = .region(region)
-                                        } label: {
-                                            VStack(alignment: .leading, spacing: 2) {
-                                                Text(result.name)
-                                                    .font(.caption)
-                                                    .fontWeight(.bold)
-                                                Text(result.address)
-                                                    .font(.system(size: 8))
-                                                    .foregroundColor(.secondary)
-                                            }
-                                            .padding(.vertical, 6)
-                                            .padding(.horizontal, 12)
-                                            .background(Color.accentColor.opacity(0.15))
-                                            .cornerRadius(8)
-                                        }
-                                    }
-                                }
-                                .padding(.vertical, 4)
-                            }
+                                .tint(.white)
+                            Text("Generating Summary...")
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                        } else {
+                            Image(systemName: "sparkles")
+                                .font(.system(size: 16, weight: .semibold))
+                            Text("Generate Day Detail")
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
                         }
                     }
-                } header: {
-                    Text("Location (Map integration)")
-                        .foregroundColor(.primary)
+                    .foregroundColor(.white)
+                    .padding(.vertical, 10)
+                    .padding(.horizontal, 16)
+                    .frame(maxWidth: .infinity)
+                    .background(
+                        LinearGradient(
+                            colors: [
+                                Color.purple,
+                                Color.pink,
+                                Color.blue
+                            ],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .cornerRadius(10)
+                }
+                .buttonStyle(.plain)
+                .disabled(isGenerating)
+                .padding(.vertical, 4)
+            } header: {
+                Text("Day Properties")
+                    .foregroundColor(.primary)
+                    .fontWeight(.bold)
+            }
+            .listRowBackground(Color.white.opacity(0.03))
+            
+            Section("Activities") {
+                ForEach(day.items) { item in
+                    NavigationLink(destination: ActivityEditorView(item: item, users: users, store: store, onSave: { updatedItem in
+                        updateItem(updatedItem)
+                    })) {
+                        HStack(spacing: 12) {
+                            Image(systemName: item.type.iconName)
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(.white)
+                                .padding(8)
+                                .background(Color.accentColor)
+                                .cornerRadius(8)
+                            
+                            VStack(alignment: .leading, spacing: 2) {
+                                HStack {
+                                    Text(item.title)
+                                        .font(.subheadline)
+                                        .fontWeight(.semibold)
+                                        .foregroundColor(.primary)
+                                    Spacer()
+                                    Text(item.time)
+                                        .font(.caption2)
+                                        .fontWeight(.bold)
+                                        .foregroundColor(.accentColor)
+                                }
+                                
+                                Text(item.details)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                    .lineLimit(1)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                    .listRowBackground(Color.white.opacity(0.03))
+                }
+                .onDelete(perform: deleteItem)
+                .onMove(perform: moveItem)
+                
+                Button(action: addItem) {
+                    Label("Add Activity", systemImage: "plus.circle")
                         .fontWeight(.bold)
                 }
                 .listRowBackground(Color.white.opacity(0.03))
-                
-                Section {
-                    ForEach(step.items) { item in
-                        NavigationLink(destination: ActivityEditorView(item: item, users: users, store: store, onSave: { updatedItem in
-                            updateItem(updatedItem)
-                        })) {
-                            HStack(spacing: 12) {
-                                Image(systemName: item.type.iconName)
-                                    .font(.system(size: 14, weight: .bold))
-                                    .foregroundColor(.white)
-                                    .padding(8)
-                                    .background(Color.accentColor)
-                                    .cornerRadius(8)
-                                
-                                VStack(alignment: .leading, spacing: 2) {
-                                    HStack {
-                                        Text(item.title)
-                                            .font(.subheadline)
-                                            .fontWeight(.semibold)
-                                            .foregroundColor(.primary)
-                                        Spacer()
-                                        Text(item.time)
-                                            .font(.caption2)
-                                            .fontWeight(.bold)
-                                            .foregroundColor(.accentColor)
-                                    }
-                                    
-                                    Text(item.details)
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                        .lineLimit(1)
-                                }
-                            }
-                            .padding(.vertical, 4)
-                        }
-                        .listRowBackground(Color.white.opacity(0.03))
-                    }
-                    .onDelete(perform: deleteItem)
-                    .onMove(perform: moveItem)
-                    
-                    Button(action: addItem) {
-                        Label("Add Activity", systemImage: "plus.circle")
-                            .fontWeight(.bold)
-                    }
-                    .listRowBackground(Color.white.opacity(0.03))
-                } header: {
-                    HStack {
-                        Text("Schedule & Activities")
-                            .foregroundColor(.primary)
-                            .fontWeight(.bold)
-                        Spacer()
-                        Text("Drag to Reorder")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-                    }
+            } header: {
+                HStack {
+                    Text("Schedule & Activities")
+                        .foregroundColor(.primary)
+                        .fontWeight(.bold)
+                    Spacer()
+                    Text("Drag to Reorder")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
                 }
             }
-            .scrollContentBackground(.hidden)
-            .background(Color.clear)
         }
-        .navigationTitle("Day \(step.dayNumber) Editor")
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                EditButton()
-            }
-        }
-        .onAppear {
-            locName = step.location.name
-            locLat = String(step.location.latitude)
-            locLng = String(step.location.longitude)
-            setInitialMapPosition()
-        }
+        .scrollContentBackground(.hidden)
+        .background(Color.clear)
+        .navigationTitle("Day \(day.dayNumber) Editor")
         .onDisappear {
-            // Save location parameters
-            let lat = Double(locLat) ?? 37.0902
-            let lng = Double(locLng) ?? -95.7129
-            let updatedStep = Step(
-                id: step.id,
-                dayNumber: step.dayNumber,
-                title: step.title,
-                date: step.date,
-                location: LocationInfo(name: locName, latitude: lat, longitude: lng),
-                description: step.description,
-                items: step.items
-            )
-            onSave(updatedStep)
-        }
-    }
-    
-    private func setInitialMapPosition() {
-        let lat = Double(locLat) ?? step.location.latitude
-        let lng = Double(locLng) ?? step.location.longitude
-        let region = MKCoordinateRegion(
-            center: CLLocationCoordinate2D(latitude: lat, longitude: lng),
-            span: MKCoordinateSpan(latitudeDelta: 2.0, longitudeDelta: 2.0)
-        )
-        mapPosition = .region(region)
-    }
-    
-    private func performLocationSearch() {
-        guard !locationSearchQuery.isEmpty else { return }
-        isSearchingLocation = true
-        
-        let request = MKLocalSearch.Request()
-        request.naturalLanguageQuery = locationSearchQuery
-        
-        let search = MKLocalSearch(request: request)
-        search.start { response, error in
-            isSearchingLocation = false
-            guard let response = response else { return }
-            locationSearchResults = response.mapItems.map { item in
-                DayLocationSearchResult(
-                    name: item.name ?? "Unknown Location",
-                    address: item.placemark.title ?? "No Address",
-                    latitude: item.placemark.coordinate.latitude,
-                    longitude: item.placemark.coordinate.longitude
-                )
-            }
+            onSave(day)
         }
     }
     
     private func updateItem(_ updatedItem: TripItem) {
-        var items = step.items
-        if let idx = items.firstIndex(where: { $0.id == updatedItem.id }) {
-            items[idx] = updatedItem
+        if let idx = day.items.firstIndex(where: { $0.id == updatedItem.id }) {
+            day.items[idx] = updatedItem
         }
-        step = Step(id: step.id, dayNumber: step.dayNumber, title: step.title, date: step.date, location: step.location, description: step.description, items: items)
     }
     
     private func addItem() {
@@ -655,39 +713,27 @@ struct DayEditorView: View {
             flightNumber: nil,
             mapPlace: nil
         )
-        let items = step.items + [newItem]
-        step = Step(id: step.id, dayNumber: step.dayNumber, title: step.title, date: step.date, location: step.location, description: step.description, items: items)
+        day.items.append(newItem)
     }
     
     private func deleteItem(at offsets: IndexSet) {
-        var items = step.items
-        items.remove(atOffsets: offsets)
-        step = Step(id: step.id, dayNumber: step.dayNumber, title: step.title, date: step.date, location: step.location, description: step.description, items: items)
+        day.items.remove(atOffsets: offsets)
     }
     
     private func moveItem(from source: IndexSet, to destination: Int) {
-        var items = step.items
-        items.move(fromOffsets: source, toOffset: destination)
-        step = Step(id: step.id, dayNumber: step.dayNumber, title: step.title, date: step.date, location: step.location, description: step.description, items: items)
+        day.items.move(fromOffsets: source, toOffset: destination)
     }
     
     private func generateDetail() {
         isGenerating = true
-        withAnimation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true)) {
-            isAnimating = true
-        }
-        
         Task {
-            if let summary = await store.generateAISummary(title: step.title, locationName: locName, items: step.items) {
+            if let summary = await store.generateAISummary(title: day.title, locationName: day.title, items: day.items) {
                 await MainActor.run {
-                    step.description = summary
+                    day.description = summary
                 }
             }
             await MainActor.run {
-                withAnimation {
-                    isGenerating = false
-                    isAnimating = false
-                }
+                isGenerating = false
             }
         }
     }

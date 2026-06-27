@@ -106,14 +106,88 @@ public struct FlightStatus: Codable, Equatable {
 }
 
 
-public struct Step: Codable, Identifiable, Hashable, Equatable {
+public enum StepType: String, Codable {
+    case flight = "flight"
+    case train = "train"
+    case stay = "stay"
+}
+
+public struct DayInfo: Codable, Identifiable, Hashable, Equatable {
     public var id: String
     public var dayNumber: Int
-    public var title: String
     public var date: String
-    public var location: LocationInfo
+    public var title: String
     public var description: String
     public var items: [TripItem]
+    
+    public init(id: String = UUID().uuidString.lowercased(), dayNumber: Int, date: String, title: String, description: String, items: [TripItem]) {
+        self.id = id
+        self.dayNumber = dayNumber
+        self.date = date
+        self.title = title
+        self.description = description
+        self.items = items
+    }
+}
+
+public struct StayStepInfo: Codable, Equatable {
+    public var cityName: String
+    public var hotel: TripItem?
+    public var days: [DayInfo]
+    
+    public init(cityName: String, hotel: TripItem? = nil, days: [DayInfo] = []) {
+        self.cityName = cityName
+        self.hotel = hotel
+        self.days = days
+    }
+}
+
+public struct FlightStepInfo: Codable, Equatable {
+    public var flightNumber: String
+    public var airline: String
+    public var departureAirport: LocationInfo
+    public var arrivalAirport: LocationInfo
+    public var departureTime: String
+    public var arrivalTime: String
+    public var date: String
+    public var details: String
+    public var sharedFiles: [String]?
+    public var profileFiles: [String: String]?
+    public var walletPasses: [String]?
+    public var profileWalletPasses: [String: String]?
+    
+    public init(flightNumber: String, airline: String, departureAirport: LocationInfo, arrivalAirport: LocationInfo, departureTime: String, arrivalTime: String, date: String, details: String, sharedFiles: [String]? = nil, profileFiles: [String: String]? = nil, walletPasses: [String]? = nil, profileWalletPasses: [String: String]? = nil) {
+        self.flightNumber = flightNumber
+        self.airline = airline
+        self.departureAirport = departureAirport
+        self.arrivalAirport = arrivalAirport
+        self.departureTime = departureTime
+        self.arrivalTime = arrivalTime
+        self.date = date
+        self.details = details
+        self.sharedFiles = sharedFiles
+        self.profileFiles = profileFiles
+        self.walletPasses = walletPasses
+        self.profileWalletPasses = profileWalletPasses
+    }
+}
+
+public struct Step: Codable, Identifiable, Hashable, Equatable {
+    public var id: String
+    public var type: StepType
+    public var title: String
+    public var date: String
+    public var flightInfo: FlightStepInfo?
+    public var stayInfo: StayStepInfo?
+    
+    public init(id: String = UUID().uuidString.lowercased(), type: StepType, title: String, date: String, flightInfo: FlightStepInfo? = nil, stayInfo: StayStepInfo? = nil) {
+        self.id = id
+        self.type = type
+        self.title = title
+        self.date = date
+        self.flightInfo = flightInfo
+        self.stayInfo = stayInfo
+    }
     
     public static func == (lhs: Step, rhs: Step) -> Bool {
         lhs.id == rhs.id
