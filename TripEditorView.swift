@@ -556,7 +556,7 @@ struct DayEditorView: View {
     
     var body: some View {
         Form {
-            Section("Day Properties") {
+            Section {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Day Title")
                         .font(.caption2)
@@ -628,7 +628,7 @@ struct DayEditorView: View {
             }
             .listRowBackground(Color.white.opacity(0.03))
             
-            Section("Activities") {
+            Section {
                 ForEach(day.items) { item in
                     NavigationLink(destination: ActivityEditorView(item: item, users: users, store: store, onSave: { updatedItem in
                         updateItem(updatedItem)
