@@ -96,7 +96,7 @@ public struct ExpenseTrackerView: View {
     private func setInitialMapPosition() {
         if let firstStep = store.trip?.steps.first {
             let region = MKCoordinateRegion(
-                center: firstStep.location.coordinate,
+                center: firstStep.coordinate,
                 span: MKCoordinateSpan(latitudeDelta: 12, longitudeDelta: 12)
             )
             mapPosition = .region(region)
@@ -115,7 +115,7 @@ public struct ExpenseTrackerView: View {
             expenseMapPosition = .region(region)
         } else if let firstStep = store.trip?.steps.first {
             let region = MKCoordinateRegion(
-                center: firstStep.location.coordinate,
+                center: firstStep.coordinate,
                 span: MKCoordinateSpan(latitudeDelta: 12, longitudeDelta: 12)
             )
             expenseMapPosition = .region(region)
@@ -530,7 +530,7 @@ public struct ExpenseTrackerView: View {
         
         if let firstStep = store.trip?.steps.first {
             request.region = MKCoordinateRegion(
-                center: firstStep.location.coordinate,
+                center: firstStep.coordinate,
                 span: MKCoordinateSpan(latitudeDelta: 2.0, longitudeDelta: 2.0)
             )
         }

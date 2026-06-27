@@ -189,6 +189,16 @@ public struct Step: Codable, Identifiable, Hashable, Equatable {
         self.stayInfo = stayInfo
     }
     
+    public var coordinate: CLLocationCoordinate2D {
+        if type == .flight || type == .train, let flight = flightInfo {
+            return flight.departureAirport.coordinate
+        } else if type == .stay, let stay = stayInfo, let hotelPlace = stay.hotel?.mapPlace {
+            return CLLocationCoordinate2D(latitude: hotelPlace.latitude, longitude: hotelPlace.longitude)
+        } else {
+            return CLLocationCoordinate2D(latitude: 37.0902, longitude: -95.7129)
+        }
+    }
+    
     public static func == (lhs: Step, rhs: Step) -> Bool {
         lhs.id == rhs.id
     }
