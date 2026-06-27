@@ -1323,7 +1323,7 @@ struct ActivityEditorView: View {
             mapPosition = .region(region)
         } else if let firstStep = store.trip?.steps.first {
             let region = MKCoordinateRegion(
-                center: firstStep.location.coordinate,
+                center: firstStep.coordinate,
                 span: MKCoordinateSpan(latitudeDelta: 12, longitudeDelta: 12)
             )
             mapPosition = .region(region)

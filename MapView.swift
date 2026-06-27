@@ -14,17 +14,18 @@ public struct MapView: View {
     public var body: some View {
         NavigationStack {
             Map(position: $position, selection: $selectedStep) {
-                ForEach(steps) { step in
+                ForEach(0..<steps.count, id: \.self) { index in
+                    let step = steps[index]
                     Marker(
-                        "Day \(step.dayNumber): \(step.title)",
-                        systemImage: "mappin.and.ellipse",
-                        coordinate: step.location.coordinate
+                        "Step \(index + 1): \(step.title)",
+                        systemImage: step.type == .stay ? "house.fill" : (step.type == .flight ? "airplane" : "tram.fill"),
+                        coordinate: step.coordinate
                     )
                     .tag(step)
                 }
                 
                 // Draw route polyline connecting the points chronologically
-                MapPolyline(coordinates: steps.map { $0.location.coordinate })
+                MapPolyline(coordinates: steps.map { $0.coordinate })
                     .stroke(Color.accentColor.opacity(0.6), lineWidth: 4)
             }
             .mapStyle(.standard(elevation: .realistic))
@@ -50,20 +51,22 @@ public struct MapView: View {
                             Spacer()
                             
                             // Day Tag & Navigator Title
-                            VStack(spacing: 2) {
-                                Text("Day \(step.dayNumber) of \(steps.count)")
-                                    .font(.caption2)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(.accentColor)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 3)
-                                    .background(Color.accentColor.opacity(0.15))
-                                    .cornerRadius(6)
-                                
-                                Text(step.title)
-                                    .font(.subheadline)
-                                    .fontWeight(.bold)
-                                    .lineLimit(1)
+                            if let idx = steps.firstIndex(where: { $0.id == step.id }) {
+                                VStack(spacing: 2) {
+                                    Text("Step \(idx + 1) of \(steps.count)")
+                                        .font(.caption2)
+                                        .fontWeight(.bold)
+                                        .foregroundColor(.accentColor)
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 3)
+                                        .background(Color.accentColor.opacity(0.15))
+                                        .cornerRadius(6)
+                                    
+                                    Text(step.title)
+                                        .font(.subheadline)
+                                        .fontWeight(.bold)
+                                        .lineLimit(1)
+                                }
                             }
                             
                             Spacer()
@@ -87,7 +90,7 @@ public struct MapView: View {
                         
                         HStack {
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(step.location.name)
+                                Text(getStepLocationName(step))
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                                     .lineLimit(1)
@@ -96,7 +99,7 @@ public struct MapView: View {
                             Spacer()
                             
                             Button {
-                                openInMaps(coordinate: step.location.coordinate, name: step.location.name)
+                                openInMaps(coordinate: step.coordinate, name: getStepLocationName(step))
                             } label: {
                                 Image(systemName: "arrow.triangle.turn.up.right.diamond.fill")
                                     .font(.system(size: 14, weight: .bold))
@@ -131,9 +134,19 @@ public struct MapView: View {
         }
     }
     
+    private func getStepLocationName(_ step: Step) -> String {
+        if step.type == .flight || step.type == .train, let flight = step.flightInfo {
+            return "\(flight.departureAirport.name) ➔ \(flight.arrivalAirport.name)"
+        } else if step.type == .stay, let stay = step.stayInfo {
+            return stay.cityName
+        } else {
+            return "Travel Step"
+        }
+    }
+    
     private func zoomToStep(_ step: Step, animated: Bool = true) {
         let region = MKCoordinateRegion(
-            center: step.location.coordinate,
+            center: step.coordinate,
             span: MKCoordinateSpan(latitudeDelta: 0.18, longitudeDelta: 0.18)
         )
         if animated {
