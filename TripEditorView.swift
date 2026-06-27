@@ -4,6 +4,7 @@ import UniformTypeIdentifiers
 
 public struct TripEditorView: View {
     @ObservedObject var store: TripStore
+    @Environment(\.dismiss) private var dismiss
     
     @State private var editedTrip: Trip?
     @State private var showingUploadAlert = false
@@ -57,6 +58,11 @@ public struct TripEditorView: View {
             }
             .navigationTitle("Itinerary Editor ✍️")
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Close") {
+                        dismiss()
+                    }
+                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     EditButton()
                 }
@@ -169,14 +175,24 @@ public struct TripEditorView: View {
             .onDelete(perform: deleteStep)
             .onMove(perform: moveStep)
             
-            HStack {
+            Menu {
                 Button(action: addStayStep) {
-                    Label("Add Stay", systemImage: "house.circle")
-                        .fontWeight(.bold)
+                    Label("Add Stay", systemImage: "house")
                 }
-                Spacer()
                 Button(action: addFlightStep) {
-                    Label("Add Travel", systemImage: "airplane.circle")
+                    Label("Add Flight", systemImage: "airplane")
+                }
+                Button(action: addTrainStep) {
+                    Label("Add Train", systemImage: "tram")
+                }
+                Button(action: addCarStep) {
+                    Label("Add Road Trip", systemImage: "car")
+                }
+            } label: {
+                HStack {
+                    Image(systemName: "plus.circle.fill")
+                        .foregroundColor(.accentColor)
+                    Text("Add Step to Trip...")
                         .fontWeight(.bold)
                 }
             }
@@ -269,6 +285,46 @@ public struct TripEditorView: View {
                 arrivalTime: "3:00 PM",
                 date: "2026-08-06",
                 details: "Edit flight details."
+            )
+        )
+        editedTrip = Trip(tripName: trip.tripName, startDate: trip.startDate, endDate: trip.endDate, users: trip.users, emergencyInfo: trip.emergencyInfo, steps: trip.steps + [newStep])
+    }
+    
+    private func addTrainStep() {
+        guard let trip = editedTrip else { return }
+        let newStep = Step(
+            type: .train,
+            title: "New Train Journey",
+            date: "2026-08-06",
+            flightInfo: FlightStepInfo(
+                flightNumber: "TR000",
+                airline: "New Train Operator",
+                departureAirport: LocationInfo(name: "Departure Station", latitude: 37.0902, longitude: -95.7129),
+                arrivalAirport: LocationInfo(name: "Arrival Station", latitude: 37.0902, longitude: -95.7129),
+                departureTime: "12:00 PM",
+                arrivalTime: "3:00 PM",
+                date: "2026-08-06",
+                details: "Edit train details."
+            )
+        )
+        editedTrip = Trip(tripName: trip.tripName, startDate: trip.startDate, endDate: trip.endDate, users: trip.users, emergencyInfo: trip.emergencyInfo, steps: trip.steps + [newStep])
+    }
+    
+    private func addCarStep() {
+        guard let trip = editedTrip else { return }
+        let newStep = Step(
+            type: .car,
+            title: "New Road Trip",
+            date: "2026-08-06",
+            flightInfo: FlightStepInfo(
+                flightNumber: "Drive",
+                airline: "Rental Car",
+                departureAirport: LocationInfo(name: "Start Point", latitude: 37.0902, longitude: -95.7129),
+                arrivalAirport: LocationInfo(name: "End Point", latitude: 37.0902, longitude: -95.7129),
+                departureTime: "12:00 PM",
+                arrivalTime: "3:00 PM",
+                date: "2026-08-06",
+                details: "Edit road trip details."
             )
         )
         editedTrip = Trip(tripName: trip.tripName, startDate: trip.startDate, endDate: trip.endDate, users: trip.users, emergencyInfo: trip.emergencyInfo, steps: trip.steps + [newStep])

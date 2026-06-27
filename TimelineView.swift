@@ -17,6 +17,7 @@ public struct TimelineView: View {
     // Stays & Flights animation and presentation states
     @State private var planeProgress: Double = 0.0
     @State private var expandedDays: Set<String> = []
+    @State private var showingEditor = false
     
     public init(store: TripStore) {
         self.store = store
@@ -173,15 +174,23 @@ public struct TimelineView: View {
                 }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    if store.isSyncing {
-                        ProgressView()
-                    } else {
+                    HStack(spacing: 14) {
                         Button {
-                            Task {
-                                await store.sync()
-                            }
+                            showingEditor = true
                         } label: {
-                            Image(systemName: "arrow.clockwise")
+                            Image(systemName: "square.and.pencil")
+                        }
+                        
+                        if store.isSyncing {
+                            ProgressView()
+                        } else {
+                            Button {
+                                Task {
+                                    await store.sync()
+                                }
+                            } label: {
+                                Image(systemName: "arrow.clockwise")
+                            }
                         }
                     }
                 }
@@ -192,6 +201,9 @@ public struct TimelineView: View {
                 } else {
                     PDFKitView(fileURL: identifiableURL.url, title: fileViewTitle)
                 }
+            }
+            .sheet(isPresented: $showingEditor) {
+                TripEditorView(store: store)
             }
             .onAppear {
                 setInitialMapPosition()

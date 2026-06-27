@@ -187,11 +187,6 @@ public struct ContentView: View {
                     Label("Expenses", systemImage: "dollarsign.circle")
                 }
             
-            TripEditorView(store: store)
-                .tabItem {
-                    Label("Editor", systemImage: "pencil.and.outline")
-                }
-            
             ProfileSettingsView(store: store)
                 .tabItem {
                     Label("Settings", systemImage: "gearshape")
