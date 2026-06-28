@@ -74,3 +74,40 @@ public func displayFilename(forPath path: String) -> String {
     }
     return path.components(separatedBy: "/").last ?? path
 }
+
+public func stageFile(selectedURL: URL, type: String) -> String? {
+    let gotAccess = selectedURL.startAccessingSecurityScopedResource()
+    defer {
+        if gotAccess {
+            selectedURL.stopAccessingSecurityScopedResource()
+        }
+    }
+    
+    do {
+        let fileData = try Data(contentsOf: selectedURL)
+        let filename = selectedURL.lastPathComponent
+        let uuid = UUID().uuidString.lowercased()
+        
+        let tempDir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("TravelerTemp")
+            .appendingPathComponent(uuid)
+        try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true, attributes: nil)
+        
+        let localURL = tempDir.appendingPathComponent(filename)
+        try fileData.write(to: localURL)
+        
+        return createTempURL(uuid: uuid, filename: filename, type: type)
+    } catch {
+        print("Failed to stage file: \(error)")
+        return nil
+    }
+}
+
+import MapKit
+public func openInMaps(coordinate: CLLocationCoordinate2D, name: String) {
+    let placemark = MKPlacemark(coordinate: coordinate)
+    let mapItem = MKMapItem(placemark: placemark)
+    mapItem.name = name
+    let launchOptions = [MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeDriving]
+    mapItem.openInMaps(launchOptions: launchOptions)
+}

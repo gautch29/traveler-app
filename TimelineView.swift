@@ -45,50 +45,6 @@ public struct TimelineView: View {
         )
     }
     
-    func dayBinding(stepId: String, dayId: String) -> Binding<DayInfo>? {
-        guard let stepBind = stepBinding(forId: stepId) else { return nil }
-        return Binding(
-            get: {
-                stepBind.wrappedValue.stayInfo?.days.first(where: { $0.id == dayId }) ?? DayInfo(dayNumber: 0, date: "", title: "", description: "", items: [])
-            },
-            set: { newValue in
-                guard var stay = stepBind.wrappedValue.stayInfo else { return }
-                if let idx = stay.days.firstIndex(where: { $0.id == dayId }) {
-                    stay.days[idx] = newValue
-                    stepBind.wrappedValue.stayInfo = stay
-                }
-            }
-        )
-    }
-    
-    func itemBinding(stepId: String, dayId: String, itemId: String) -> Binding<TripItem>? {
-        guard let dayBinding = dayBinding(stepId: stepId, dayId: dayId) else { return nil }
-        return Binding(
-            get: {
-                dayBinding.wrappedValue.items.first(where: { $0.id == itemId }) ?? TripItem(
-                    id: "",
-                    type: .activity,
-                    title: "",
-                    time: "",
-                    details: "",
-                    sharedFiles: [],
-                    profileFiles: nil,
-                    walletPasses: nil,
-                    profileWalletPasses: nil,
-                    websiteURL: nil,
-                    flightNumber: nil,
-                    mapPlace: nil
-                )
-            },
-            set: { newValue in
-                var day = dayBinding.wrappedValue
-                guard let idx = day.items.firstIndex(where: { $0.id == itemId }) else { return }
-                day.items[idx] = newValue
-                dayBinding.wrappedValue = day
-            }
-        )
-    }
-    
     public var body: some View {
         NavigationStack {
             ZStack(alignment: .top) {
@@ -168,19 +124,99 @@ public struct TimelineView: View {
                                         Spacer()
                                             .frame(height: 20)
                                         
-                                        if step.type == .flight || step.type == .train || step.type == .car {
-                                            flightSummaryCard(step)
-                                                .padding(.horizontal)
-                                            
-                                            flightDetailsSection(step)
-                                                .padding(.horizontal)
-                                        } else if step.type == .stay, let stay = step.stayInfo {
-                                            staySummaryCard(step, stay: stay)
-                                                .padding(.horizontal)
-                                            
-                                            stayDaysSection(step, stay: stay)
-                                                .padding(.horizontal)
-                                        }
+                                         if step.type == .flight || step.type == .train || step.type == .car {
+                                             if isTimelineEditMode, let binding = stepBinding(forId: step.id) {
+                                                 FlightSummaryCardView(
+                                                     step: binding,
+                                                     isTimelineEditMode: true,
+                                                     store: store,
+                                                     deleteAction: { deleteStep(step) }
+                                                 )
+                                                 .padding(.horizontal)
+                                                 
+                                                 FlightDetailsSectionView(
+                                                     step: binding,
+                                                     isTimelineEditMode: true,
+                                                     store: store,
+                                                     selectedFileToView: $selectedFileToView,
+                                                     fileViewTitle: $fileViewTitle,
+                                                     showingFilePicker: $showingFilePicker,
+                                                     fileImportCallback: $fileImportCallback
+                                                 )
+                                                 .padding(.horizontal)
+                                             } else {
+                                                 FlightSummaryCardView(
+                                                     step: .constant(step),
+                                                     isTimelineEditMode: false,
+                                                     store: store,
+                                                     deleteAction: {}
+                                                 )
+                                                 .padding(.horizontal)
+                                                 
+                                                 FlightDetailsSectionView(
+                                                     step: .constant(step),
+                                                     isTimelineEditMode: false,
+                                                     store: store,
+                                                     selectedFileToView: $selectedFileToView,
+                                                     fileViewTitle: $fileViewTitle,
+                                                     showingFilePicker: $showingFilePicker,
+                                                     fileImportCallback: $fileImportCallback
+                                                 )
+                                                 .padding(.horizontal)
+                                             }
+                                         } else if step.type == .stay {
+                                             if isTimelineEditMode, let binding = stepBinding(forId: step.id) {
+                                                 StaySummaryCardView(
+                                                     step: binding,
+                                                     isTimelineEditMode: true,
+                                                     store: store,
+                                                     selectedFileToView: $selectedFileToView,
+                                                     fileViewTitle: $fileViewTitle,
+                                                     showingFilePicker: $showingFilePicker,
+                                                     fileImportCallback: $fileImportCallback,
+                                                     deleteAction: { deleteStep(step) }
+                                                 )
+                                                 .padding(.horizontal)
+                                                 
+                                                 StayDaysSectionView(
+                                                     step: binding,
+                                                     isTimelineEditMode: true,
+                                                     store: store,
+                                                     editingDayIds: $editingDayIds,
+                                                     expandedDays: $expandedDays,
+                                                     selectedFileToView: $selectedFileToView,
+                                                     fileViewTitle: $fileViewTitle,
+                                                     showingFilePicker: $showingFilePicker,
+                                                     fileImportCallback: $fileImportCallback
+                                                 )
+                                                 .padding(.horizontal)
+                                             } else {
+                                                 StaySummaryCardView(
+                                                     step: .constant(step),
+                                                     isTimelineEditMode: false,
+                                                     store: store,
+                                                     selectedFileToView: $selectedFileToView,
+                                                     fileViewTitle: $fileViewTitle,
+                                                     showingFilePicker: $showingFilePicker,
+                                                     fileImportCallback: $fileImportCallback,
+                                                     deleteAction: {}
+                                                 )
+                                                 .padding(.horizontal)
+                                                 
+                                                 StayDaysSectionView(
+                                                     step: .constant(step),
+                                                     isTimelineEditMode: false,
+                                                     store: store,
+                                                     editingDayIds: $editingDayIds,
+                                                     expandedDays: $expandedDays,
+                                                     selectedFileToView: $selectedFileToView,
+                                                     fileViewTitle: $fileViewTitle,
+                                                     showingFilePicker: $showingFilePicker,
+                                                     fileImportCallback: $fileImportCallback
+                                                 )
+                                                 .padding(.horizontal)
+                                             }
+                                         }
                                         
                                         Spacer()
                                             .frame(height: 50)
@@ -446,34 +482,6 @@ public struct TimelineView: View {
     }
     
     // MARK: - Operations
-    
-    func stageFile(selectedURL: URL, type: String) -> String? {
-        let gotAccess = selectedURL.startAccessingSecurityScopedResource()
-        defer {
-            if gotAccess {
-                selectedURL.stopAccessingSecurityScopedResource()
-            }
-        }
-        
-        do {
-            let fileData = try Data(contentsOf: selectedURL)
-            let filename = selectedURL.lastPathComponent
-            let uuid = UUID().uuidString.lowercased()
-            
-            let tempDir = FileManager.default.temporaryDirectory
-                .appendingPathComponent("TravelerTemp")
-                .appendingPathComponent(uuid)
-            try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true, attributes: nil)
-            
-            let localURL = tempDir.appendingPathComponent(filename)
-            try fileData.write(to: localURL)
-            
-            return createTempURL(uuid: uuid, filename: filename, type: type)
-        } catch {
-            print("Failed to stage file: \(error)")
-            return nil
-        }
-    }
     
     private func uploadStagedFile(_ path: String) async -> String? {
         guard path.hasPrefix("temp://") else { return nil }

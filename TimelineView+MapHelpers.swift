@@ -2,13 +2,6 @@ import SwiftUI
 import MapKit
 
 extension TimelineView {
-    func openInMaps(coordinate: CLLocationCoordinate2D, name: String) {
-        let placemark = MKPlacemark(coordinate: coordinate)
-        let mapItem = MKMapItem(placemark: placemark)
-        mapItem.name = name
-        let launchOptions = [MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeDriving]
-        mapItem.openInMaps(launchOptions: launchOptions)
-    }
     
     func getEmojiForStep(_ step: Step) -> String {
         let title = step.title.lowercased()

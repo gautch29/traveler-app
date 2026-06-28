@@ -1,8 +1,14 @@
 import SwiftUI
 import MapKit
+import PassKit
 
-extension TimelineView {
-    func flightSummaryCard(_ step: Step) -> some View {
+struct FlightSummaryCardView: View {
+    @Binding var step: Step
+    let isTimelineEditMode: Bool
+    let store: TripStore
+    let deleteAction: () -> Void
+    
+    var body: some View {
         guard let flight = step.flightInfo else { return AnyView(EmptyView()) }
         let type = step.type
         
@@ -43,30 +49,30 @@ extension TimelineView {
                         .foregroundColor(.secondary)
                 }
                 
-                if isTimelineEditMode, let binding = stepBinding(forId: step.id) {
+                if isTimelineEditMode {
                     VStack(alignment: .leading, spacing: 8) {
-                        TextField("Step Title", text: binding.title)
+                        TextField("Step Title", text: $step.title)
                             .font(.title3)
                             .fontWeight(.bold)
                             .glassTextFieldStyle()
                         
                         HStack {
                             TextField("Operator (Airline/Car)", text: Binding(
-                                get: { binding.wrappedValue.flightInfo?.airline ?? "" },
-                                set: { binding.wrappedValue.flightInfo?.airline = $0 }
+                                get: { step.flightInfo?.airline ?? "" },
+                                set: { step.flightInfo?.airline = $0 }
                             ))
                             .glassTextFieldStyle()
                             
                             TextField("Number/ID", text: Binding(
-                                get: { binding.wrappedValue.flightInfo?.flightNumber ?? "" },
-                                set: { binding.wrappedValue.flightInfo?.flightNumber = $0 }
+                                get: { step.flightInfo?.flightNumber ?? "" },
+                                set: { step.flightInfo?.flightNumber = $0 }
                             ))
                             .glassTextFieldStyle()
                         }
                         
                         HStack {
                             Button(role: .destructive) {
-                                deleteStep(step)
+                                deleteAction()
                             } label: {
                                 Label("Delete Step", systemImage: "trash")
                                     .font(.caption)
@@ -84,18 +90,18 @@ extension TimelineView {
                 }
                 
                 HStack(alignment: .center) {
-                    if isTimelineEditMode, let binding = stepBinding(forId: step.id) {
+                    if isTimelineEditMode {
                         VStack(alignment: .leading, spacing: 6) {
                             TextField("From", text: Binding(
-                                get: { binding.wrappedValue.flightInfo?.departureAirport.name ?? "" },
+                                get: { step.flightInfo?.departureAirport.name ?? "" },
                                 set: { newName in
-                                    if var info = binding.wrappedValue.flightInfo {
+                                    if var info = step.flightInfo {
                                         info.departureAirport = LocationInfo(
                                             name: newName,
                                             latitude: info.departureAirport.latitude,
                                             longitude: info.departureAirport.longitude
                                         )
-                                        binding.wrappedValue.flightInfo = info
+                                        step.flightInfo = info
                                     }
                                 }
                             ))
@@ -103,8 +109,8 @@ extension TimelineView {
                             .glassTextFieldStyle()
                             
                             TextField("Time", text: Binding(
-                                get: { binding.wrappedValue.flightInfo?.departureTime ?? "" },
-                                set: { binding.wrappedValue.flightInfo?.departureTime = $0 }
+                                get: { step.flightInfo?.departureTime ?? "" },
+                                set: { step.flightInfo?.departureTime = $0 }
                             ))
                             .font(.caption)
                             .glassTextFieldStyle()
@@ -127,15 +133,15 @@ extension TimelineView {
                         
                         VStack(alignment: .trailing, spacing: 6) {
                             TextField("To", text: Binding(
-                                get: { binding.wrappedValue.flightInfo?.arrivalAirport.name ?? "" },
+                                get: { step.flightInfo?.arrivalAirport.name ?? "" },
                                 set: { newName in
-                                    if var info = binding.wrappedValue.flightInfo {
+                                    if var info = step.flightInfo {
                                         info.arrivalAirport = LocationInfo(
                                             name: newName,
                                             latitude: info.arrivalAirport.latitude,
                                             longitude: info.arrivalAirport.longitude
                                         )
-                                        binding.wrappedValue.flightInfo = info
+                                        step.flightInfo = info
                                     }
                                 }
                             ))
@@ -143,8 +149,8 @@ extension TimelineView {
                             .glassTextFieldStyle()
                             
                             TextField("Time", text: Binding(
-                                get: { binding.wrappedValue.flightInfo?.arrivalTime ?? "" },
-                                set: { binding.wrappedValue.flightInfo?.arrivalTime = $0 }
+                                get: { step.flightInfo?.arrivalTime ?? "" },
+                                set: { step.flightInfo?.arrivalTime = $0 }
                             ))
                             .font(.caption)
                             .glassTextFieldStyle()
@@ -192,10 +198,10 @@ extension TimelineView {
                 
                 Divider()
                 
-                if isTimelineEditMode, let binding = stepBinding(forId: step.id) {
+                if isTimelineEditMode {
                     TextField("Details", text: Binding(
-                        get: { binding.wrappedValue.flightInfo?.details ?? "" },
-                        set: { binding.wrappedValue.flightInfo?.details = $0 }
+                        get: { step.flightInfo?.details ?? "" },
+                        set: { step.flightInfo?.details = $0 }
                     ))
                     .font(.subheadline)
                     .glassTextFieldStyle()
@@ -210,11 +216,22 @@ extension TimelineView {
             .liquidGlassStyle(cornerRadius: 24, fillOpacity: 0.03, borderOpacity: 0.45)
         )
     }
+}
+
+struct FlightDetailsSectionView: View {
+    @Binding var step: Step
+    let isTimelineEditMode: Bool
+    let store: TripStore
+    @Binding var selectedFileToView: IdentifiableURL?
+    @Binding var fileViewTitle: String
+    @Binding var showingFilePicker: Bool
+    @Binding var fileImportCallback: ((URL) -> Void)?
     
-    func flightDetailsSection(_ step: Step) -> some View {
+    var body: some View {
         guard let flight = step.flightInfo else { return AnyView(EmptyView()) }
         let type = step.type
         let user = store.selectedUser ?? ""
+        
         var flightFiles: [String] = []
         if let shared = flight.sharedFiles { flightFiles.append(contentsOf: shared) }
         if let profile = flight.profileFiles?[user] { flightFiles.append(profile) }
@@ -226,7 +243,7 @@ extension TimelineView {
         
         return AnyView(
             VStack(alignment: .leading, spacing: 14) {
-                if isTimelineEditMode, let binding = stepBinding(forId: step.id) {
+                if isTimelineEditMode {
                     Text("Itinerary Map Settings")
                         .font(.headline)
                         .fontWeight(.bold)
@@ -238,32 +255,32 @@ extension TimelineView {
                             .fontWeight(.bold)
                         HStack {
                             TextField("Lat", text: Binding(
-                                get: { String(format: "%.4f", binding.wrappedValue.flightInfo?.departureAirport.latitude ?? 0.0) },
+                                get: { String(format: "%.4f", step.flightInfo?.departureAirport.latitude ?? 0.0) },
                                 set: { newLatStr in
-                                    if var info = binding.wrappedValue.flightInfo {
+                                    if var info = step.flightInfo {
                                         let newLat = Double(newLatStr) ?? info.departureAirport.latitude
                                         info.departureAirport = LocationInfo(
                                             name: info.departureAirport.name,
                                             latitude: newLat,
                                             longitude: info.departureAirport.longitude
                                         )
-                                        binding.wrappedValue.flightInfo = info
+                                        step.flightInfo = info
                                     }
                                 }
                             ))
                             .glassTextFieldStyle()
                             
                             TextField("Lng", text: Binding(
-                                get: { String(format: "%.4f", binding.wrappedValue.flightInfo?.departureAirport.longitude ?? 0.0) },
+                                get: { String(format: "%.4f", step.flightInfo?.departureAirport.longitude ?? 0.0) },
                                 set: { newLngStr in
-                                    if var info = binding.wrappedValue.flightInfo {
+                                    if var info = step.flightInfo {
                                         let newLng = Double(newLngStr) ?? info.departureAirport.longitude
                                         info.departureAirport = LocationInfo(
                                             name: info.departureAirport.name,
                                             latitude: info.departureAirport.latitude,
                                             longitude: newLng
                                         )
-                                        binding.wrappedValue.flightInfo = info
+                                        step.flightInfo = info
                                     }
                                 }
                             ))
@@ -275,32 +292,32 @@ extension TimelineView {
                             .fontWeight(.bold)
                         HStack {
                             TextField("Lat", text: Binding(
-                                get: { String(format: "%.4f", binding.wrappedValue.flightInfo?.arrivalAirport.latitude ?? 0.0) },
+                                get: { String(format: "%.4f", step.flightInfo?.arrivalAirport.latitude ?? 0.0) },
                                 set: { newLatStr in
-                                    if var info = binding.wrappedValue.flightInfo {
+                                    if var info = step.flightInfo {
                                         let newLat = Double(newLatStr) ?? info.arrivalAirport.latitude
                                         info.arrivalAirport = LocationInfo(
                                             name: info.arrivalAirport.name,
                                             latitude: newLat,
                                             longitude: info.arrivalAirport.longitude
                                         )
-                                        binding.wrappedValue.flightInfo = info
+                                        step.flightInfo = info
                                     }
                                 }
                             ))
                             .glassTextFieldStyle()
                             
                             TextField("Lng", text: Binding(
-                                get: { String(format: "%.4f", binding.wrappedValue.flightInfo?.arrivalAirport.longitude ?? 0.0) },
+                                get: { String(format: "%.4f", step.flightInfo?.arrivalAirport.longitude ?? 0.0) },
                                 set: { newLngStr in
-                                    if var info = binding.wrappedValue.flightInfo {
+                                    if var info = step.flightInfo {
                                         let newLng = Double(newLngStr) ?? info.arrivalAirport.longitude
                                         info.arrivalAirport = LocationInfo(
                                             name: info.arrivalAirport.name,
                                             latitude: info.arrivalAirport.latitude,
                                             longitude: newLng
                                         )
-                                        binding.wrappedValue.flightInfo = info
+                                        step.flightInfo = info
                                     }
                                 }
                             ))
@@ -378,214 +395,212 @@ extension TimelineView {
                         .padding(.top, 10)
                     
                     VStack(alignment: .leading, spacing: 12) {
-                        if let binding = stepBinding(forId: step.id) {
-                            HStack(spacing: 12) {
-                                Button {
-                                    fileImportCallback = { url in
-                                        if let tempURL = stageFile(selectedURL: url, type: "ticket") {
-                                            if var fInfo = binding.wrappedValue.flightInfo {
-                                                var arr = fInfo.sharedFiles ?? []
-                                                arr.append(tempURL)
-                                                fInfo.sharedFiles = arr
-                                                binding.wrappedValue.flightInfo = fInfo
-                                            }
-                                        }
-                                    }
-                                    showingFilePicker = true
-                                } label: {
-                                    Label("Upload PDF", systemImage: "doc.badge.plus")
-                                        .font(.caption)
-                                        .fontWeight(.bold)
-                                        .foregroundColor(.white)
-                                        .padding(8)
-                                        .background(Color.blue)
-                                        .cornerRadius(8)
-                                }
-                                
-                                Button {
-                                    fileImportCallback = { url in
-                                        if let tempURL = stageFile(selectedURL: url, type: "pass") {
-                                            if var fInfo = binding.wrappedValue.flightInfo {
-                                                var arr = fInfo.walletPasses ?? []
-                                                arr.append(tempURL)
-                                                fInfo.walletPasses = arr
-                                                binding.wrappedValue.flightInfo = fInfo
-                                            }
-                                        }
-                                    }
-                                    showingFilePicker = true
-                                } label: {
-                                    Label("Upload Pass", systemImage: "qrcode")
-                                        .font(.caption)
-                                        .fontWeight(.bold)
-                                        .foregroundColor(.white)
-                                        .padding(8)
-                                        .background(Color.purple)
-                                        .cornerRadius(8)
-                                }
-                            }
-                            
-                            let shared = step.flightInfo?.sharedFiles ?? []
-                            let wallet = step.flightInfo?.walletPasses ?? []
-                            
-                            if !shared.isEmpty || !wallet.isEmpty {
-                                VStack(alignment: .leading, spacing: 8) {
-                                    ForEach(shared, id: \.self) { file in
-                                        HStack {
-                                            Image(systemName: "doc.text")
-                                                .foregroundColor(.secondary)
-                                            Text(displayFilename(forPath: file))
-                                                .font(.caption)
-                                                .lineLimit(1)
-                                            Spacer()
-                                            Button {
-                                                if var fInfo = binding.wrappedValue.flightInfo {
-                                                    var arr = fInfo.sharedFiles ?? []
-                                                    if let idx = arr.firstIndex(of: file) {
-                                                        arr.remove(at: idx)
-                                                    }
-                                                    fInfo.sharedFiles = arr
-                                                    binding.wrappedValue.flightInfo = fInfo
-                                                }
-                                            } label: {
-                                                Image(systemName: "minus.circle.fill")
-                                                    .foregroundColor(.red)
-                                            }
-                                        }
-                                        .padding(8)
-                                        .liquidGlassStyle(cornerRadius: 8, fillOpacity: 0.02, borderOpacity: 0.25)
-                                    }
-                                    
-                                    ForEach(wallet, id: \.self) { pass in
-                                        HStack {
-                                            Image(systemName: "qrcode")
-                                                .foregroundColor(.secondary)
-                                            Text(displayFilename(forPath: pass))
-                                                .font(.caption)
-                                                .lineLimit(1)
-                                            Spacer()
-                                            Button {
-                                                if var fInfo = binding.wrappedValue.flightInfo {
-                                                    var arr = fInfo.walletPasses ?? []
-                                                    if let idx = arr.firstIndex(of: pass) {
-                                                        arr.remove(at: idx)
-                                                    }
-                                                    fInfo.walletPasses = arr
-                                                    binding.wrappedValue.flightInfo = fInfo
-                                                }
-                                            } label: {
-                                                Image(systemName: "minus.circle.fill")
-                                                    .foregroundColor(.red)
-                                            }
-                                        }
-                                        .padding(8)
-                                        .liquidGlassStyle(cornerRadius: 8, fillOpacity: 0.02, borderOpacity: 0.25)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    .padding()
-                    .liquidGlassStyle(cornerRadius: 16, fillOpacity: 0.015, borderOpacity: 0.25)
-                }
-                
-                if !isTimelineEditMode && type != .car && (!flightFiles.isEmpty || !validFlightPasses.isEmpty) {
-                    Text("Tickets & Boarding Passes")
-                        .font(.headline)
-                        .fontWeight(.bold)
-                        .padding(.leading, 4)
-                        .padding(.top, 10)
-                    
-                    ForEach(flightFiles, id: \.self) { file in
-                        if store.downloadedFiles.contains(file) {
-                            HStack(spacing: 8) {
-                                Button {
-                                    if let url = store.getLocalFileURL(forFilename: file) {
-                                        fileViewTitle = type == .flight ? "Boarding Pass" : "Train Ticket"
-                                        selectedFileToView = IdentifiableURL(url: url)
-                                    }
-                                } label: {
-                                    HStack {
-                                        Image(systemName: type == .flight ? "airplane" : "tram.fill")
-                                            .foregroundColor(.accentColor)
-                                        Text(type == .flight ? "View Boarding Pass" : "View Train Ticket")
-                                            .font(.subheadline)
-                                            .fontWeight(.bold)
-                                            .foregroundColor(.primary)
-                                        Spacer()
-                                        Image(systemName: "arrow.up.left.and.arrow.down.right")
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
-                                    }
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 12)
-                                    .frame(maxWidth: .infinity)
-                                    .liquidGlassStyle(cornerRadius: 12, fillOpacity: 0.015, borderOpacity: 0.25)
-                                }
-                                
-                                if let url = store.getLocalFileURL(forFilename: file) {
-                                    ShareLink(item: url) {
-                                        Image(systemName: "square.and.arrow.up")
-                                            .font(.subheadline)
-                                            .padding(.horizontal, 14)
-                                            .padding(.vertical, 12)
-                                            .liquidGlassStyle(cornerRadius: 12, fillOpacity: 0.015, borderOpacity: 0.25)
-                                    }
-                                }
-                            }
-                        } else {
+                        HStack(spacing: 12) {
                             Button {
-                                Task {
-                                    if let tripURL = URL(string: store.serverURLString) {
-                                        let remoteURL = tripURL.deletingLastPathComponent().appendingPathComponent(file)
-                                        try? await store.downloadFile(from: remoteURL, originalFilename: file)
+                                fileImportCallback = { url in
+                                    if let tempURL = stageFile(selectedURL: url, type: "ticket") {
+                                        if var fInfo = step.flightInfo {
+                                            var arr = fInfo.sharedFiles ?? []
+                                            arr.append(tempURL)
+                                            fInfo.sharedFiles = arr
+                                            step.flightInfo = fInfo
+                                        }
                                     }
                                 }
+                                showingFilePicker = true
                             } label: {
-                                HStack {
-                                    Image(systemName: "arrow.down.circle")
-                                        .foregroundColor(.accentColor)
-                                    Text(type == .flight ? "Download Boarding Pass" : "Download Train Ticket")
-                                        .font(.subheadline)
-                                        .fontWeight(.bold)
-                                        .foregroundColor(.accentColor)
-                                    Spacer()
-                                }
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 12)
-                                .frame(maxWidth: .infinity)
-                                .liquidGlassStyle(cornerRadius: 12, fillOpacity: 0.015, borderOpacity: 0.25)
-                            }
-                        }
-                    }
-                    
-                    ForEach(validFlightPasses, id: \.self) { passFile in
-                        Button {
-                            if let url = store.getLocalFileURL(forFilename: passFile) {
-                                fileViewTitle = "Apple Wallet Pass"
-                                selectedFileToView = IdentifiableURL(url: url)
-                            }
-                        } label: {
-                            HStack {
-                                Image(systemName: "qrcode.viewfinder")
-                                    .foregroundColor(.accentColor)
-                                Text("Add to Apple Wallet")
-                                    .font(.subheadline)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(.primary)
-                                Spacer()
-                                Image(systemName: "plus")
+                                Label("Upload PDF", systemImage: "doc.badge.plus")
                                     .font(.caption)
-                                    .foregroundColor(.secondary)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.white)
+                                    .padding(8)
+                                    .background(Color.blue)
+                                    .cornerRadius(8)
                             }
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 12)
-                            .frame(maxWidth: .infinity)
-                            .liquidGlassStyle(cornerRadius: 12, fillOpacity: 0.015, borderOpacity: 0.25)
+                            
+                            Button {
+                                fileImportCallback = { url in
+                                    if let tempURL = stageFile(selectedURL: url, type: "pass") {
+                                        if var fInfo = step.flightInfo {
+                                            var arr = fInfo.walletPasses ?? []
+                                            arr.append(tempURL)
+                                            fInfo.walletPasses = arr
+                                            step.flightInfo = fInfo
+                                        }
+                                    }
+                                }
+                                showingFilePicker = true
+                            } label: {
+                                Label("Upload Pass", systemImage: "qrcode")
+                                    .font(.caption)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.white)
+                                    .padding(8)
+                                    .background(Color.purple)
+                                    .cornerRadius(8)
+                            }
                         }
-                    }
-                }
-            }
-        )
-    }
+                        
+                        let shared = step.flightInfo?.sharedFiles ?? []
+                        let wallet = step.flightInfo?.walletPasses ?? []
+                        
+                        if !shared.isEmpty || !wallet.isEmpty {
+                              VStack(alignment: .leading, spacing: 8) {
+                                  ForEach(shared, id: \.self) { file in
+                                      HStack {
+                                          Image(systemName: "doc.text")
+                                              .foregroundColor(.secondary)
+                                          Text(displayFilename(forPath: file))
+                                              .font(.caption)
+                                              .lineLimit(1)
+                                          Spacer()
+                                          Button {
+                                              if var fInfo = step.flightInfo {
+                                                  var arr = fInfo.sharedFiles ?? []
+                                                  if let idx = arr.firstIndex(of: file) {
+                                                      arr.remove(at: idx)
+                                                  }
+                                                  fInfo.sharedFiles = arr
+                                                  step.flightInfo = fInfo
+                                              }
+                                          } label: {
+                                              Image(systemName: "minus.circle.fill")
+                                                  .foregroundColor(.red)
+                                          }
+                                      }
+                                      .padding(8)
+                                      .liquidGlassStyle(cornerRadius: 8, fillOpacity: 0.02, borderOpacity: 0.25)
+                                  }
+                                  
+                                  ForEach(wallet, id: \.self) { pass in
+                                      HStack {
+                                          Image(systemName: "qrcode")
+                                              .foregroundColor(.secondary)
+                                          Text(displayFilename(forPath: pass))
+                                              .font(.caption)
+                                              .lineLimit(1)
+                                          Spacer()
+                                          Button {
+                                              if var fInfo = step.flightInfo {
+                                                  var arr = fInfo.walletPasses ?? []
+                                                  if let idx = arr.firstIndex(of: pass) {
+                                                      arr.remove(at: idx)
+                                                  }
+                                                  fInfo.walletPasses = arr
+                                                  step.flightInfo = fInfo
+                                              }
+                                          } label: {
+                                              Image(systemName: "minus.circle.fill")
+                                                  .foregroundColor(.red)
+                                          }
+                                      }
+                                      .padding(8)
+                                      .liquidGlassStyle(cornerRadius: 8, fillOpacity: 0.02, borderOpacity: 0.25)
+                                  }
+                              }
+                          }
+                      }
+                      .padding()
+                      .liquidGlassStyle(cornerRadius: 16, fillOpacity: 0.015, borderOpacity: 0.25)
+                  }
+                  
+                  if !isTimelineEditMode && type != .car && (!flightFiles.isEmpty || !validFlightPasses.isEmpty) {
+                      Text("Tickets & Boarding Passes")
+                          .font(.headline)
+                          .fontWeight(.bold)
+                          .padding(.leading, 4)
+                          .padding(.top, 10)
+                      
+                      ForEach(flightFiles, id: \.self) { file in
+                          if store.downloadedFiles.contains(file) {
+                              HStack(spacing: 8) {
+                                  Button {
+                                      if let url = store.getLocalFileURL(forFilename: file) {
+                                          fileViewTitle = type == .flight ? "Boarding Pass" : "Train Ticket"
+                                          selectedFileToView = IdentifiableURL(url: url)
+                                      }
+                                  } label: {
+                                      HStack {
+                                          Image(systemName: type == .flight ? "airplane" : "tram.fill")
+                                              .foregroundColor(.accentColor)
+                                          Text(type == .flight ? "View Boarding Pass" : "View Train Ticket")
+                                              .font(.subheadline)
+                                              .fontWeight(.bold)
+                                              .foregroundColor(.primary)
+                                          Spacer()
+                                          Image(systemName: "arrow.up.left.and.arrow.down.right")
+                                              .font(.caption)
+                                              .foregroundColor(.secondary)
+                                      }
+                                      .padding(.horizontal, 16)
+                                      .padding(.vertical, 12)
+                                      .frame(maxWidth: .infinity)
+                                      .liquidGlassStyle(cornerRadius: 12, fillOpacity: 0.015, borderOpacity: 0.25)
+                                  }
+                                  
+                                  if let url = store.getLocalFileURL(forFilename: file) {
+                                      ShareLink(item: url) {
+                                          Image(systemName: "square.and.arrow.up")
+                                              .font(.subheadline)
+                                              .padding(.horizontal, 14)
+                                              .padding(.vertical, 12)
+                                              .liquidGlassStyle(cornerRadius: 12, fillOpacity: 0.015, borderOpacity: 0.25)
+                                      }
+                                  }
+                              }
+                          } else {
+                              Button {
+                                  Task {
+                                      if let tripURL = URL(string: store.serverURLString) {
+                                          let remoteURL = tripURL.deletingLastPathComponent().appendingPathComponent(file)
+                                          try? await store.downloadFile(from: remoteURL, originalFilename: file)
+                                      }
+                                  }
+                              } label: {
+                                  HStack {
+                                      Image(systemName: "arrow.down.circle")
+                                          .foregroundColor(.accentColor)
+                                      Text(type == .flight ? "Download Boarding Pass" : "Download Train Ticket")
+                                          .font(.subheadline)
+                                          .fontWeight(.bold)
+                                          .foregroundColor(.accentColor)
+                                      Spacer()
+                                  }
+                                  .padding(.horizontal, 16)
+                                  .padding(.vertical, 12)
+                                  .frame(maxWidth: .infinity)
+                                  .liquidGlassStyle(cornerRadius: 12, fillOpacity: 0.015, borderOpacity: 0.25)
+                              }
+                          }
+                      }
+                      
+                      ForEach(validFlightPasses, id: \.self) { passFile in
+                          Button {
+                              if let url = store.getLocalFileURL(forFilename: passFile) {
+                                  fileViewTitle = "Apple Wallet Pass"
+                                  selectedFileToView = IdentifiableURL(url: url)
+                              }
+                          } label: {
+                              HStack {
+                                  Image(systemName: "qrcode.viewfinder")
+                                      .foregroundColor(.accentColor)
+                                  Text("Add to Apple Wallet")
+                                      .font(.subheadline)
+                                      .fontWeight(.bold)
+                                      .foregroundColor(.primary)
+                                  Spacer()
+                                  Image(systemName: "plus")
+                                      .font(.caption)
+                                      .foregroundColor(.secondary)
+                              }
+                              .padding(.horizontal, 16)
+                              .padding(.vertical, 12)
+                              .frame(maxWidth: .infinity)
+                              .liquidGlassStyle(cornerRadius: 12, fillOpacity: 0.015, borderOpacity: 0.25)
+                          }
+                      }
+                  }
+              }
+          )
+      }
 }
