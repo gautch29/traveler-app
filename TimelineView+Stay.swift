@@ -303,52 +303,29 @@ extension TimelineView {
                         }
                         
                         let hotelPasses = hotel.getWalletPasses(forUser: user)
-                        ForEach(hotelPasses, id: \.self) { passFile in
-                            if store.downloadedFiles.contains(passFile) {
-                                Button {
-                                    if let url = store.getLocalFileURL(forFilename: passFile) {
-                                        fileViewTitle = "Apple Wallet Pass"
-                                        selectedFileToView = IdentifiableURL(url: url)
-                                    }
-                                } label: {
-                                    HStack {
-                                        Image(systemName: "qrcode.viewfinder")
-                                            .foregroundColor(.purple)
-                                        Text("Add to Apple Wallet")
-                                            .font(.subheadline)
-                                            .fontWeight(.bold)
-                                            .foregroundColor(.primary)
-                                        Spacer()
-                                        Image(systemName: "plus")
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
-                                    }
-                                    .padding(.horizontal, 14)
-                                    .padding(.vertical, 10)
-                                    .liquidGlassStyle(cornerRadius: 8, fillOpacity: 0.05, borderOpacity: 0.3)
+                        let validHotelPasses = hotelPasses.filter { store.downloadedFiles.contains($0) && isValidPKPass(file: $0, store: store) }
+                        ForEach(validHotelPasses, id: \.self) { passFile in
+                            Button {
+                                if let url = store.getLocalFileURL(forFilename: passFile) {
+                                    fileViewTitle = "Apple Wallet Pass"
+                                    selectedFileToView = IdentifiableURL(url: url)
                                 }
-                            } else {
-                                Button {
-                                    Task {
-                                        if let tripURL = URL(string: store.serverURLString) {
-                                            let remoteURL = tripURL.deletingLastPathComponent().appendingPathComponent(passFile)
-                                            try? await store.downloadFile(from: remoteURL, originalFilename: passFile)
-                                        }
-                                    }
-                                } label: {
-                                    HStack {
-                                        Image(systemName: "arrow.down.circle")
-                                            .foregroundColor(.purple)
-                                        Text("Download Boarding Pass")
-                                            .font(.subheadline)
-                                            .fontWeight(.bold)
-                                            .foregroundColor(.purple)
-                                        Spacer()
-                                    }
-                                    .padding(.horizontal, 14)
-                                    .padding(.vertical, 10)
-                                    .liquidGlassStyle(cornerRadius: 8, fillOpacity: 0.05, borderOpacity: 0.3)
+                            } label: {
+                                HStack {
+                                    Image(systemName: "qrcode.viewfinder")
+                                        .foregroundColor(.purple)
+                                    Text("Add to Apple Wallet")
+                                        .font(.subheadline)
+                                        .fontWeight(.bold)
+                                        .foregroundColor(.primary)
+                                    Spacer()
+                                    Image(systemName: "plus")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
                                 }
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 10)
+                                .liquidGlassStyle(cornerRadius: 8, fillOpacity: 0.05, borderOpacity: 0.3)
                             }
                         }
                     }
@@ -824,52 +801,31 @@ extension TimelineView {
             }
             
             let passes = item.getWalletPasses(forUser: user)
-            if !passes.isEmpty {
+            let validPasses = passes.filter { store.downloadedFiles.contains($0) && isValidPKPass(file: $0, store: store) }
+            if !validPasses.isEmpty {
                 Divider()
                     .padding(.leading, 24)
                 
-                ForEach(passes, id: \.self) { passFile in
-                    if store.downloadedFiles.contains(passFile) {
-                        Button {
-                            if let url = store.getLocalFileURL(forFilename: passFile) {
-                                fileViewTitle = "Apple Wallet Pass"
-                                selectedFileToView = IdentifiableURL(url: url)
-                            }
-                        } label: {
-                            HStack {
-                                Image(systemName: "qrcode.viewfinder")
-                                    .foregroundColor(.accentColor)
-                                Text("Add to Apple Wallet")
-                                    .font(.caption)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(.primary)
-                                Spacer()
-                                Image(systemName: "plus")
-                                    .font(.caption2)
-                                    .foregroundColor(.secondary)
-                            }
-                            .padding(.leading, 24)
+                ForEach(validPasses, id: \.self) { passFile in
+                    Button {
+                        if let url = store.getLocalFileURL(forFilename: passFile) {
+                            fileViewTitle = "Apple Wallet Pass"
+                            selectedFileToView = IdentifiableURL(url: url)
                         }
-                    } else {
-                        Button {
-                            Task {
-                                if let tripURL = URL(string: store.serverURLString) {
-                                    let remoteURL = tripURL.deletingLastPathComponent().appendingPathComponent(passFile)
-                                    try? await store.downloadFile(from: remoteURL, originalFilename: passFile)
-                                }
-                            }
-                        } label: {
-                            HStack {
-                                Image(systemName: "arrow.down.circle")
-                                    .foregroundColor(.accentColor)
-                                Text("Download Boarding Pass")
-                                    .font(.caption)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(.accentColor)
-                                Spacer()
-                            }
-                            .padding(.leading, 24)
+                    } label: {
+                        HStack {
+                            Image(systemName: "qrcode.viewfinder")
+                                .foregroundColor(.accentColor)
+                            Text("Add to Apple Wallet")
+                                .font(.caption)
+                                .fontWeight(.bold)
+                                .foregroundColor(.primary)
+                            Spacer()
+                            Image(systemName: "plus")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
                         }
+                        .padding(.leading, 24)
                     }
                 }
             }

@@ -222,6 +222,7 @@ extension TimelineView {
         var flightPasses: [String] = []
         if let walletShared = flight.walletPasses { flightPasses.append(contentsOf: walletShared) }
         if let walletProfile = flight.profileWalletPasses?[user] { flightPasses.append(walletProfile) }
+        let validFlightPasses = flightPasses.filter { store.downloadedFiles.contains($0) && isValidPKPass(file: $0, store: store) }
         
         return AnyView(
             VStack(alignment: .leading, spacing: 14) {
@@ -472,7 +473,7 @@ extension TimelineView {
                     .liquidGlassStyle(cornerRadius: 16, fillOpacity: 0.015, borderOpacity: 0.25)
                 }
                 
-                if !isTimelineEditMode && type != .car && (!flightFiles.isEmpty || !flightPasses.isEmpty) {
+                if !isTimelineEditMode && type != .car && (!flightFiles.isEmpty || !validFlightPasses.isEmpty) {
                     Text("Tickets & Boarding Passes")
                         .font(.headline)
                         .fontWeight(.bold)
@@ -542,54 +543,29 @@ extension TimelineView {
                         }
                     }
                     
-                    ForEach(flightPasses, id: \.self) { passFile in
-                        if store.downloadedFiles.contains(passFile) {
-                            Button {
-                                if let url = store.getLocalFileURL(forFilename: passFile) {
-                                    fileViewTitle = "Apple Wallet Pass"
-                                    selectedFileToView = IdentifiableURL(url: url)
-                                }
-                            } label: {
-                                HStack {
-                                    Image(systemName: "qrcode.viewfinder")
-                                        .foregroundColor(.accentColor)
-                                    Text("Add to Apple Wallet")
-                                        .font(.subheadline)
-                                        .fontWeight(.bold)
-                                        .foregroundColor(.primary)
-                                    Spacer()
-                                    Image(systemName: "plus")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 12)
-                                .frame(maxWidth: .infinity)
-                                .liquidGlassStyle(cornerRadius: 12, fillOpacity: 0.015, borderOpacity: 0.25)
+                    ForEach(validFlightPasses, id: \.self) { passFile in
+                        Button {
+                            if let url = store.getLocalFileURL(forFilename: passFile) {
+                                fileViewTitle = "Apple Wallet Pass"
+                                selectedFileToView = IdentifiableURL(url: url)
                             }
-                        } else {
-                            Button {
-                                Task {
-                                    if let tripURL = URL(string: store.serverURLString) {
-                                        let remoteURL = tripURL.deletingLastPathComponent().appendingPathComponent(passFile)
-                                        try? await store.downloadFile(from: remoteURL, originalFilename: passFile)
-                                    }
-                                }
-                            } label: {
-                                HStack {
-                                    Image(systemName: "arrow.down.circle")
-                                        .foregroundColor(.accentColor)
-                                    Text("Download Boarding Pass")
-                                        .font(.subheadline)
-                                        .fontWeight(.bold)
-                                        .foregroundColor(.accentColor)
-                                    Spacer()
-                                }
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 12)
-                                .frame(maxWidth: .infinity)
-                                .liquidGlassStyle(cornerRadius: 12, fillOpacity: 0.015, borderOpacity: 0.25)
+                        } label: {
+                            HStack {
+                                Image(systemName: "qrcode.viewfinder")
+                                    .foregroundColor(.accentColor)
+                                Text("Add to Apple Wallet")
+                                    .font(.subheadline)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.primary)
+                                Spacer()
+                                Image(systemName: "plus")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
                             }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                            .frame(maxWidth: .infinity)
+                            .liquidGlassStyle(cornerRadius: 12, fillOpacity: 0.015, borderOpacity: 0.25)
                         }
                     }
                 }

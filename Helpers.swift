@@ -1,4 +1,5 @@
 import Foundation
+import PassKit
 
 public func formatDateString(_ dateStr: String) -> String {
     let formatter = DateFormatter()
@@ -27,4 +28,11 @@ public func formatDateStringShort(_ dateStr: String) -> String {
     
     formatter.dateFormat = "MMM d"
     return formatter.string(from: date)
+}
+
+@MainActor
+public func isValidPKPass(file: String, store: TripStore) -> Bool {
+    guard let url = store.getLocalFileURL(forFilename: file) else { return false }
+    guard let data = try? Data(contentsOf: url) else { return false }
+    return (try? PKPass(data: data)) != nil
 }
