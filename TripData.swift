@@ -210,12 +210,12 @@ public struct Step: Codable, Identifiable, Hashable, Equatable {
 }
 
 public struct Trip: Codable, Equatable {
-    public let tripName: String
-    public let startDate: String
-    public let endDate: String
-    public let users: [String]
-    public let emergencyInfo: EmergencyInfo
-    public let steps: [Step]
+    public var tripName: String
+    public var startDate: String
+    public var endDate: String
+    public var users: [String]
+    public var emergencyInfo: EmergencyInfo
+    public var steps: [Step]
 }
 
 public struct Expense: Codable, Identifiable, Equatable {
