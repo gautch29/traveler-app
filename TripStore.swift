@@ -17,6 +17,9 @@ class SelfSignedSessionDelegate: NSObject, URLSessionDelegate {
 public class TripStore: ObservableObject {
     @Published public var trip: Trip?
     @Published public var selectedUser: String?
+    @Published public var selectedStep: Step? = nil
+    @Published public var selectedDayId: String? = nil
+    @Published public var selectedTab: Int = 0
     @Published public var serverURLString: String
     @Published public var serverToken: String
     @Published public var isSyncing = false

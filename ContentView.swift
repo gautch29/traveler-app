@@ -171,28 +171,32 @@ public struct ContentView: View {
     // MARK: - Main Tab View
     
     private var mainAppTabView: some View {
-        TabView {
+        TabView(selection: $store.selectedTab) {
             TimelineView(store: store)
                 .tabItem {
                     Label("Timeline", systemImage: "calendar")
                 }
+                .tag(0)
             
-            if let trip = store.trip {
-                MapView(steps: trip.steps)
+            if let _ = store.trip {
+                MapView(store: store)
                     .tabItem {
                         Label("Map", systemImage: "map")
                     }
+                    .tag(1)
             }
             
             ExpenseTrackerView(store: store)
                 .tabItem {
                     Label("Expenses", systemImage: "dollarsign.circle")
                 }
+                .tag(2)
             
             ProfileSettingsView(store: store)
                 .tabItem {
                     Label("Settings", systemImage: "gearshape")
                 }
+                .tag(3)
         }
     }
 }

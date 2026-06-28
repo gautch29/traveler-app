@@ -746,6 +746,23 @@ public struct TimelineView: View {
                     
                     Spacer()
                     
+                    if !isTimelineEditMode {
+                        Button {
+                            withAnimation {
+                                store.selectedStep = step
+                                store.selectedTab = 1
+                            }
+                        } label: {
+                            Image(systemName: "map.fill")
+                                .font(.caption)
+                                .foregroundColor(.white)
+                                .padding(6)
+                                .background(Color.blue)
+                                .clipShape(Circle())
+                        }
+                        .padding(.trailing, 4)
+                    }
+                    
                     Text(formatDateString(flight.date))
                         .font(.caption)
                         .fontWeight(.bold)
@@ -1298,6 +1315,23 @@ public struct TimelineView: View {
                 
                 Spacer()
                 
+                if !isTimelineEditMode {
+                    Button {
+                        withAnimation {
+                            store.selectedStep = step
+                            store.selectedTab = 1
+                        }
+                    } label: {
+                        Image(systemName: "map.fill")
+                            .font(.caption)
+                            .foregroundColor(.white)
+                            .padding(6)
+                            .background(Color.purple)
+                            .clipShape(Circle())
+                    }
+                    .padding(.trailing, 4)
+                }
+                
                 Text("\(stay.days.count) Days")
                     .font(.caption)
                     .fontWeight(.bold)
@@ -1603,49 +1637,66 @@ public struct TimelineView: View {
                         .background(Color.white.opacity(0.04))
                     } else {
                         // Read Mode Day Header Card
-                        Button {
-                            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                if expandedDays.contains(day.id) {
-                                    expandedDays.remove(day.id)
-                                } else {
-                                    expandedDays.insert(day.id)
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("DAY \(day.dayNumber)")
+                                    .font(.caption2)
+                                    .fontWeight(.black)
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 3)
+                                    .background(Color.blue)
+                                    .cornerRadius(4)
+                                
+                                Text(day.title)
+                                    .font(.headline)
+                                    .foregroundColor(.primary)
+                                    .multilineTextAlignment(.leading)
+                            }
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                    if expandedDays.contains(day.id) {
+                                        expandedDays.remove(day.id)
+                                    } else {
+                                        expandedDays.insert(day.id)
+                                    }
                                 }
                             }
-                        } label: {
-                            HStack {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("DAY \(day.dayNumber)")
-                                        .font(.caption2)
-                                        .fontWeight(.black)
-                                        .foregroundColor(.white)
-                                        .padding(.horizontal, 6)
-                                        .padding(.vertical, 3)
-                                        .background(Color.blue)
-                                        .cornerRadius(4)
-                                    
-                                    Text(day.title)
-                                        .font(.headline)
-                                        .foregroundColor(.primary)
-                                        .multilineTextAlignment(.leading)
+                            
+                            Spacer()
+                            
+                            Button {
+                                withAnimation {
+                                    store.selectedStep = step
+                                    store.selectedDayId = day.id
+                                    store.selectedTab = 1
                                 }
-                                
-                                Spacer()
-                                
-                                Text(formatDateStringShort(day.date))
+                            } label: {
+                                Image(systemName: "map.fill")
                                     .font(.caption)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(.secondary)
-                                    .padding(.trailing, 6)
-                                
-                                Image(systemName: "chevron.right")
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
-                                    .rotationEffect(.degrees(expandedDays.contains(day.id) ? 90 : 0))
+                                    .foregroundColor(.white)
+                                    .padding(6)
+                                    .background(Color.blue)
+                                    .clipShape(Circle())
                             }
-                            .padding()
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(Color.white.opacity(0.02))
+                            .buttonStyle(PlainButtonStyle())
+                            .padding(.trailing, 4)
+                            
+                            Text(formatDateStringShort(day.date))
+                                .font(.caption)
+                                .fontWeight(.bold)
+                                .foregroundColor(.secondary)
+                                .padding(.trailing, 6)
+                            
+                            Image(systemName: "chevron.right")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                                .rotationEffect(.degrees(expandedDays.contains(day.id) ? 90 : 0))
                         }
+                        .padding()
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color.white.opacity(0.02))
                     }
                     
                     if expandedDays.contains(day.id) || isTimelineEditMode {
@@ -1932,27 +1983,37 @@ public struct TimelineView: View {
                         .padding(.leading, 6)
                     
                     ForEach(Array(trip.steps.enumerated()), id: \.element.id) { index, step in
-                        HStack(spacing: 12) {
-                            Text("\(index + 1)")
-                                .font(.caption2)
-                                .fontWeight(.bold)
-                                .foregroundColor(.white)
-                                .frame(width: 20, height: 20)
-                                .background(step.type == .stay ? Color.purple : (step.type == .flight ? Color.blue : (step.type == .train ? Color.orange : Color.green)))
-                                .clipShape(Circle())
-                            
-                            Text(step.title)
-                                .font(.subheadline)
-                                .fontWeight(.semibold)
-                            
-                            Spacer()
-                            
-                            Text(formatDateStringShort(step.date))
-                                .font(.caption2)
-                                .foregroundColor(.secondary)
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.5)) {
+                                activeDayIndex = index + 1
+                            }
+                        } label: {
+                            HStack(spacing: 12) {
+                                Text("\(index + 1)")
+                                    .font(.caption2)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.white)
+                                    .frame(width: 20, height: 20)
+                                    .background(step.type == .stay ? Color.purple : (step.type == .flight ? Color.blue : (step.type == .train ? Color.orange : Color.green)))
+                                    .clipShape(Circle())
+                                
+                                Text(step.title)
+                                    .font(.subheadline)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.primary)
+                                    .multilineTextAlignment(.leading)
+                                
+                                Spacer()
+                                
+                                Text(formatDateStringShort(step.date))
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                            }
+                            .padding(10)
+                            .contentShape(Rectangle())
+                            .liquidGlassStyle(cornerRadius: 10, fillOpacity: 0.015, borderOpacity: 0.25)
                         }
-                        .padding(10)
-                        .liquidGlassStyle(cornerRadius: 10, fillOpacity: 0.015, borderOpacity: 0.25)
+                        .buttonStyle(PlainButtonStyle())
                     }
                 }
                 .padding(.horizontal)

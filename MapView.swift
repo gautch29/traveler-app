@@ -19,23 +19,25 @@ public struct MapView: View {
         let step: Step?
     }
 
-    let steps: [Step]
+    @ObservedObject var store: TripStore
+    
+    private var steps: [Step] {
+        store.trip?.steps ?? []
+    }
     
     @State private var position: MapCameraPosition = .automatic
-    @State private var selectedStep: Step? = nil
     @State private var isShowingLocalStayDetails = false
     @State private var isShowingDayDetails = false
-    @State private var selectedDayId: String? = nil
     @State private var currentDetent: CustomDetent = .summary
     
-    public init(steps: [Step]) {
-        self.steps = steps
+    public init(store: TripStore) {
+        self.store = store
     }
     
     public var body: some View {
         NavigationStack {
             ZStack(alignment: .bottom) {
-                Map(position: $position, selection: $selectedStep) {
+                Map(position: $position, selection: $store.selectedStep) {
                     ForEach(getActiveMapMarkers()) { marker in
                         Marker(
                             marker.title,
@@ -56,7 +58,7 @@ public struct MapView: View {
                 .ignoresSafeArea()
                 
                 // Custom Draggable Sheet positioned correctly at the bottom across iOS and macOS
-                if let step = selectedStep {
+                if let step = store.selectedStep {
                     VStack(spacing: 0) {
                         Capsule()
                             .fill(Color.secondary.opacity(0.5))
@@ -68,7 +70,7 @@ public struct MapView: View {
                             step: step,
                             users: steps.first?.id != nil ? ["User"] : [],
                             isExpanded: currentDetent != .summary,
-                            selectedDayId: selectedDayId,
+                            selectedDayId: store.selectedDayId,
                             onPrev: getPrevAction(for: step),
                             onNext: getNextAction(for: step),
                             openInMaps: {
@@ -79,14 +81,14 @@ public struct MapView: View {
                             },
                             onSelectDay: { day in
                                 withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                                    if selectedDayId == day.id {
-                                        selectedDayId = nil
+                                    if store.selectedDayId == day.id {
+                                        store.selectedDayId = nil
                                         isShowingDayDetails = false
                                         if let stayInfo = step.stayInfo {
                                             zoomToStay(stayInfo)
                                         }
                                     } else {
-                                        selectedDayId = day.id
+                                        store.selectedDayId = day.id
                                         isShowingDayDetails = true
                                         if let stayInfo = step.stayInfo {
                                             zoomToDay(day, stay: stayInfo)
@@ -126,39 +128,49 @@ public struct MapView: View {
             }
             .navigationTitle("Route Map 🗺️")
             .navigationBarTitleDisplayMode(.inline)
-            .animation(.spring(response: 0.35, dampingFraction: 0.8), value: selectedStep)
+            .animation(.spring(response: 0.35, dampingFraction: 0.8), value: store.selectedStep)
             .onAppear {
-                // Focus on the first step on startup
-                if selectedStep == nil, let first = steps.first {
-                    selectedStep = first
+                if store.selectedStep == nil, let first = steps.first {
+                    store.selectedStep = first
                     zoomToStep(first, animated: false)
+                } else if let selected = store.selectedStep {
+                    zoomToStep(selected, animated: false)
+                    if let dayId = store.selectedDayId, selected.type == .stay, let stay = selected.stayInfo, let day = stay.days.first(where: { $0.id == dayId }) {
+                        currentDetent = .half
+                        isShowingLocalStayDetails = true
+                        isShowingDayDetails = true
+                        zoomToDay(day, stay: stay)
+                    }
                 }
             }
-            .onChange(of: selectedStep) { (oldStep: Step?, newStep: Step?) in
+            .onChange(of: store.selectedStep) { (oldStep: Step?, newStep: Step?) in
                 guard let step = newStep else { return }
                 currentDetent = .summary
                 isShowingLocalStayDetails = false
                 isShowingDayDetails = false
-                selectedDayId = nil
+                // Note: Keep selectedDayId if set from timeline
+                if store.selectedDayId == nil {
+                    store.selectedDayId = nil
+                }
                 zoomToStep(step)
             }
             .onChange(of: currentDetent) { (oldDetent: CustomDetent, newDetent: CustomDetent) in
-                guard let step = selectedStep, step.type == .stay else { return }
+                guard let step = store.selectedStep, step.type == .stay else { return }
                 let showDetails = (newDetent == CustomDetent.half || newDetent == CustomDetent.full)
                 withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
                     isShowingLocalStayDetails = showDetails
                     if !showDetails {
                         isShowingDayDetails = false
-                        selectedDayId = nil
+                        store.selectedDayId = nil
                     }
                 }
             }
             .onChange(of: isShowingLocalStayDetails) { (oldVal: Bool, newVal: Bool) in
                 if newVal {
-                    if let step = selectedStep, step.type == .stay, let stay = step.stayInfo, !isShowingDayDetails {
+                    if let step = store.selectedStep, step.type == .stay, let stay = step.stayInfo, !isShowingDayDetails {
                         zoomToStay(stay)
                     }
-                } else if let step = selectedStep {
+                } else if let step = store.selectedStep {
                     zoomToStep(step)
                 }
             }
@@ -178,8 +190,8 @@ public struct MapView: View {
                     step: step
                 )
             }
-        } else if let step = selectedStep, step.type == .stay, let stay = step.stayInfo {
-            if let dayId = selectedDayId, let selectedDay = stay.days.first(where: { $0.id == dayId }) {
+        } else if let step = store.selectedStep, step.type == .stay, let stay = step.stayInfo {
+            if let dayId = store.selectedDayId, let selectedDay = stay.days.first(where: { $0.id == dayId }) {
                 // Day Specific Mode: Show hotel and this day's items only
                 var markers: [LocalActivityMarker] = []
                 if let hotelPlace = stay.hotel?.mapPlace {
@@ -189,9 +201,10 @@ public struct MapView: View {
                         coordinate: CLLocationCoordinate2D(latitude: hotelPlace.latitude, longitude: hotelPlace.longitude),
                         systemImage: "bed.double.fill",
                         color: .purple,
-                        step: nil
+                        step: step
                     ))
                 }
+                
                 for item in selectedDay.items {
                     if let place = item.mapPlace {
                         markers.append(LocalActivityMarker(
@@ -200,13 +213,13 @@ public struct MapView: View {
                             coordinate: CLLocationCoordinate2D(latitude: place.latitude, longitude: place.longitude),
                             systemImage: "mappin.and.ellipse",
                             color: .orange,
-                            step: nil
+                            step: step
                         ))
                     }
                 }
                 return markers
             } else {
-                // Stay Details Mode: Show hotel and all activities
+                // Stay Specific Mode: Show hotel and all day items
                 var markers: [LocalActivityMarker] = []
                 if let hotelPlace = stay.hotel?.mapPlace {
                     markers.append(LocalActivityMarker(
@@ -215,19 +228,20 @@ public struct MapView: View {
                         coordinate: CLLocationCoordinate2D(latitude: hotelPlace.latitude, longitude: hotelPlace.longitude),
                         systemImage: "bed.double.fill",
                         color: .purple,
-                        step: nil
+                        step: step
                     ))
                 }
+                
                 for day in stay.days {
                     for item in day.items {
                         if let place = item.mapPlace {
                             markers.append(LocalActivityMarker(
                                 id: item.id,
-                                title: "Day \(day.dayNumber): \(item.title)",
+                                title: item.title,
                                 coordinate: CLLocationCoordinate2D(latitude: place.latitude, longitude: place.longitude),
                                 systemImage: "mappin.and.ellipse",
                                 color: .orange,
-                                step: nil
+                                step: step
                             ))
                         }
                     }
@@ -241,8 +255,8 @@ public struct MapView: View {
     private func getActivePolylineCoordinates() -> [CLLocationCoordinate2D] {
         if !isShowingLocalStayDetails && !isShowingDayDetails {
             return steps.map { $0.coordinate }
-        } else if let step = selectedStep, step.type == .stay, let stay = step.stayInfo {
-            if let dayId = selectedDayId, let selectedDay = stay.days.first(where: { $0.id == dayId }) {
+        } else if let step = store.selectedStep, step.type == .stay, let stay = step.stayInfo {
+            if let dayId = store.selectedDayId, let selectedDay = stay.days.first(where: { $0.id == dayId }) {
                 return getLocalDayCoordinates(selectedDay, stay: stay)
             } else {
                 return getLocalStayCoordinates(stay)
@@ -261,12 +275,12 @@ public struct MapView: View {
 
     private func getPrevAction(for step: Step) -> (() -> Void)? {
         guard let idx = steps.firstIndex(where: { $0.id == step.id }), idx > 0 else { return nil }
-        return { selectedStep = steps[idx - 1] }
+        return { store.selectedStep = steps[idx - 1] }
     }
     
     private func getNextAction(for step: Step) -> (() -> Void)? {
         guard let idx = steps.firstIndex(where: { $0.id == step.id }), idx < steps.count - 1 else { return nil }
-        return { selectedStep = steps[idx + 1] }
+        return { store.selectedStep = steps[idx + 1] }
     }
     
     private func getStepLocationName(_ step: Step) -> String {
@@ -279,47 +293,36 @@ public struct MapView: View {
         }
     }
     
-    private func getLocalStayCoordinates(_ stay: StayStepInfo) -> [CLLocationCoordinate2D] {
-        var coords: [CLLocationCoordinate2D] = []
-        if let hotelPlace = stay.hotel?.mapPlace {
-            coords.append(CLLocationCoordinate2D(latitude: hotelPlace.latitude, longitude: hotelPlace.longitude))
-        }
-        for day in stay.days {
-            for item in day.items {
-                if let place = item.mapPlace {
-                    coords.append(CLLocationCoordinate2D(latitude: place.latitude, longitude: place.longitude))
-                }
-            }
-        }
-        if let hotelPlace = stay.hotel?.mapPlace, coords.count > 1 {
-            coords.append(CLLocationCoordinate2D(latitude: hotelPlace.latitude, longitude: hotelPlace.longitude))
-        }
-        return coords
-    }
-    
-    private func getLocalDayCoordinates(_ day: DayInfo, stay: StayStepInfo) -> [CLLocationCoordinate2D] {
-        var coords: [CLLocationCoordinate2D] = []
-        if let hotelPlace = stay.hotel?.mapPlace {
-            coords.append(CLLocationCoordinate2D(latitude: hotelPlace.latitude, longitude: hotelPlace.longitude))
-        }
-        for item in day.items {
-            if let place = item.mapPlace {
-                coords.append(CLLocationCoordinate2D(latitude: place.latitude, longitude: place.longitude))
-            }
-        }
-        if let hotelPlace = stay.hotel?.mapPlace, coords.count > 1 {
-            coords.append(CLLocationCoordinate2D(latitude: hotelPlace.latitude, longitude: hotelPlace.longitude))
-        }
-        return coords
-    }
+    // MARK: - Zooming & Map Camera
     
     private func zoomToStep(_ step: Step, animated: Bool = true) {
-        let region = MKCoordinateRegion(
-            center: step.coordinate,
-            span: MKCoordinateSpan(latitudeDelta: 0.18, longitudeDelta: 0.18)
-        )
+        let region: MKCoordinateRegion
+        if step.type == .flight || step.type == .train || step.type == .car, let flight = step.flightInfo {
+            let centerLat = (flight.departureAirport.latitude + flight.arrivalAirport.latitude) / 2
+            let centerLng = (flight.departureAirport.longitude + flight.arrivalAirport.longitude) / 2
+            let latDelta = abs(flight.departureAirport.latitude - flight.arrivalAirport.latitude) * 1.5 + 2.0
+            let lngDelta = abs(flight.departureAirport.longitude - flight.arrivalAirport.longitude) * 1.5 + 2.0
+            region = MKCoordinateRegion(
+                center: CLLocationCoordinate2D(latitude: centerLat, longitude: centerLng),
+                span: MKCoordinateSpan(latitudeDelta: max(latDelta, 0.5), longitudeDelta: max(lngDelta, 0.5))
+            )
+        } else if step.type == .stay, let stay = step.stayInfo {
+            let coord: CLLocationCoordinate2D
+            if let hotelPlace = stay.hotel?.mapPlace {
+                coord = CLLocationCoordinate2D(latitude: hotelPlace.latitude, longitude: hotelPlace.longitude)
+            } else {
+                coord = step.coordinate
+            }
+            region = MKCoordinateRegion(
+                center: coord,
+                span: MKCoordinateSpan(latitudeDelta: 0.22, longitudeDelta: 0.22)
+            )
+        } else {
+            return
+        }
+        
         if animated {
-            withAnimation(.spring(response: 0.8, dampingFraction: 0.82)) {
+            withAnimation(.easeInOut(duration: 1.2)) {
                 position = .region(region)
             }
         } else {
@@ -329,26 +332,25 @@ public struct MapView: View {
     
     private func zoomToStay(_ stay: StayStepInfo) {
         let coords = getLocalStayCoordinates(stay)
-        guard !coords.isEmpty else {
-            zoomToCoordinate(getCenterCoordinate(forCityName: stay.cityName))
-            return
-        }
+        guard !coords.isEmpty else { return }
+        
         let lats = coords.map { $0.latitude }
-        let lns = coords.map { $0.longitude }
-        let minLat = lats.min() ?? 0.0
-        let maxLat = lats.max() ?? 0.0
-        let minLng = lns.min() ?? 0.0
-        let maxLng = lns.max() ?? 0.0
+        let lngs = coords.map { $0.longitude }
+        let minLat = lats.min() ?? 0
+        let maxLat = lats.max() ?? 0
+        let minLng = lngs.min() ?? 0
+        let maxLng = lngs.max() ?? 0
         
         let center = CLLocationCoordinate2D(
             latitude: (minLat + maxLat) / 2,
             longitude: (minLng + maxLng) / 2
         )
         let span = MKCoordinateSpan(
-            latitudeDelta: max((maxLat - minLat) * 1.5, 0.08),
-            longitudeDelta: max((maxLng - minLng) * 1.5, 0.08)
+            latitudeDelta: max(maxLat - minLat, 0.015) * 1.5,
+            longitudeDelta: max(maxLng - minLng, 0.015) * 1.5
         )
-        withAnimation(.spring(response: 0.8, dampingFraction: 0.82)) {
+        
+        withAnimation(.easeInOut(duration: 1.2)) {
             position = .region(MKCoordinateRegion(center: center, span: span))
         }
     }
@@ -356,49 +358,54 @@ public struct MapView: View {
     private func zoomToDay(_ day: DayInfo, stay: StayStepInfo) {
         let coords = getLocalDayCoordinates(day, stay: stay)
         guard !coords.isEmpty else { return }
+        
         let lats = coords.map { $0.latitude }
-        let lns = coords.map { $0.longitude }
-        let minLat = lats.min() ?? 0.0
-        let maxLat = lats.max() ?? 0.0
-        let minLng = lns.min() ?? 0.0
-        let maxLng = lns.max() ?? 0.0
+        let lngs = coords.map { $0.longitude }
+        let minLat = lats.min() ?? 0
+        let maxLat = lats.max() ?? 0
+        let minLng = lngs.min() ?? 0
+        let maxLng = lngs.max() ?? 0
         
         let center = CLLocationCoordinate2D(
             latitude: (minLat + maxLat) / 2,
             longitude: (minLng + maxLng) / 2
         )
         let span = MKCoordinateSpan(
-            latitudeDelta: max((maxLat - minLat) * 1.5, 0.04),
-            longitudeDelta: max((maxLng - minLng) * 1.5, 0.04)
+            latitudeDelta: max(maxLat - minLat, 0.008) * 1.5,
+            longitudeDelta: max(maxLng - minLng, 0.008) * 1.5
         )
-        withAnimation(.spring(response: 0.8, dampingFraction: 0.82)) {
+        
+        withAnimation(.easeInOut(duration: 1.2)) {
             position = .region(MKCoordinateRegion(center: center, span: span))
         }
     }
     
-    private func zoomToCoordinate(_ coord: CLLocationCoordinate2D) {
-        withAnimation(.spring(response: 0.8, dampingFraction: 0.82)) {
-            position = .region(MKCoordinateRegion(center: coord, span: MKCoordinateSpan(latitudeDelta: 0.18, longitudeDelta: 0.18)))
+    private func getLocalStayCoordinates(_ stay: StayStepInfo) -> [CLLocationCoordinate2D] {
+        var list: [CLLocationCoordinate2D] = []
+        if let hotelPlace = stay.hotel?.mapPlace {
+            list.append(CLLocationCoordinate2D(latitude: hotelPlace.latitude, longitude: hotelPlace.longitude))
         }
+        for day in stay.days {
+            for item in day.items {
+                if let place = item.mapPlace {
+                    list.append(CLLocationCoordinate2D(latitude: place.latitude, longitude: place.longitude))
+                }
+            }
+        }
+        return list
     }
     
-    private func getCenterCoordinate(forCityName city: String) -> CLLocationCoordinate2D {
-        let name = city.lowercased()
-        if name.contains("new york") || name.contains("nyc") {
-            return CLLocationCoordinate2D(latitude: 40.7128, longitude: -74.0060)
-        } else if name.contains("washington") || name.contains("dc") {
-            return CLLocationCoordinate2D(latitude: 38.9072, longitude: -77.0369)
-        } else if name.contains("orlando") {
-            return CLLocationCoordinate2D(latitude: 28.5383, longitude: -81.3792)
-        } else if name.contains("miami") {
-            return CLLocationCoordinate2D(latitude: 25.7617, longitude: -80.1918)
-        } else if name.contains("key west") {
-            return CLLocationCoordinate2D(latitude: 24.5551, longitude: -81.7800)
-        } else if name.contains("paris") {
-            return CLLocationCoordinate2D(latitude: 48.8566, longitude: 2.3522)
-        } else {
-            return CLLocationCoordinate2D(latitude: 37.0902, longitude: -95.7129)
+    private func getLocalDayCoordinates(_ day: DayInfo, stay: StayStepInfo) -> [CLLocationCoordinate2D] {
+        var list: [CLLocationCoordinate2D] = []
+        if let hotelPlace = stay.hotel?.mapPlace {
+            list.append(CLLocationCoordinate2D(latitude: hotelPlace.latitude, longitude: hotelPlace.longitude))
         }
+        for item in day.items {
+            if let place = item.mapPlace {
+                list.append(CLLocationCoordinate2D(latitude: place.latitude, longitude: place.longitude))
+            }
+        }
+        return list
     }
     
     private func openInMaps(coordinate: CLLocationCoordinate2D, name: String) {
@@ -444,15 +451,11 @@ struct StaySheetContent: View {
                         Text(step.type == .stay ? "STAY" : (step.type == .flight ? "FLIGHT" : (step.type == .train ? "TRAIN" : "ROAD TRIP")))
                             .font(.caption2)
                             .fontWeight(.black)
-                            .foregroundColor(.accentColor)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 3)
-                            .background(Color.accentColor.opacity(0.15))
-                            .cornerRadius(6)
-                        
+                            .foregroundColor(.secondary)
                         Text(step.title)
-                            .font(.subheadline)
+                            .font(.headline)
                             .fontWeight(.bold)
+                            .foregroundColor(.primary)
                             .lineLimit(1)
                     }
                     
@@ -469,132 +472,163 @@ struct StaySheetContent: View {
                     .opacity(onNext == nil ? 0.3 : 1.0)
                 }
                 
-                Divider()
-                
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
+                        Text("Location")
+                            .font(.caption2)
+                            .fontWeight(.black)
+                            .foregroundColor(.secondary)
                         Text(getStepLocationName())
                             .font(.subheadline)
-                            .fontWeight(.bold)
+                            .fontWeight(.semibold)
                             .foregroundColor(.primary)
                             .lineLimit(1)
-                        
-                        if step.type == .stay && !isExpanded {
-                            Text("Drag up to view days & activities 📍")
-                                .font(.system(size: 10, weight: .semibold))
-                                .foregroundColor(.secondary)
-                        }
                     }
                     
                     Spacer()
                     
-                    Button {
-                        openInMaps()
-                    } label: {
-                        Image(systemName: "arrow.triangle.turn.up.right.diamond.fill")
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundColor(.white)
-                            .frame(width: 32, height: 32)
-                            .background(Color.blue)
-                            .clipShape(Circle())
-                            .shadow(color: Color.blue.opacity(0.3), radius: 3, x: 0, y: 1.5)
+                    Button(action: openInMaps) {
+                        Label("Maps", systemImage: "map.fill")
+                            .font(.caption)
+                            .bold()
+                            .padding(.vertical, 6)
+                            .padding(.horizontal, 12)
+                            .background(Color.accentColor.opacity(0.15))
+                            .cornerRadius(8)
                     }
                 }
+                .padding(.top, 4)
             }
-            .padding()
+            .padding([.horizontal, .bottom])
             
-            // Revealed Days List (Only visible if expanded)
-            if isExpanded, step.type == .stay, let stay = step.stayInfo {
+            // Extended Scroll Details (Revealed when expanded upward)
+            if isExpanded {
                 Divider()
                 
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 16) {
-                        HStack {
-                            Text("Stays Itinerary")
+                if step.type != .stay {
+                    // Transit Information details
+                    VStack(alignment: .leading, spacing: 14) {
+                        if let flight = step.flightInfo {
+                            Text("Transit Details")
                                 .font(.headline)
                                 .fontWeight(.bold)
-                            Spacer()
-                            if selectedDayId != nil {
-                                Text("Showing selected day on map")
-                                    .font(.caption2)
-                                    .foregroundColor(.orange)
-                                    .fontWeight(.bold)
+                            
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Operator: \(flight.airline)")
+                                Text("Route: \(flight.departureAirport.name) to \(flight.arrivalAirport.name)")
+                                Text("Time: \(flight.departureTime) - \(flight.arrivalTime)")
+                                Text("Description: \(flight.details)")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
                             }
-                        }
-                        .padding(.horizontal)
-                        .padding(.top, 10)
-                        
-                        ForEach(stay.days) { day in
-                            Button {
-                                onSelectDay(day)
-                            } label: {
-                                VStack(alignment: .leading, spacing: 6) {
-                                    HStack {
-                                        Text("Day \(day.dayNumber)")
-                                            .font(.caption)
-                                            .fontWeight(.bold)
-                                            .foregroundColor(.white)
-                                            .padding(.horizontal, 6)
-                                            .padding(.vertical, 3)
-                                            .background(selectedDayId == day.id ? Color.orange : Color.blue)
-                                            .cornerRadius(4)
-                                        
-                                        Text(day.title)
-                                            .font(.subheadline)
-                                            .fontWeight(.semibold)
-                                            .foregroundColor(.primary)
-                                        
-                                        Spacer()
-                                        
-                                        Text(day.date)
-                                            .font(.caption2)
-                                            .foregroundColor(.secondary)
-                                    }
-                                    
-                                    if !day.description.isEmpty {
-                                        Text(day.description)
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
-                                            .lineLimit(2)
-                                            .multilineTextAlignment(.leading)
-                                    }
-                                    
-                                    if !day.items.isEmpty {
-                                        VStack(alignment: .leading, spacing: 6) {
-                                            ForEach(day.items) { item in
-                                                HStack(spacing: 8) {
-                                                    Image(systemName: item.type == .hotel ? "bed.double.fill" : "mappin.and.ellipse")
-                                                        .font(.caption2)
-                                                        .foregroundColor(.accentColor)
-                                                    Text(item.title)
-                                                        .font(.caption)
-                                                        .foregroundColor(.primary)
-                                                    Spacer()
-                                                    Text(item.time)
-                                                        .font(.caption2)
-                                                        .foregroundColor(.secondary)
-                                                }
-                                                .padding(6)
-                                                .background(Color.secondary.opacity(0.08))
-                                                .cornerRadius(6)
-                                            }
-                                        }
-                                        .padding(.top, 2)
-                                    }
-                                }
-                                .padding()
-                                .background(selectedDayId == day.id ? Color.accentColor.opacity(0.12) : Color.secondary.opacity(0.04))
-                                .cornerRadius(12)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(selectedDayId == day.id ? Color.accentColor : Color.clear, lineWidth: 2)
-                                )
-                            }
-                            .buttonStyle(.plain)
-                            .padding(.horizontal)
+                            .padding()
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(Color.secondary.opacity(0.06))
+                            .cornerRadius(12)
                         }
                     }
-                    .padding(.bottom, 20)
+                    .padding()
+                } else if let stay = step.stayInfo {
+                    // Stay information & day selector
+                    ScrollView(.vertical, showsIndicators: false) {
+                        VStack(alignment: .leading, spacing: 16) {
+                            Text("Accommodation details")
+                                .font(.headline)
+                                .fontWeight(.bold)
+                                .padding(.horizontal)
+                                .padding(.top, 8)
+                            
+                            if let hotel = stay.hotel {
+                                VStack(alignment: .leading, spacing: 6) {
+                                    Text(hotel.title)
+                                        .font(.subheadline)
+                                        .fontWeight(.bold)
+                                    Text(hotel.details)
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                .padding()
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .background(Color.secondary.opacity(0.06))
+                                .cornerRadius(12)
+                                .padding(.horizontal)
+                            }
+                            
+                            HStack {
+                                Text("Select Days")
+                                    .font(.headline)
+                                    .fontWeight(.bold)
+                                Spacer()
+                                if selectedDayId != nil {
+                                    Text("Showing selected day on map")
+                                        .font(.caption)
+                                        .foregroundColor(.orange)
+                                        .bold()
+                                }
+                            }
+                            .padding(.horizontal)
+                            
+                            ForEach(stay.days) { day in
+                                Button {
+                                    onSelectDay(day)
+                                } label: {
+                                    VStack(alignment: .leading, spacing: 6) {
+                                        HStack {
+                                            Text("Day \(day.dayNumber): \(day.title)")
+                                                .font(.subheadline)
+                                                .fontWeight(.bold)
+                                                .foregroundColor(.primary)
+                                            Spacer()
+                                            Text(day.date)
+                                                .font(.caption2)
+                                                .foregroundColor(.secondary)
+                                        }
+                                        
+                                        if !day.description.isEmpty {
+                                            Text(day.description)
+                                                .font(.caption)
+                                                .foregroundColor(.secondary)
+                                                .lineLimit(2)
+                                                .multilineTextAlignment(.leading)
+                                        }
+                                        
+                                        if !day.items.isEmpty {
+                                            VStack(alignment: .leading, spacing: 6) {
+                                                ForEach(day.items) { item in
+                                                    HStack(spacing: 8) {
+                                                        Image(systemName: item.type == .hotel ? "bed.double.fill" : "mappin.and.ellipse")
+                                                            .font(.caption2)
+                                                            .foregroundColor(.accentColor)
+                                                        Text(item.title)
+                                                            .font(.caption)
+                                                            .foregroundColor(.primary)
+                                                        Spacer()
+                                                        Text(item.time)
+                                                            .font(.caption2)
+                                                            .foregroundColor(.secondary)
+                                                    }
+                                                    .padding(6)
+                                                    .background(Color.secondary.opacity(0.08))
+                                                    .cornerRadius(6)
+                                                }
+                                            }
+                                            .padding(.top, 2)
+                                        }
+                                    }
+                                    .padding()
+                                    .background(selectedDayId == day.id ? Color.accentColor.opacity(0.12) : Color.secondary.opacity(0.04))
+                                    .cornerRadius(12)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(selectedDayId == day.id ? Color.accentColor : Color.clear, lineWidth: 2)
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                                .padding(.horizontal)
+                            }
+                        }
+                        .padding(.bottom, 20)
+                    }
                 }
             }
         }
