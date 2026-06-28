@@ -1963,12 +1963,44 @@ public struct TimelineView: View {
                             .fontWeight(.semibold)
                     }
                     
-                    HStack(spacing: 12) {
+                    HStack(alignment: .top, spacing: 12) {
                         Image(systemName: "phone.fill")
                             .foregroundColor(.accentColor)
                             .font(.title3)
-                        Text("Emergency: \(trip.emergencyInfo)")
-                            .fontWeight(.semibold)
+                            .padding(.top, 2)
+                        
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Emergency Contact Info")
+                                .fontWeight(.bold)
+                                .foregroundColor(.primary)
+                            
+                            ForEach(trip.emergencyInfo.numbers) { item in
+                                HStack {
+                                    Text("\(item.label):")
+                                        .fontWeight(.semibold)
+                                        .foregroundColor(.secondary)
+                                    
+                                    if let url = URL(string: "tel://\(item.number.replacingOccurrences(of: " ", with: ""))") {
+                                        Link(item.number, destination: url)
+                                            .fontWeight(.semibold)
+                                            .foregroundColor(.accentColor)
+                                    } else {
+                                        Text(item.number)
+                                            .fontWeight(.semibold)
+                                            .foregroundColor(.primary)
+                                    }
+                                }
+                                .font(.subheadline)
+                            }
+                            
+                            if !trip.emergencyInfo.notes.isEmpty {
+                                Text(trip.emergencyInfo.notes)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                    .padding(.top, 4)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
                     }
                 }
                 .padding(20)
