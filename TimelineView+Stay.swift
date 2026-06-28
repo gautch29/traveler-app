@@ -259,8 +259,8 @@ extension TimelineView {
                                 }
                             }
                             
-                            let hotelFiles = binding.wrappedValue.stayInfo?.hotel?.sharedFiles ?? []
-                            let hotelPasses = binding.wrappedValue.stayInfo?.hotel?.walletPasses ?? []
+                            let hotelFiles = step.stayInfo?.hotel?.sharedFiles ?? []
+                            let hotelPasses = step.stayInfo?.hotel?.walletPasses ?? []
                             
                             if !hotelFiles.isEmpty || !hotelPasses.isEmpty {
                                 VStack(alignment: .leading, spacing: 6) {
@@ -670,7 +670,7 @@ extension TimelineView {
                                                     }
                                                 }
                                                 
-                                                let itemFiles = itemBind.wrappedValue.sharedFiles
+                                                let itemFiles = item.sharedFiles
                                                 if !itemFiles.isEmpty {
                                                     ForEach(itemFiles, id: \.self) { file in
                                                         HStack {
@@ -696,7 +696,7 @@ extension TimelineView {
                                                         .liquidGlassStyle(cornerRadius: 6, fillOpacity: 0.02, borderOpacity: 0.2)
                                                     }
                                                 }
-                                                let itemPasses = itemBind.wrappedValue.walletPasses ?? []
+                                                let itemPasses = item.walletPasses ?? []
                                                 if !itemPasses.isEmpty {
                                                     ForEach(itemPasses, id: \.self) { pass in
                                                         HStack {

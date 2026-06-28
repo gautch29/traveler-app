@@ -425,8 +425,8 @@ extension TimelineView {
                                 }
                             }
                             
-                            let shared = binding.wrappedValue.flightInfo?.sharedFiles ?? []
-                            let wallet = binding.wrappedValue.flightInfo?.walletPasses ?? []
+                            let shared = step.flightInfo?.sharedFiles ?? []
+                            let wallet = step.flightInfo?.walletPasses ?? []
                             
                             if !shared.isEmpty || !wallet.isEmpty {
                                 VStack(alignment: .leading, spacing: 8) {
