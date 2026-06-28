@@ -17,6 +17,7 @@ public struct TimelineView: View {
     // Stays & Flights animation and presentation states
     @State private var planeProgress: Double = 0.0
     @State private var expandedDays: Set<String> = []
+    @State private var editingDayIds: Set<String> = []
     
     // In-Timeline Inline Editing States
     @State private var isTimelineEditMode = false
@@ -1713,8 +1714,9 @@ public struct TimelineView: View {
             
             ForEach(stay.days) { day in
                 VStack(alignment: .leading, spacing: 0) {
-                    if isTimelineEditMode, let dayBind = dayBinding(stepId: step.id, dayId: day.id) {
-                        // Edit Mode Day Header Card
+                    let isDayEditing = editingDayIds.contains(day.id)
+                    if isDayEditing, let dayBind = dayBinding(stepId: step.id, dayId: day.id) {
+                        // Edit Mode Day Header Card (Title, Description, Date)
                         VStack(alignment: .leading, spacing: 8) {
                             HStack {
                                 Text("DAY \(day.dayNumber)")
@@ -1728,15 +1730,19 @@ public struct TimelineView: View {
                                 
                                 Spacer()
                                 
-                                Button(role: .destructive) {
-                                    if let idx = stepBinding(forId: step.id)?.wrappedValue.stayInfo?.days.firstIndex(where: { $0.id == day.id }) {
-                                        withAnimation {
-                                            _ = stepBinding(forId: step.id)?.wrappedValue.stayInfo?.days.remove(at: idx)
-                                        }
+                                Button {
+                                    withAnimation {
+                                        _ = editingDayIds.remove(day.id)
                                     }
                                 } label: {
-                                    Image(systemName: "trash")
-                                        .foregroundColor(.red)
+                                    Text("Done")
+                                        .font(.caption)
+                                        .fontWeight(.bold)
+                                        .foregroundColor(.white)
+                                        .padding(.horizontal, 10)
+                                        .padding(.vertical, 4)
+                                        .background(Color.green)
+                                        .cornerRadius(6)
                                 }
                             }
                             
@@ -1753,9 +1759,9 @@ public struct TimelineView: View {
                                 .glassTextFieldStyle()
                         }
                         .padding()
-                        .background(Color.white.opacity(0.04))
+                        .background(Color(white: 1.0, opacity: 0.04))
                     } else {
-                        // Read Mode Day Header Card
+                        // Read/Stay-Editing Mode Day Header Card
                         HStack {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text("DAY \(day.dayNumber)")
@@ -1772,18 +1778,23 @@ public struct TimelineView: View {
                                     .foregroundColor(.primary)
                                     .multilineTextAlignment(.leading)
                             }
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                    if expandedDays.contains(day.id) {
-                                        expandedDays.remove(day.id)
-                                    } else {
-                                        expandedDays.insert(day.id)
-                                    }
-                                }
-                            }
                             
                             Spacer()
+                            
+                            if isTimelineEditMode {
+                                // In stay-edit mode: show trash/delete button next to day
+                                Button(role: .destructive) {
+                                    if let idx = stepBinding(forId: step.id)?.wrappedValue.stayInfo?.days.firstIndex(where: { $0.id == day.id }) {
+                                        withAnimation {
+                                            _ = stepBinding(forId: step.id)?.wrappedValue.stayInfo?.days.remove(at: idx)
+                                        }
+                                    }
+                                } label: {
+                                    Image(systemName: "trash")
+                                        .foregroundColor(.red)
+                                }
+                                .padding(.trailing, 8)
+                            }
                             
                             Button {
                                 withAnimation {
@@ -1816,14 +1827,46 @@ public struct TimelineView: View {
                         .padding()
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .background(Color.white.opacity(0.02))
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                if expandedDays.contains(day.id) {
+                                    expandedDays.remove(day.id)
+                                } else {
+                                    expandedDays.insert(day.id)
+                                }
+                            }
+                        }
                     }
                     
-                    if expandedDays.contains(day.id) || isTimelineEditMode {
+                    if expandedDays.contains(day.id) || isDayEditing {
                         Divider()
                             .padding(.horizontal)
                         
                         VStack(alignment: .leading, spacing: 14) {
-                            if !isTimelineEditMode && !day.description.isEmpty {
+                            if !isDayEditing {
+                                HStack {
+                                    Spacer()
+                                    Button {
+                                        withAnimation {
+                                            _ = editingDayIds.insert(day.id)
+                                        }
+                                    } label: {
+                                        Label("Edit Day Content", systemImage: "pencil")
+                                            .font(.caption2)
+                                            .fontWeight(.bold)
+                                            .foregroundColor(.white)
+                                            .padding(.vertical, 6)
+                                            .padding(.horizontal, 10)
+                                            .background(Color.orange)
+                                            .cornerRadius(6)
+                                    }
+                                }
+                                .padding(.horizontal)
+                                .padding(.top, 8)
+                            }
+                            
+                            if !isDayEditing && !day.description.isEmpty {
                                 Text(day.description)
                                     .font(.subheadline)
                                     .foregroundColor(.secondary)
@@ -1832,7 +1875,7 @@ public struct TimelineView: View {
                                     .fixedSize(horizontal: false, vertical: true)
                             }
                             
-                            if !isTimelineEditMode && day.items.isEmpty {
+                            if !isDayEditing && day.items.isEmpty {
                                 Text("No activities planned. Free day!")
                                     .font(.caption)
                                     .foregroundColor(.secondary)
@@ -1842,7 +1885,7 @@ public struct TimelineView: View {
                             } else {
                                 VStack(spacing: 12) {
                                     ForEach(day.items) { item in
-                                        if isTimelineEditMode, let itemBind = itemBinding(stepId: step.id, dayId: day.id, itemId: item.id) {
+                                        if isDayEditing, let itemBind = itemBinding(stepId: step.id, dayId: day.id, itemId: item.id) {
                                             VStack(alignment: .leading, spacing: 6) {
                                                 HStack {
                                                     Image(systemName: item.type == .hotel ? "bed.double.fill" : "mappin.and.ellipse")
@@ -1972,7 +2015,7 @@ public struct TimelineView: View {
                                         }
                                     }
                                     
-                                    if isTimelineEditMode, let dayBind = dayBinding(stepId: step.id, dayId: day.id) {
+                                    if isDayEditing, let dayBind = dayBinding(stepId: step.id, dayId: day.id) {
                                         Button {
                                             let newItem = TripItem(
                                                 id: UUID().uuidString.lowercased(),
@@ -2010,6 +2053,28 @@ public struct TimelineView: View {
                                 .padding(.horizontal)
                                 .padding(.bottom, 16)
                                 .padding(.top, 8)
+                            }
+                            
+                            if isDayEditing {
+                                HStack {
+                                    Spacer()
+                                    Button {
+                                        withAnimation {
+                                            _ = editingDayIds.remove(day.id)
+                                        }
+                                    } label: {
+                                        Label("Done Editing", systemImage: "checkmark.circle.fill")
+                                            .font(.caption)
+                                            .fontWeight(.bold)
+                                            .foregroundColor(.white)
+                                            .padding(.vertical, 8)
+                                            .padding(.horizontal, 16)
+                                            .background(Color.green)
+                                            .cornerRadius(8)
+                                    }
+                                }
+                                .padding(.horizontal)
+                                .padding(.bottom, 12)
                             }
                         }
                     }
