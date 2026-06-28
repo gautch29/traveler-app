@@ -29,6 +29,7 @@ public struct MapView: View {
     @State private var isShowingLocalStayDetails = false
     @State private var isShowingDayDetails = false
     @State private var currentDetent: CustomDetent = .summary
+    @State private var dragOffset: CGFloat = 0
     
     public init(store: TripStore) {
         self.store = store
@@ -60,11 +61,16 @@ public struct MapView: View {
                 // Custom Draggable Sheet positioned correctly at the bottom across iOS and macOS
                 if let step = store.selectedStep {
                     VStack(spacing: 0) {
-                        Capsule()
-                            .fill(Color.secondary.opacity(0.5))
-                            .frame(width: 36, height: 5)
-                            .padding(.top, 8)
-                            .padding(.bottom, 4)
+                        if step.type == .stay {
+                            Capsule()
+                                .fill(Color.secondary.opacity(0.5))
+                                .frame(width: 36, height: 5)
+                                .padding(.top, 8)
+                                .padding(.bottom, 4)
+                        } else {
+                            Spacer()
+                                .frame(height: 12)
+                        }
                         
                         StaySheetContent(
                             step: step,
@@ -99,28 +105,43 @@ public struct MapView: View {
                         )
                     }
                     .frame(maxWidth: 500)
-                    .frame(height: currentDetent == .summary ? 180 : (currentDetent == .half ? 450 : 700))
-                    .background(
-                        Color(.systemBackground)
-                            .opacity(0.85)
-                            .background(Material.regularMaterial)
-                    )
-                    .cornerRadius(24)
-                    .shadow(color: Color.black.opacity(0.15), radius: 10, x: 0, y: -2)
+                    .frame(height: {
+                        guard step.type == .stay else { return 180 }
+                        let base: CGFloat
+                        switch currentDetent {
+                        case .summary: base = 180
+                        case .half: base = 450
+                        case .full: base = 700
+                        }
+                        let target = base - dragOffset
+                        return max(180, min(700, target))
+                    }())
+                    .liquidGlassStyle(cornerRadius: 24, fillOpacity: 0.08, borderOpacity: 0.35)
                     .padding(.horizontal, 16)
                     .padding(.bottom, 16)
                     .gesture(
                         DragGesture()
+                            .onChanged { value in
+                                guard step.type == .stay else { return }
+                                dragOffset = value.translation.height
+                            }
                             .onEnded { value in
                                 guard step.type == .stay else { return }
-                                withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                                    if value.translation.height < -40 {
+                                
+                                let dragDistance = value.translation.height
+                                let predictedEnd = value.predictedEndTranslation.height
+                                
+                                withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+                                    if dragDistance < -80 || predictedEnd < -150 {
+                                        // Dragging UP
                                         if currentDetent == .summary { currentDetent = .half }
                                         else if currentDetent == .half { currentDetent = .full }
-                                    } else if value.translation.height > 40 {
+                                    } else if dragDistance > 80 || predictedEnd > 150 {
+                                        // Dragging DOWN
                                         if currentDetent == .full { currentDetent = .half }
                                         else if currentDetent == .half { currentDetent = .summary }
                                     }
+                                    dragOffset = 0
                                 }
                             }
                     )
@@ -148,7 +169,6 @@ public struct MapView: View {
                 currentDetent = .summary
                 isShowingLocalStayDetails = false
                 isShowingDayDetails = false
-                // Note: Keep selectedDayId if set from timeline
                 if store.selectedDayId == nil {
                     store.selectedDayId = nil
                 }

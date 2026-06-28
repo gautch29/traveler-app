@@ -1493,13 +1493,13 @@ public struct TimelineView: View {
                     }
                     
                     if isTimelineEditMode {
-                        Text("Attached booking receipts:")
+                        Text("Attached Files & Booking Receipts:")
                             .font(.caption2)
                             .fontWeight(.bold)
                             .foregroundColor(.secondary)
                             .padding(.top, 4)
                         
-                        HStack {
+                        HStack(spacing: 12) {
                             Button {
                                 filePickerType = .ticket
                                 fileUploadTargetStepId = step.id
@@ -1513,11 +1513,27 @@ public struct TimelineView: View {
                                     .background(Color.purple)
                                     .cornerRadius(6)
                             }
+                            
+                            Button {
+                                filePickerType = .pass
+                                fileUploadTargetStepId = step.id
+                                showingFilePicker = true
+                            } label: {
+                                Label("Attach Pass", systemImage: "qrcode")
+                                    .font(.caption2)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.white)
+                                    .padding(6)
+                                    .background(Color.blue)
+                                    .cornerRadius(6)
+                            }
                         }
                         
                         if let binding = stepBinding(forId: step.id) {
                             let hotelFiles = binding.wrappedValue.stayInfo?.hotel?.sharedFiles ?? []
-                            if !hotelFiles.isEmpty {
+                            let hotelPasses = binding.wrappedValue.stayInfo?.hotel?.walletPasses ?? []
+                            
+                            if !hotelFiles.isEmpty || !hotelPasses.isEmpty {
                                 VStack(alignment: .leading, spacing: 6) {
                                     ForEach(hotelFiles, id: \.self) { file in
                                         HStack {
@@ -1534,6 +1550,34 @@ public struct TimelineView: View {
                                                         arr.remove(at: idx)
                                                     }
                                                     hotel.sharedFiles = arr
+                                                    stay.hotel = hotel
+                                                    binding.wrappedValue.stayInfo = stay
+                                                }
+                                            } label: {
+                                                Image(systemName: "minus.circle.fill")
+                                                    .foregroundColor(.red)
+                                                    .font(.caption2)
+                                            }
+                                        }
+                                        .padding(6)
+                                        .liquidGlassStyle(cornerRadius: 8, fillOpacity: 0.02, borderOpacity: 0.2)
+                                    }
+                                    
+                                    ForEach(hotelPasses, id: \.self) { pass in
+                                        HStack {
+                                            Image(systemName: "qrcode")
+                                                .font(.caption2)
+                                            Text(pass.components(separatedBy: "/").last ?? pass)
+                                                .font(.system(size: 10))
+                                                .lineLimit(1)
+                                            Spacer()
+                                            Button {
+                                                if var stay = binding.wrappedValue.stayInfo, var hotel = stay.hotel {
+                                                    var arr = hotel.walletPasses ?? []
+                                                    if let idx = arr.firstIndex(of: pass) {
+                                                        arr.remove(at: idx)
+                                                    }
+                                                    hotel.walletPasses = arr
                                                     stay.hotel = hotel
                                                     binding.wrappedValue.stayInfo = stay
                                                 }
@@ -1571,6 +1615,56 @@ public struct TimelineView: View {
                                         Image(systemName: "arrow.up.left.and.arrow.down.right")
                                             .font(.caption)
                                             .foregroundColor(.secondary)
+                                    }
+                                    .padding(.horizontal, 14)
+                                    .padding(.vertical, 10)
+                                    .liquidGlassStyle(cornerRadius: 8, fillOpacity: 0.05, borderOpacity: 0.3)
+                                }
+                            }
+                        }
+                        
+                        let hotelPasses = hotel.getWalletPasses(forUser: user)
+                        ForEach(hotelPasses, id: \.self) { passFile in
+                            if store.downloadedFiles.contains(passFile) {
+                                Button {
+                                    if let url = store.getLocalFileURL(forFilename: passFile) {
+                                        fileViewTitle = "Apple Wallet Pass"
+                                        selectedFileToView = IdentifiableURL(url: url)
+                                    }
+                                } label: {
+                                    HStack {
+                                        Image(systemName: "qrcode.viewfinder")
+                                            .foregroundColor(.purple)
+                                        Text("Add to Apple Wallet")
+                                            .font(.subheadline)
+                                            .fontWeight(.bold)
+                                            .foregroundColor(.primary)
+                                        Spacer()
+                                        Image(systemName: "plus")
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                    }
+                                    .padding(.horizontal, 14)
+                                    .padding(.vertical, 10)
+                                    .liquidGlassStyle(cornerRadius: 8, fillOpacity: 0.05, borderOpacity: 0.3)
+                                }
+                            } else {
+                                Button {
+                                    Task {
+                                        if let tripURL = URL(string: store.serverURLString) {
+                                            let remoteURL = tripURL.deletingLastPathComponent().appendingPathComponent(passFile)
+                                            try? await store.downloadFile(from: remoteURL, originalFilename: passFile)
+                                        }
+                                    }
+                                } label: {
+                                    HStack {
+                                        Image(systemName: "arrow.down.circle")
+                                            .foregroundColor(.purple)
+                                        Text("Download Boarding Pass")
+                                            .font(.subheadline)
+                                            .fontWeight(.bold)
+                                            .foregroundColor(.purple)
+                                        Spacer()
                                     }
                                     .padding(.horizontal, 14)
                                     .padding(.vertical, 10)
@@ -1802,6 +1896,19 @@ public struct TimelineView: View {
                                                             .foregroundColor(.white)
                                                             .cornerRadius(6)
                                                     }
+                                                    
+                                                    Button {
+                                                        filePickerType = .pass
+                                                        fileUploadTargetStepId = "\(step.id)|\(day.id)|\(item.id)"
+                                                        showingFilePicker = true
+                                                    } label: {
+                                                        Label("Attach Pass", systemImage: "qrcode")
+                                                            .font(.system(size: 10))
+                                                            .padding(6)
+                                                            .background(Color.purple)
+                                                            .foregroundColor(.white)
+                                                            .cornerRadius(6)
+                                                    }
                                                 }
                                                 
                                                 let itemFiles = itemBind.wrappedValue.sharedFiles
@@ -1820,6 +1927,32 @@ public struct TimelineView: View {
                                                                     arr.remove(at: idx)
                                                                 }
                                                                 itemBind.wrappedValue.sharedFiles = arr
+                                                            } label: {
+                                                                Image(systemName: "minus.circle.fill")
+                                                                    .foregroundColor(.red)
+                                                                    .font(.caption2)
+                                                            }
+                                                        }
+                                                        .padding(4)
+                                                        .liquidGlassStyle(cornerRadius: 6, fillOpacity: 0.02, borderOpacity: 0.2)
+                                                    }
+                                                }
+                                                let itemPasses = itemBind.wrappedValue.walletPasses ?? []
+                                                if !itemPasses.isEmpty {
+                                                    ForEach(itemPasses, id: \.self) { pass in
+                                                        HStack {
+                                                            Image(systemName: "qrcode")
+                                                                .font(.caption2)
+                                                            Text(pass.components(separatedBy: "/").last ?? pass)
+                                                                .font(.system(size: 10))
+                                                                .lineLimit(1)
+                                                            Spacer()
+                                                            Button {
+                                                                var arr = itemBind.wrappedValue.walletPasses ?? []
+                                                                if let idx = arr.firstIndex(of: pass) {
+                                                                    arr.remove(at: idx)
+                                                                }
+                                                                itemBind.wrappedValue.walletPasses = arr
                                                             } label: {
                                                                 Image(systemName: "minus.circle.fill")
                                                                     .foregroundColor(.red)
@@ -1940,6 +2073,57 @@ public struct TimelineView: View {
                                 Image(systemName: "arrow.up.left.and.arrow.down.right")
                                     .font(.caption2)
                                     .foregroundColor(.secondary)
+                            }
+                            .padding(.leading, 24)
+                        }
+                    }
+                }
+            }
+            
+            let passes = item.getWalletPasses(forUser: user)
+            if !passes.isEmpty {
+                Divider()
+                    .padding(.leading, 24)
+                
+                ForEach(passes, id: \.self) { passFile in
+                    if store.downloadedFiles.contains(passFile) {
+                        Button {
+                            if let url = store.getLocalFileURL(forFilename: passFile) {
+                                fileViewTitle = "Apple Wallet Pass"
+                                selectedFileToView = IdentifiableURL(url: url)
+                            }
+                        } label: {
+                            HStack {
+                                Image(systemName: "qrcode.viewfinder")
+                                    .foregroundColor(.accentColor)
+                                Text("Add to Apple Wallet")
+                                    .font(.caption)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.primary)
+                                Spacer()
+                                Image(systemName: "plus")
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                            }
+                            .padding(.leading, 24)
+                        }
+                    } else {
+                        Button {
+                            Task {
+                                if let tripURL = URL(string: store.serverURLString) {
+                                    let remoteURL = tripURL.deletingLastPathComponent().appendingPathComponent(passFile)
+                                    try? await store.downloadFile(from: remoteURL, originalFilename: passFile)
+                                }
+                            }
+                        } label: {
+                            HStack {
+                                Image(systemName: "arrow.down.circle")
+                                    .foregroundColor(.accentColor)
+                                Text("Download Boarding Pass")
+                                    .font(.caption)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.accentColor)
+                                Spacer()
                             }
                             .padding(.leading, 24)
                         }
