@@ -385,7 +385,7 @@ public class TripStore: ObservableObject {
         return assetsDir
     }
     
-    private func localURL(forFilename filename: String) -> URL {
+    func localURL(forFilename filename: String) -> URL {
         let safeName = filename.replacingOccurrences(of: "/", with: "_")
         return assetsDirectory.appendingPathComponent(safeName)
     }

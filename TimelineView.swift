@@ -17,20 +17,11 @@ public struct TimelineView: View {
     
     // File upload/import states
     @State var showingFilePicker = false
-    @State var filePickerType: AttachmentType = .ticket
-    @State var fileUploadTargetStepId: String = ""
-    @State var isUploadingFile = false
     @State var showingUploadAlert = false
     @State var uploadAlertMessage = ""
-    
-    // File view states
     @State var selectedFileToView: IdentifiableURL? = nil
     @State var fileViewTitle: String = ""
-    
-    public enum AttachmentType {
-        case ticket
-        case pass
-    }
+    @State var fileImportCallback: ((URL) -> Void)? = nil
     
     public init(store: TripStore) {
         self.store = store
@@ -319,6 +310,9 @@ public struct TimelineView: View {
                     HStack(spacing: 14) {
                         if isTimelineEditMode {
                             Button("Cancel") {
+                                let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent("TravelerTemp")
+                                try? FileManager.default.removeItem(at: tempDir)
+                                
                                 withAnimation {
                                     isTimelineEditMode = false
                                     editedTrip = nil
@@ -371,7 +365,14 @@ public struct TimelineView: View {
                 allowedContentTypes: [.pdf, .data],
                 allowsMultipleSelection: false
             ) { result in
-                handleFileImport(result: result)
+                switch result {
+                case .success(let urls):
+                    guard let selectedURL = urls.first else { return }
+                    fileImportCallback?(selectedURL)
+                case .failure(let error):
+                    uploadAlertMessage = "File selection failed: \(error.localizedDescription)"
+                    showingUploadAlert = true
+                }
             }
             .alert("Update", isPresented: $showingUploadAlert) {
                 Button("OK", role: .cancel) {}
@@ -446,17 +447,193 @@ public struct TimelineView: View {
     
     // MARK: - Operations
     
+    func stageFile(selectedURL: URL, type: String) -> String? {
+        let gotAccess = selectedURL.startAccessingSecurityScopedResource()
+        defer {
+            if gotAccess {
+                selectedURL.stopAccessingSecurityScopedResource()
+            }
+        }
+        
+        do {
+            let fileData = try Data(contentsOf: selectedURL)
+            let filename = selectedURL.lastPathComponent
+            let uuid = UUID().uuidString.lowercased()
+            
+            let tempDir = FileManager.default.temporaryDirectory
+                .appendingPathComponent("TravelerTemp")
+                .appendingPathComponent(uuid)
+            try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true, attributes: nil)
+            
+            let localURL = tempDir.appendingPathComponent(filename)
+            try fileData.write(to: localURL)
+            
+            return createTempURL(uuid: uuid, filename: filename, type: type)
+        } catch {
+            print("Failed to stage file: \(error)")
+            return nil
+        }
+    }
+    
+    private func uploadStagedFile(_ path: String) async -> String? {
+        guard path.hasPrefix("temp://") else { return nil }
+        guard let staged = parseTempURL(path) else { return nil }
+        
+        do {
+            let data = try Data(contentsOf: staged.localURL)
+            let folder = staged.type == "pass" ? "passes" : "tickets"
+            let serverPath = "\(folder)/\(staged.originalFilename)"
+            
+            let success = await store.uploadFile(data: data, filename: serverPath)
+            if success {
+                let localCacheURL = store.localURL(forFilename: serverPath)
+                try? FileManager.default.createDirectory(at: localCacheURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+                if FileManager.default.fileExists(atPath: localCacheURL.path) {
+                    try? FileManager.default.removeItem(at: localCacheURL)
+                }
+                try? FileManager.default.copyItem(at: staged.localURL, to: localCacheURL)
+                
+                await MainActor.run {
+                    _ = store.downloadedFiles.insert(serverPath)
+                }
+                return serverPath
+            }
+        } catch {
+            print("Failed to upload staged file: \(error)")
+        }
+        return nil
+    }
+    
     private func saveInlineEdits() {
-        guard let trip = editedTrip else { return }
-        store.trip = trip
+        guard var trip = editedTrip else { return }
         
         Task {
+            var uploadFailed = false
+            
+            // 1. Process and upload all staged files in the trip
+            for i in 0..<trip.steps.count {
+                var step = trip.steps[i]
+                
+                // A. Check flightInfo
+                if var flight = step.flightInfo {
+                    if var shared = flight.sharedFiles {
+                        for j in 0..<shared.count {
+                            if shared[j].hasPrefix("temp://") {
+                                if let serverPath = await uploadStagedFile(shared[j]) {
+                                    shared[j] = serverPath
+                                } else {
+                                    uploadFailed = true
+                                }
+                            }
+                        }
+                        flight.sharedFiles = shared
+                    }
+                    if var wallet = flight.walletPasses {
+                        for j in 0..<wallet.count {
+                            if wallet[j].hasPrefix("temp://") {
+                                if let serverPath = await uploadStagedFile(wallet[j]) {
+                                    wallet[j] = serverPath
+                                } else {
+                                    uploadFailed = true
+                                }
+                            }
+                        }
+                        flight.walletPasses = wallet
+                    }
+                    step.flightInfo = flight
+                }
+                
+                // B. Check stayInfo
+                if var stay = step.stayInfo {
+                    if var hotel = stay.hotel {
+                        var shared = hotel.sharedFiles
+                        for j in 0..<shared.count {
+                            if shared[j].hasPrefix("temp://") {
+                                if let serverPath = await uploadStagedFile(shared[j]) {
+                                    shared[j] = serverPath
+                                } else {
+                                    uploadFailed = true
+                                }
+                            }
+                        }
+                        hotel.sharedFiles = shared
+                        
+                        if var wallet = hotel.walletPasses {
+                            for j in 0..<wallet.count {
+                                if wallet[j].hasPrefix("temp://") {
+                                    if let serverPath = await uploadStagedFile(wallet[j]) {
+                                        wallet[j] = serverPath
+                                    } else {
+                                        uploadFailed = true
+                                    }
+                                }
+                            }
+                            hotel.walletPasses = wallet
+                        }
+                        stay.hotel = hotel
+                    }
+                    
+                    for d in 0..<stay.days.count {
+                        var day = stay.days[d]
+                        for it in 0..<day.items.count {
+                            var item = day.items[it]
+                            
+                            var shared = item.sharedFiles
+                            for j in 0..<shared.count {
+                                if shared[j].hasPrefix("temp://") {
+                                    if let serverPath = await uploadStagedFile(shared[j]) {
+                                        shared[j] = serverPath
+                                    } else {
+                                        uploadFailed = true
+                                    }
+                                }
+                            }
+                            item.sharedFiles = shared
+                            
+                            if var wallet = item.walletPasses {
+                                for j in 0..<wallet.count {
+                                    if wallet[j].hasPrefix("temp://") {
+                                        if let serverPath = await uploadStagedFile(wallet[j]) {
+                                            wallet[j] = serverPath
+                                        } else {
+                                            uploadFailed = true
+                                        }
+                                    }
+                                }
+                                item.walletPasses = wallet
+                            }
+                            day.items[it] = item
+                        }
+                        stay.days[d] = day
+                    }
+                    step.stayInfo = stay
+                }
+                
+                trip.steps[i] = step
+            }
+            
+            if uploadFailed {
+                await MainActor.run {
+                    uploadAlertMessage = "Failed to upload one or more staged attachments."
+                    showingUploadAlert = true
+                }
+                return
+            }
+            
+            // 2. Save trip config on the server
+            store.trip = trip
             let success = await store.uploadTrip()
             if success {
                 await store.downloadAllFilesForCurrentConfig()
+                
+                let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent("TravelerTemp")
+                try? FileManager.default.removeItem(at: tempDir)
             }
-            withAnimation {
-                isTimelineEditMode = false
+            
+            await MainActor.run {
+                withAnimation {
+                    isTimelineEditMode = false
+                }
             }
         }
     }
@@ -590,106 +767,6 @@ public struct TimelineView: View {
                 steps: trip.steps + [newStep]
             )
             activeDayIndex = (editedTrip?.steps.count ?? 0)
-        }
-    }
-    
-    private func handleFileImport(result: Result<[URL], Error>) {
-        switch result {
-        case .success(let urls):
-            guard let selectedURL = urls.first else { return }
-            let gotAccess = selectedURL.startAccessingSecurityScopedResource()
-            defer {
-                if gotAccess {
-                    selectedURL.stopAccessingSecurityScopedResource()
-                }
-            }
-            
-            do {
-                let fileData = try Data(contentsOf: selectedURL)
-                let rawFilename = selectedURL.lastPathComponent
-                let folderName = filePickerType == .pass ? "passes" : "tickets"
-                let serverPath = "\(folderName)/\(rawFilename)"
-                
-                isUploadingFile = true
-                Task {
-                    let success = await store.uploadFile(data: fileData, filename: serverPath)
-                    isUploadingFile = false
-                    
-                    if success {
-                        // Check if it's a compound activity target step id
-                        if fileUploadTargetStepId.contains("|") {
-                            let parts = fileUploadTargetStepId.components(separatedBy: "|")
-                            if parts.count == 3 {
-                                let stepId = parts[0]
-                                let dayId = parts[1]
-                                let itemId = parts[2]
-                                
-                                if let itemBind = itemBinding(stepId: stepId, dayId: dayId, itemId: itemId) {
-                                    var files = itemBind.wrappedValue.sharedFiles
-                                    files.append(serverPath)
-                                    itemBind.wrappedValue.sharedFiles = files
-                                }
-                            }
-                        } else {
-                            // Standard step target
-                            if let binding = stepBinding(forId: fileUploadTargetStepId) {
-                                if binding.wrappedValue.type == .stay {
-                                    if var stay = binding.wrappedValue.stayInfo {
-                                        if var hotel = stay.hotel {
-                                            var shared = hotel.sharedFiles
-                                            shared.append(serverPath)
-                                            hotel.sharedFiles = shared
-                                            stay.hotel = hotel
-                                            binding.wrappedValue.stayInfo = stay
-                                        } else {
-                                            stay.hotel = TripItem(
-                                                id: UUID().uuidString.lowercased(),
-                                                type: .hotel,
-                                                title: "New Accommodation",
-                                                time: "",
-                                                details: "Details",
-                                                sharedFiles: [serverPath],
-                                                profileFiles: nil,
-                                                walletPasses: nil,
-                                                profileWalletPasses: nil,
-                                                websiteURL: nil,
-                                                flightNumber: nil,
-                                                mapPlace: nil
-                                            )
-                                            binding.wrappedValue.stayInfo = stay
-                                        }
-                                    }
-                                } else {
-                                    if var flight = binding.wrappedValue.flightInfo {
-                                        if filePickerType == .pass {
-                                            var passes = flight.walletPasses ?? []
-                                            passes.append(serverPath)
-                                            flight.walletPasses = passes
-                                        } else {
-                                            var shared = flight.sharedFiles ?? []
-                                            shared.append(serverPath)
-                                            flight.sharedFiles = shared
-                                        }
-                                        binding.wrappedValue.flightInfo = flight
-                                    }
-                                }
-                            }
-                        }
-                        uploadAlertMessage = "File uploaded and attached successfully!"
-                        showingUploadAlert = true
-                    } else {
-                        uploadAlertMessage = "Failed to upload file to the server."
-                        showingUploadAlert = true
-                    }
-                }
-            } catch {
-                uploadAlertMessage = "Failed to read local file: \(error.localizedDescription)"
-                showingUploadAlert = true
-            }
-            
-        case .failure(let error):
-            uploadAlertMessage = "File selection failed: \(error.localizedDescription)"
-            showingUploadAlert = true
         }
     }
     

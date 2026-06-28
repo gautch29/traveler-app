@@ -178,37 +178,87 @@ extension TimelineView {
                             .foregroundColor(.secondary)
                             .padding(.top, 4)
                         
-                        HStack(spacing: 12) {
-                            Button {
-                                filePickerType = .ticket
-                                fileUploadTargetStepId = step.id
-                                showingFilePicker = true
-                            } label: {
-                                Label("Attach Receipt PDF", systemImage: "doc.badge.plus")
-                                    .font(.caption2)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(.white)
-                                    .padding(6)
-                                    .background(Color.purple)
-                                    .cornerRadius(6)
+                        if let binding = stepBinding(forId: step.id) {
+                            HStack(spacing: 12) {
+                                Button {
+                                    fileImportCallback = { url in
+                                        if let tempURL = stageFile(selectedURL: url, type: "ticket") {
+                                            if var stay = binding.wrappedValue.stayInfo {
+                                                if var hotel = stay.hotel {
+                                                    hotel.sharedFiles.append(tempURL)
+                                                    stay.hotel = hotel
+                                                } else {
+                                                    stay.hotel = TripItem(
+                                                        id: UUID().uuidString.lowercased(),
+                                                        type: .hotel,
+                                                        title: "New Accommodation",
+                                                        time: "",
+                                                        details: "Details",
+                                                        sharedFiles: [tempURL],
+                                                        profileFiles: nil,
+                                                        walletPasses: nil,
+                                                        profileWalletPasses: nil,
+                                                        websiteURL: nil,
+                                                        flightNumber: nil,
+                                                        mapPlace: nil
+                                                    )
+                                                }
+                                                binding.wrappedValue.stayInfo = stay
+                                            }
+                                        }
+                                    }
+                                    showingFilePicker = true
+                                } label: {
+                                    Label("Attach Receipt PDF", systemImage: "doc.badge.plus")
+                                        .font(.caption2)
+                                        .fontWeight(.bold)
+                                        .foregroundColor(.white)
+                                        .padding(6)
+                                        .background(Color.purple)
+                                        .cornerRadius(6)
+                                }
+                                
+                                Button {
+                                    fileImportCallback = { url in
+                                        if let tempURL = stageFile(selectedURL: url, type: "pass") {
+                                            if var stay = binding.wrappedValue.stayInfo {
+                                                if var hotel = stay.hotel {
+                                                    var wallet = hotel.walletPasses ?? []
+                                                    wallet.append(tempURL)
+                                                    hotel.walletPasses = wallet
+                                                    stay.hotel = hotel
+                                                } else {
+                                                    stay.hotel = TripItem(
+                                                        id: UUID().uuidString.lowercased(),
+                                                        type: .hotel,
+                                                        title: "New Accommodation",
+                                                        time: "",
+                                                        details: "Details",
+                                                        sharedFiles: [],
+                                                        profileFiles: nil,
+                                                        walletPasses: [tempURL],
+                                                        profileWalletPasses: nil,
+                                                        websiteURL: nil,
+                                                        flightNumber: nil,
+                                                        mapPlace: nil
+                                                    )
+                                                }
+                                                binding.wrappedValue.stayInfo = stay
+                                            }
+                                        }
+                                    }
+                                    showingFilePicker = true
+                                } label: {
+                                    Label("Attach Pass", systemImage: "qrcode")
+                                        .font(.caption2)
+                                        .fontWeight(.bold)
+                                        .foregroundColor(.white)
+                                        .padding(6)
+                                        .background(Color.blue)
+                                        .cornerRadius(6)
+                                }
                             }
                             
-                            Button {
-                                filePickerType = .pass
-                                fileUploadTargetStepId = step.id
-                                showingFilePicker = true
-                            } label: {
-                                Label("Attach Pass", systemImage: "qrcode")
-                                    .font(.caption2)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(.white)
-                                    .padding(6)
-                                    .background(Color.blue)
-                                    .cornerRadius(6)
-                            }
-                        }
-                        
-                        if let binding = stepBinding(forId: step.id) {
                             let hotelFiles = binding.wrappedValue.stayInfo?.hotel?.sharedFiles ?? []
                             let hotelPasses = binding.wrappedValue.stayInfo?.hotel?.walletPasses ?? []
                             
@@ -218,7 +268,7 @@ extension TimelineView {
                                         HStack {
                                             Image(systemName: "doc.text")
                                                 .font(.caption2)
-                                            Text(file.components(separatedBy: "/").last ?? file)
+                                            Text(displayFilename(forPath: file))
                                                 .font(.system(size: 10))
                                                 .lineLimit(1)
                                             Spacer()
@@ -229,6 +279,7 @@ extension TimelineView {
                                                         arr.remove(at: idx)
                                                     }
                                                     hotel.sharedFiles = arr
+                                                    stay.hotel = hotel
                                                     stay.hotel = hotel
                                                     binding.wrappedValue.stayInfo = stay
                                                 }
@@ -246,7 +297,7 @@ extension TimelineView {
                                         HStack {
                                             Image(systemName: "qrcode")
                                                 .font(.caption2)
-                                            Text(pass.components(separatedBy: "/").last ?? pass)
+                                            Text(displayFilename(forPath: pass))
                                                 .font(.system(size: 10))
                                                 .lineLimit(1)
                                             Spacer()
@@ -583,8 +634,13 @@ extension TimelineView {
                                                 
                                                 HStack(spacing: 8) {
                                                     Button {
-                                                        filePickerType = .ticket
-                                                        fileUploadTargetStepId = "\(step.id)|\(day.id)|\(item.id)"
+                                                        fileImportCallback = { url in
+                                                            if let tempURL = stageFile(selectedURL: url, type: "ticket") {
+                                                                var shared = itemBind.wrappedValue.sharedFiles
+                                                                shared.append(tempURL)
+                                                                itemBind.wrappedValue.sharedFiles = shared
+                                                            }
+                                                        }
                                                         showingFilePicker = true
                                                     } label: {
                                                         Label("Attach PDF", systemImage: "doc.badge.plus")
@@ -596,8 +652,13 @@ extension TimelineView {
                                                     }
                                                     
                                                     Button {
-                                                        filePickerType = .pass
-                                                        fileUploadTargetStepId = "\(step.id)|\(day.id)|\(item.id)"
+                                                        fileImportCallback = { url in
+                                                            if let tempURL = stageFile(selectedURL: url, type: "pass") {
+                                                                var wallet = itemBind.wrappedValue.walletPasses ?? []
+                                                                wallet.append(tempURL)
+                                                                itemBind.wrappedValue.walletPasses = wallet
+                                                            }
+                                                        }
                                                         showingFilePicker = true
                                                     } label: {
                                                         Label("Attach Pass", systemImage: "qrcode")
@@ -615,7 +676,7 @@ extension TimelineView {
                                                         HStack {
                                                             Image(systemName: "doc.text")
                                                                 .font(.caption2)
-                                                            Text(file.components(separatedBy: "/").last ?? file)
+                                                            Text(displayFilename(forPath: file))
                                                                 .font(.system(size: 10))
                                                                 .lineLimit(1)
                                                             Spacer()
@@ -641,7 +702,7 @@ extension TimelineView {
                                                         HStack {
                                                             Image(systemName: "qrcode")
                                                                 .font(.caption2)
-                                                            Text(pass.components(separatedBy: "/").last ?? pass)
+                                                            Text(displayFilename(forPath: pass))
                                                                 .font(.system(size: 10))
                                                                 .lineLimit(1)
                                                             Spacer()

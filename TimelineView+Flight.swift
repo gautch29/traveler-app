@@ -378,37 +378,53 @@ extension TimelineView {
                         .padding(.top, 10)
                     
                     VStack(alignment: .leading, spacing: 12) {
-                        HStack(spacing: 12) {
-                            Button {
-                                filePickerType = .ticket
-                                fileUploadTargetStepId = step.id
-                                showingFilePicker = true
-                            } label: {
-                                Label("Upload PDF", systemImage: "doc.badge.plus")
-                                    .font(.caption)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(.white)
-                                    .padding(8)
-                                    .background(Color.blue)
-                                    .cornerRadius(8)
+                        if let binding = stepBinding(forId: step.id) {
+                            HStack(spacing: 12) {
+                                Button {
+                                    fileImportCallback = { url in
+                                        if let tempURL = stageFile(selectedURL: url, type: "ticket") {
+                                            if var fInfo = binding.wrappedValue.flightInfo {
+                                                var arr = fInfo.sharedFiles ?? []
+                                                arr.append(tempURL)
+                                                fInfo.sharedFiles = arr
+                                                binding.wrappedValue.flightInfo = fInfo
+                                            }
+                                        }
+                                    }
+                                    showingFilePicker = true
+                                } label: {
+                                    Label("Upload PDF", systemImage: "doc.badge.plus")
+                                        .font(.caption)
+                                        .fontWeight(.bold)
+                                        .foregroundColor(.white)
+                                        .padding(8)
+                                        .background(Color.blue)
+                                        .cornerRadius(8)
+                                }
+                                
+                                Button {
+                                    fileImportCallback = { url in
+                                        if let tempURL = stageFile(selectedURL: url, type: "pass") {
+                                            if var fInfo = binding.wrappedValue.flightInfo {
+                                                var arr = fInfo.walletPasses ?? []
+                                                arr.append(tempURL)
+                                                fInfo.walletPasses = arr
+                                                binding.wrappedValue.flightInfo = fInfo
+                                            }
+                                        }
+                                    }
+                                    showingFilePicker = true
+                                } label: {
+                                    Label("Upload Pass", systemImage: "qrcode")
+                                        .font(.caption)
+                                        .fontWeight(.bold)
+                                        .foregroundColor(.white)
+                                        .padding(8)
+                                        .background(Color.purple)
+                                        .cornerRadius(8)
+                                }
                             }
                             
-                            Button {
-                                filePickerType = .pass
-                                fileUploadTargetStepId = step.id
-                                showingFilePicker = true
-                            } label: {
-                                Label("Upload Pass", systemImage: "qrcode")
-                                    .font(.caption)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(.white)
-                                    .padding(8)
-                                    .background(Color.purple)
-                                    .cornerRadius(8)
-                            }
-                        }
-                        
-                        if let binding = stepBinding(forId: step.id) {
                             let shared = binding.wrappedValue.flightInfo?.sharedFiles ?? []
                             let wallet = binding.wrappedValue.flightInfo?.walletPasses ?? []
                             
@@ -418,7 +434,7 @@ extension TimelineView {
                                         HStack {
                                             Image(systemName: "doc.text")
                                                 .foregroundColor(.secondary)
-                                            Text(file.components(separatedBy: "/").last ?? file)
+                                            Text(displayFilename(forPath: file))
                                                 .font(.caption)
                                                 .lineLimit(1)
                                             Spacer()
@@ -444,7 +460,7 @@ extension TimelineView {
                                         HStack {
                                             Image(systemName: "qrcode")
                                                 .foregroundColor(.secondary)
-                                            Text(pass.components(separatedBy: "/").last ?? pass)
+                                            Text(displayFilename(forPath: pass))
                                                 .font(.caption)
                                                 .lineLimit(1)
                                             Spacer()

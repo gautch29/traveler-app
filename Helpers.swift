@@ -36,3 +36,41 @@ public func isValidPKPass(file: String, store: TripStore) -> Bool {
     guard let data = try? Data(contentsOf: url) else { return false }
     return (try? PKPass(data: data)) != nil
 }
+
+public struct StagedFile {
+    public let localURL: URL
+    public let originalFilename: String
+    public let type: String // "ticket" or "pass"
+}
+
+public func parseTempURL(_ string: String) -> StagedFile? {
+    guard string.hasPrefix("temp://") else { return nil }
+    guard let url = URL(string: string) else { return nil }
+    
+    let pathComponents = url.pathComponents
+    guard pathComponents.count >= 2 else { return nil }
+    let filename = pathComponents[1]
+    
+    let uuid = url.host ?? ""
+    let tempDir = FileManager.default.temporaryDirectory
+        .appendingPathComponent("TravelerTemp")
+        .appendingPathComponent(uuid)
+    let localURL = tempDir.appendingPathComponent(filename)
+    
+    let typeString = URLComponents(string: string)?.queryItems?.first(where: { $0.name == "type" })?.value ?? "ticket"
+    
+    return StagedFile(localURL: localURL, originalFilename: filename, type: typeString)
+}
+
+public func createTempURL(uuid: String, filename: String, type: String) -> String {
+    return "temp://\(uuid)/\(filename)?type=\(type)"
+}
+
+public func displayFilename(forPath path: String) -> String {
+    if path.hasPrefix("temp://") {
+        if let staged = parseTempURL(path) {
+            return staged.originalFilename + " (Staged)"
+        }
+    }
+    return path.components(separatedBy: "/").last ?? path
+}
