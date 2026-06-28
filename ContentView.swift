@@ -52,9 +52,11 @@ public struct ContentView: View {
                 VStack(spacing: 28) {
                     // App Logo / Icon
                     VStack(spacing: 12) {
-                        Image(systemName: "airplane.circle.fill")
-                            .font(.system(size: 80))
-                            .foregroundColor(.white)
+                        Image("Logo")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 90, height: 90)
+                            .clipShape(RoundedRectangle(cornerRadius: 22))
                             .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
                         
                         Text("Traveler")

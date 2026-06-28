@@ -10,6 +10,7 @@
 		0B2A11B3709C02A171989E22 /* commit-msg.sample in Resources */ = {isa = PBXBuildFile; fileRef = 987A5278CD3510EEB66C145D /* commit-msg.sample */; };
 		0CE4745CAB7E2E9216FE2E8A /* pre-push.sample in Resources */ = {isa = PBXBuildFile; fileRef = 607952DF6AF5AF4656A221DE /* pre-push.sample */; };
 		0F6B7C3471D7C35FD7EA8622 /* TripData.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD7E22A737065E6CBCC12955 /* TripData.swift */; };
+		23C68E449B0E0D418531083B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 45C3EF40B48EA34C84733110 /* Assets.xcassets */; };
 		2CC7F1DD3CCF964149A7ADB2 /* fsmonitor-watchman.sample in Resources */ = {isa = PBXBuildFile; fileRef = 433DF3D30C2A9D795A846731 /* fsmonitor-watchman.sample */; };
 		35E1B36DF398CEDA03DACCD8 /* ExpenseTrackerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 290B839685794EEFDFD218D1 /* ExpenseTrackerView.swift */; };
 		4653E5C1223E381EE2FAEB05 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2216F304310979F2185A133C /* ContentView.swift */; };
@@ -40,6 +41,7 @@
 		00C8FF57922D7ABA46BA1012 /* 3bc9197d38df5caab0fae1383a45b6d91311bc */ = {isa = PBXFileReference; lastKnownFileType = file; path = 3bc9197d38df5caab0fae1383a45b6d91311bc; sourceTree = "<group>"; };
 		018B74C42265E848D243A270 /* c6eb4111ea7f6e456d2ac003b24136bc3b4682 */ = {isa = PBXFileReference; lastKnownFileType = file; path = c6eb4111ea7f6e456d2ac003b24136bc3b4682; sourceTree = "<group>"; };
 		02031C6D9855A690EEE949B8 /* c5ab493767d99423ebebbd164c48727089c916 */ = {isa = PBXFileReference; lastKnownFileType = file; path = c5ab493767d99423ebebbd164c48727089c916; sourceTree = "<group>"; };
+		02704D4F6B64B6BCC62D52AD /* 2ac9b5f26cbdced105ffd510bf37b451edd1d7 */ = {isa = PBXFileReference; lastKnownFileType = text; path = 2ac9b5f26cbdced105ffd510bf37b451edd1d7; sourceTree = "<group>"; };
 		027E861A3AA8DE4A67134BBF /* 331f4e53f39d1cb9f73556e9bf0b1405c3b10c */ = {isa = PBXFileReference; lastKnownFileType = file; path = 331f4e53f39d1cb9f73556e9bf0b1405c3b10c; sourceTree = "<group>"; };
 		03F547503C6251773E056955 /* ec1e58dcd5a07a0c56d427e34186e3105b108b */ = {isa = PBXFileReference; lastKnownFileType = file; path = ec1e58dcd5a07a0c56d427e34186e3105b108b; sourceTree = "<group>"; };
 		04DF4B23D3E427C1DEED8F46 /* 9cbede72865bd0011b299d1927ba6ecd9dd730 */ = {isa = PBXFileReference; lastKnownFileType = text; path = 9cbede72865bd0011b299d1927ba6ecd9dd730; sourceTree = "<group>"; };
@@ -47,9 +49,11 @@
 		0633C60722A10DFBEEEECC15 /* 8d687aab0dcaf324c65ce821d614283b566c01 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 8d687aab0dcaf324c65ce821d614283b566c01; sourceTree = "<group>"; };
 		086B243F4B9FFF9952DFC7EB /* sendemail-validate.sample */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "sendemail-validate.sample"; sourceTree = "<group>"; };
 		08C8B74969BDDE619AC812A6 /* 9747a59996bc8514a79aaf5adf47ffc0a07635 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 9747a59996bc8514a79aaf5adf47ffc0a07635; sourceTree = "<group>"; };
+		0B3F2250CC1BD30744900CC3 /* cf9829546bc20dc8a47669b9f9acb46f186f9f */ = {isa = PBXFileReference; lastKnownFileType = file; path = cf9829546bc20dc8a47669b9f9acb46f186f9f; sourceTree = "<group>"; };
 		0B4260C444A9CC4F1E552A05 /* TimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineView.swift; sourceTree = "<group>"; };
 		0D0444230CAEF8711929A96F /* fe5934801c5595270bd5c1bb0f786a4ea81ef9 */ = {isa = PBXFileReference; lastKnownFileType = file; path = fe5934801c5595270bd5c1bb0f786a4ea81ef9; sourceTree = "<group>"; };
 		0D853C908E223E165857DF7A /* 26c5d2376ef344387220f5e43f6d8d17171eea */ = {isa = PBXFileReference; lastKnownFileType = file; path = 26c5d2376ef344387220f5e43f6d8d17171eea; sourceTree = "<group>"; };
+		0F0957B6AFCCA3215A1049A5 /* 65cf41d160fd4c5d66173dbe2aecece543b2ea */ = {isa = PBXFileReference; lastKnownFileType = text; path = 65cf41d160fd4c5d66173dbe2aecece543b2ea; sourceTree = "<group>"; };
 		10F3147AF97D9FF32DF48552 /* 8371024a843622d6ff2b8472cb0bdd4bec924c */ = {isa = PBXFileReference; lastKnownFileType = file; path = 8371024a843622d6ff2b8472cb0bdd4bec924c; sourceTree = "<group>"; };
 		11B01523EB8A0C50978A6E8B /* 684104b0a91fb581d9aec61c668c12695a3835 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 684104b0a91fb581d9aec61c668c12695a3835; sourceTree = "<group>"; };
 		11ED0FBE5DBB4F86CDD655E2 /* b56d326d1a8f58f8b452dc52b6171cc493f9ec */ = {isa = PBXFileReference; lastKnownFileType = file; path = b56d326d1a8f58f8b452dc52b6171cc493f9ec; sourceTree = "<group>"; };
@@ -63,26 +67,33 @@
 		1B859653BD6EBA56FECB4C91 /* 206199551cd9e9f87c9d677bd43a943eb00cd2 */ = {isa = PBXFileReference; lastKnownFileType = text; path = 206199551cd9e9f87c9d677bd43a943eb00cd2; sourceTree = "<group>"; };
 		1B9EF20E37EBB28DD4D3CCFE /* ddf389f6691574da2c673c2ded189d65e45b57 */ = {isa = PBXFileReference; lastKnownFileType = file; path = ddf389f6691574da2c673c2ded189d65e45b57; sourceTree = "<group>"; };
 		1C510AEA95EC26429113F9F5 /* d5d0da364f60d8b71f5f4ec80a73166ea9228d */ = {isa = PBXFileReference; lastKnownFileType = file; path = d5d0da364f60d8b71f5f4ec80a73166ea9228d; sourceTree = "<group>"; };
+		1D40DC19A95073E34FD6C52F /* 39c9746cc8bb80d054571f2042897486e76625 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 39c9746cc8bb80d054571f2042897486e76625; sourceTree = "<group>"; };
 		1D8743ADB8858A665595792E /* 006485fca5b247f0e46141aa143dd19ad88952 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 006485fca5b247f0e46141aa143dd19ad88952; sourceTree = "<group>"; };
 		1F49F4CF03D28D908BD2881D /* a2468cbc7e45427388f5a002c33494be84bcd5 */ = {isa = PBXFileReference; lastKnownFileType = file; path = a2468cbc7e45427388f5a002c33494be84bcd5; sourceTree = "<group>"; };
 		201A938F1205D10CF83F0232 /* 5f28829f4fd31560b87e5b68832c2026eb56be */ = {isa = PBXFileReference; lastKnownFileType = file; path = 5f28829f4fd31560b87e5b68832c2026eb56be; sourceTree = "<group>"; };
+		2051F50B890AB560715B8080 /* 49e1e049f3c32342de4867fa167a30fc99bc5e */ = {isa = PBXFileReference; lastKnownFileType = file; path = 49e1e049f3c32342de4867fa167a30fc99bc5e; sourceTree = "<group>"; };
 		21C4A1676644BCBB55DB25CA /* fdc5767abbe65affce5e876ac7ebfae663c88a */ = {isa = PBXFileReference; lastKnownFileType = file; path = fdc5767abbe65affce5e876ac7ebfae663c88a; sourceTree = "<group>"; };
 		2216F304310979F2185A133C /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		227D83326622FE0913BC9BF4 /* d19e607585bbad01be0f8835245f7e186bbaeb */ = {isa = PBXFileReference; lastKnownFileType = file; path = d19e607585bbad01be0f8835245f7e186bbaeb; sourceTree = "<group>"; };
 		2331946B5DF9F6F5FDD3601B /* 380321bf59ea8443fcd538c6e3d882bcd598fb */ = {isa = PBXFileReference; lastKnownFileType = file; path = 380321bf59ea8443fcd538c6e3d882bcd598fb; sourceTree = "<group>"; };
+		233D894A7DB3DF3B433DB430 /* 9e44d7c7f8ce827daa34d319b868e53e833791 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 9e44d7c7f8ce827daa34d319b868e53e833791; sourceTree = "<group>"; };
 		23E97557C80B2A88BCE1CD1F /* da248baad18d5788f695be51a585bc593535d9 */ = {isa = PBXFileReference; lastKnownFileType = file; path = da248baad18d5788f695be51a585bc593535d9; sourceTree = "<group>"; };
 		24E009D003D6EA96F8336C8D /* ff78f72ffd73b053cd837fdcf3b25e736ed399 */ = {isa = PBXFileReference; lastKnownFileType = file; path = ff78f72ffd73b053cd837fdcf3b25e736ed399; sourceTree = "<group>"; };
 		27010332018970A8D3AEFD97 /* d8d1945ab1af99408eacb2358a44ca3501deff */ = {isa = PBXFileReference; lastKnownFileType = text; path = d8d1945ab1af99408eacb2358a44ca3501deff; sourceTree = "<group>"; };
+		27EFF822962CD01269B2B3BA /* d4d38fe9aedf5266f8a881ac57c834de54168f */ = {isa = PBXFileReference; lastKnownFileType = file; path = d4d38fe9aedf5266f8a881ac57c834de54168f; sourceTree = "<group>"; };
 		290B839685794EEFDFD218D1 /* ExpenseTrackerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseTrackerView.swift; sourceTree = "<group>"; };
 		2AE5C25791F19CFB1ED6E7EA /* 0758c209ca9ad3d2a1920a916c4146de2dcc2e */ = {isa = PBXFileReference; lastKnownFileType = file; path = 0758c209ca9ad3d2a1920a916c4146de2dcc2e; sourceTree = "<group>"; };
 		2B85BCD7CC6566898099B206 /* 5bc802b20f66307f2af579281f4ad31a05604b */ = {isa = PBXFileReference; lastKnownFileType = file; path = 5bc802b20f66307f2af579281f4ad31a05604b; sourceTree = "<group>"; };
 		2BD9FD889ABFF1113C065CF1 /* a3a4523140c4daa31481ff9788641de806a319 */ = {isa = PBXFileReference; lastKnownFileType = file; path = a3a4523140c4daa31481ff9788641de806a319; sourceTree = "<group>"; };
 		2C7109DFC8680B8D3132C19E /* ef031b0d2c7aa37c8eefb0710b91c6707f4a19 */ = {isa = PBXFileReference; lastKnownFileType = file; path = ef031b0d2c7aa37c8eefb0710b91c6707f4a19; sourceTree = "<group>"; };
+		2C806E79615CA828DB620B79 /* 8f2ed41f1042a7b4a5889dfabed65a1e9ecf73 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 8f2ed41f1042a7b4a5889dfabed65a1e9ecf73; sourceTree = "<group>"; };
 		2C93700ABDDF2B261937CA91 /* 87120ce7da75ab3f3ea513d962f47043adfaea */ = {isa = PBXFileReference; lastKnownFileType = file; path = 87120ce7da75ab3f3ea513d962f47043adfaea; sourceTree = "<group>"; };
 		2C9F1022AD10E245E15698F1 /* a41dd9fddc1d3e11bb376fe434cb2ee2e52d1e */ = {isa = PBXFileReference; lastKnownFileType = file; path = a41dd9fddc1d3e11bb376fe434cb2ee2e52d1e; sourceTree = "<group>"; };
 		2D0DFF5CEF0D37AC56D74054 /* e14430cbeb5a1c4aac52de0617ec23bcff16aa */ = {isa = PBXFileReference; lastKnownFileType = file; path = e14430cbeb5a1c4aac52de0617ec23bcff16aa; sourceTree = "<group>"; };
 		2D72100AB772C968A663C6C9 /* c7d218a6e98db661fdd329c60d0de724565aaf */ = {isa = PBXFileReference; lastKnownFileType = file; path = c7d218a6e98db661fdd329c60d0de724565aaf; sourceTree = "<group>"; };
 		2D74A0946169E4E308F5918C /* 64bdbc6f73fe9e8337d8096fcf824a87a04844 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 64bdbc6f73fe9e8337d8096fcf824a87a04844; sourceTree = "<group>"; };
 		2E2244D9FF21ADD281C10C98 /* 8f9c173235a6934eda12b1471263149c2ff15c */ = {isa = PBXFileReference; lastKnownFileType = file; path = 8f9c173235a6934eda12b1471263149c2ff15c; sourceTree = "<group>"; };
+		2EF77A97C8CA5F681C1FE16B /* 76cdde05c790e379b8d51fa879f84fb48c9e98 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 76cdde05c790e379b8d51fa879f84fb48c9e98; sourceTree = "<group>"; };
 		308FB7D1561DA26FB25AA935 /* 5b41f9df9572fa1300c94e542b11c0c9dd597a */ = {isa = PBXFileReference; lastKnownFileType = file; path = 5b41f9df9572fa1300c94e542b11c0c9dd597a; sourceTree = "<group>"; };
 		30EB508E6F45A46DEFC90848 /* 319407f13e840510c43c4b7b395154e6b1fb7d */ = {isa = PBXFileReference; lastKnownFileType = file; path = 319407f13e840510c43c4b7b395154e6b1fb7d; sourceTree = "<group>"; };
 		310E9196861B9558B0E67CF6 /* fca01833d0b015c294de6a6793d2b2aeeee3f0 */ = {isa = PBXFileReference; lastKnownFileType = file; path = fca01833d0b015c294de6a6793d2b2aeeee3f0; sourceTree = "<group>"; };
@@ -96,12 +107,17 @@
 		399F3F5648CD2802D2D31AFF /* 5517488e30309a55c08bed2fc0af4043dcd99c */ = {isa = PBXFileReference; lastKnownFileType = text; path = 5517488e30309a55c08bed2fc0af4043dcd99c; sourceTree = "<group>"; };
 		3A04C50AC93489000D9256C3 /* 4046000b699e357f3c8fe73e4af902ce88b9b5 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 4046000b699e357f3c8fe73e4af902ce88b9b5; sourceTree = "<group>"; };
 		3A4B7240415506537F5E98C7 /* 74d5e183736ab8a31471a3d4e4bf7862a3d9b5 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 74d5e183736ab8a31471a3d4e4bf7862a3d9b5; sourceTree = "<group>"; };
+		3C9A7B105055D097EA88D168 /* 6f837829c0892f6786ad4585ab3586ee823be1 */ = {isa = PBXFileReference; lastKnownFileType = text; path = 6f837829c0892f6786ad4585ab3586ee823be1; sourceTree = "<group>"; };
 		3DD340FA436E02B5EF83A0CC /* d4da326eed777c37309731e4a4ed83a9c1c5fa */ = {isa = PBXFileReference; lastKnownFileType = text; path = d4da326eed777c37309731e4a4ed83a9c1c5fa; sourceTree = "<group>"; };
 		3E55DDF5069DEE0C573F576B /* 8e3d6326daa8efecc04d83d88f538d68f5b58b */ = {isa = PBXFileReference; lastKnownFileType = file; path = 8e3d6326daa8efecc04d83d88f538d68f5b58b; sourceTree = "<group>"; };
 		410976A96A94D9A3B3B5A3AA /* fc0e803cc2a1b9b3ad9859342cc67d3a1197ed */ = {isa = PBXFileReference; lastKnownFileType = file; path = fc0e803cc2a1b9b3ad9859342cc67d3a1197ed; sourceTree = "<group>"; };
 		416FFF27ADA2F38E1E25796F /* 8dac258a88c0f33ff79f2623075d341cb03606 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 8dac258a88c0f33ff79f2623075d341cb03606; sourceTree = "<group>"; };
 		422735440BD494617ADA1463 /* 8f76b4923877620dbde46a4e2bd6fad4a26701 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 8f76b4923877620dbde46a4e2bd6fad4a26701; sourceTree = "<group>"; };
+		424A0BC8302ED958179CDD2F /* 2ec1490c4a9a32f30635b6911bab8424b39a42 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 2ec1490c4a9a32f30635b6911bab8424b39a42; sourceTree = "<group>"; };
+		42D6AE6B61629A059783CF9A /* 8559c2dbd726db7bf13679aabed07e3bb425ff */ = {isa = PBXFileReference; lastKnownFileType = file; path = 8559c2dbd726db7bf13679aabed07e3bb425ff; sourceTree = "<group>"; };
 		433DF3D30C2A9D795A846731 /* fsmonitor-watchman.sample */ = {isa = PBXFileReference; lastKnownFileType = text.script.perl; path = "fsmonitor-watchman.sample"; sourceTree = "<group>"; };
+		43AA778FEB16025259F8BF1F /* 9cac72be5e43c9bfbc4e120b7dd6a161094b6c */ = {isa = PBXFileReference; lastKnownFileType = file; path = 9cac72be5e43c9bfbc4e120b7dd6a161094b6c; sourceTree = "<group>"; };
+		45C3EF40B48EA34C84733110 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		465C3A13B85A388EC0F0FF2A /* 967561cc5845139ac1cef41607e3f45d48222e */ = {isa = PBXFileReference; lastKnownFileType = file; path = 967561cc5845139ac1cef41607e3f45d48222e; sourceTree = "<group>"; };
 		4681A4059A4543296BEF9416 /* ee8532be3f95afc4d3a4b8ce9bb8e70437a114 */ = {isa = PBXFileReference; lastKnownFileType = file; path = ee8532be3f95afc4d3a4b8ce9bb8e70437a114; sourceTree = "<group>"; };
 		469DB63517C0660B8D3A7977 /* 54fd72989598393220e5689d36b258fe4c9d12 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 54fd72989598393220e5689d36b258fe4c9d12; sourceTree = "<group>"; };
@@ -114,6 +130,7 @@
 		4BAC203881762103F3865257 /* 5802f6ffd33e727eccb048af807d47ff24ff33 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 5802f6ffd33e727eccb048af807d47ff24ff33; sourceTree = "<group>"; };
 		4BF0C6A3ED7A47F4A61F4326 /* e3d532919a358072023ce909c960cb41b62fb6 */ = {isa = PBXFileReference; lastKnownFileType = file; path = e3d532919a358072023ce909c960cb41b62fb6; sourceTree = "<group>"; };
 		4D7273DE4362E7E639BF0DEC /* 1621fd0ca2e1ea7d70373e2fe7d1f70f5eb645 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 1621fd0ca2e1ea7d70373e2fe7d1f70f5eb645; sourceTree = "<group>"; };
+		4DE56A065D8682DAC417541A /* 57fe52da168d10156f37582fb6d45fbf11b7b8 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 57fe52da168d10156f37582fb6d45fbf11b7b8; sourceTree = "<group>"; };
 		4E2D85DB200369581609E540 /* c824afd689734269350150761da63eb70a8f6b */ = {isa = PBXFileReference; lastKnownFileType = file; path = c824afd689734269350150761da63eb70a8f6b; sourceTree = "<group>"; };
 		502B8F961580EB9BA34C7B4C /* d940b2ddc0688ef3f01e00410d70cb53004b6a */ = {isa = PBXFileReference; lastKnownFileType = file; path = d940b2ddc0688ef3f01e00410d70cb53004b6a; sourceTree = "<group>"; };
 		50402F9972C0EBAFB24BFFDE /* a464d058e2735299e6fe6b6e777650e5a07017 */ = {isa = PBXFileReference; lastKnownFileType = file; path = a464d058e2735299e6fe6b6e777650e5a07017; sourceTree = "<group>"; };
@@ -129,14 +146,17 @@
 		5F68120086E092FED1AD8F6D /* pre-rebase.sample */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "pre-rebase.sample"; sourceTree = "<group>"; };
 		6004F75CB28DF33F2ADCF143 /* 0b4b911527af92cf667d4ec12c46ca239a8ffa */ = {isa = PBXFileReference; lastKnownFileType = file; path = 0b4b911527af92cf667d4ec12c46ca239a8ffa; sourceTree = "<group>"; };
 		607952DF6AF5AF4656A221DE /* pre-push.sample */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "pre-push.sample"; sourceTree = "<group>"; };
+		607FD89674003DE2C93A3272 /* a5c8a9c2ee5251f513ffec3e5dd73b226e2c6a */ = {isa = PBXFileReference; lastKnownFileType = file; path = a5c8a9c2ee5251f513ffec3e5dd73b226e2c6a; sourceTree = "<group>"; };
 		611B35B9619B531087929D36 /* 498806f3e8937c4a4f4f4e6094f82e1aef8bb0 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 498806f3e8937c4a4f4f4e6094f82e1aef8bb0; sourceTree = "<group>"; };
 		614731CBA860CA070AE08AC0 /* pre-commit.sample */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "pre-commit.sample"; sourceTree = "<group>"; };
 		64390932E50A8C8CEE67C112 /* 2380fa9af754d555df2aa871c3a3f56f22fbaf */ = {isa = PBXFileReference; lastKnownFileType = file; path = 2380fa9af754d555df2aa871c3a3f56f22fbaf; sourceTree = "<group>"; };
+		64DFE05737552DF4877AD8CE /* 18464082a8ca3d63f9793648de9e5761ed99d4 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 18464082a8ca3d63f9793648de9e5761ed99d4; sourceTree = "<group>"; };
 		65EFEEC35DDCEBDAE9D40A05 /* c0c5384cc0047b866dce58c57424b0bfc6691a */ = {isa = PBXFileReference; lastKnownFileType = file; path = c0c5384cc0047b866dce58c57424b0bfc6691a; sourceTree = "<group>"; };
 		67D22F1D33913B1B59BEE5D2 /* 0e4857726ef0b829518015463a232022f0a9e6 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 0e4857726ef0b829518015463a232022f0a9e6; sourceTree = "<group>"; };
 		67F0E9C59C25852E0C0F8016 /* 9f48bac62ba936998590d93277923e7e50e788 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 9f48bac62ba936998590d93277923e7e50e788; sourceTree = "<group>"; };
 		6831D11154D60F820181819F /* 625ee04f94674619154b025e28830698ab5434 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 625ee04f94674619154b025e28830698ab5434; sourceTree = "<group>"; };
 		692BFF9DEF44823C6543E848 /* 23aa001822cd9d65c874438058aa833be1b89d */ = {isa = PBXFileReference; lastKnownFileType = file; path = 23aa001822cd9d65c874438058aa833be1b89d; sourceTree = "<group>"; };
+		693E685CBE797CB1DDAB865A /* 1cd3f9a18f4a40ad3cfa5d3f99e5c487088a85 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 1cd3f9a18f4a40ad3cfa5d3f99e5c487088a85; sourceTree = "<group>"; };
 		6B5C126B3142477E609138A3 /* 0e7bca4cbdbc8e4cc2c30e79dcc16d2d6716bd */ = {isa = PBXFileReference; lastKnownFileType = file; path = 0e7bca4cbdbc8e4cc2c30e79dcc16d2d6716bd; sourceTree = "<group>"; };
 		6B79E99605E22ABAAD2D5363 /* main */ = {isa = PBXFileReference; lastKnownFileType = text; path = main; sourceTree = "<group>"; };
 		6B8A469AEC244F18D8FDDD16 /* 646f00da697f045940ed64cb978bf3b7096d9a */ = {isa = PBXFileReference; lastKnownFileType = file; path = 646f00da697f045940ed64cb978bf3b7096d9a; sourceTree = "<group>"; };
@@ -144,6 +164,7 @@
 		704BFE689F520CED2FDFF83E /* fde3ad01dd87382e375f34a4f0f427b539a842 */ = {isa = PBXFileReference; lastKnownFileType = file; path = fde3ad01dd87382e375f34a4f0f427b539a842; sourceTree = "<group>"; };
 		7165936FD1AD7D8A6FF0A6AF /* 2bd900804df8971f1023c6fc4f23f6f37d23f9 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 2bd900804df8971f1023c6fc4f23f6f37d23f9; sourceTree = "<group>"; };
 		733E22C70DA05A58D69FFF4F /* pre-receive.sample */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "pre-receive.sample"; sourceTree = "<group>"; };
+		739302270F319A16FF0E7AA3 /* 937829db9aa0ae289ae824ac6d5011f407e3dd */ = {isa = PBXFileReference; lastKnownFileType = file; path = 937829db9aa0ae289ae824ac6d5011f407e3dd; sourceTree = "<group>"; };
 		756C2B5E39F7A76D481351BA /* 092c107e4aa0873db9dd6baeeef23e4e612a53 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 092c107e4aa0873db9dd6baeeef23e4e612a53; sourceTree = "<group>"; };
 		7611601BE30A0AE5EB3BA661 /* 942f17b758126a03a4ff7f6b4230d76a7943ce */ = {isa = PBXFileReference; lastKnownFileType = file; path = 942f17b758126a03a4ff7f6b4230d76a7943ce; sourceTree = "<group>"; };
 		76DC8E62E70ED8695FB6194D /* 29296829f6164ad521eb989a481a09cc0fa8a5 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 29296829f6164ad521eb989a481a09cc0fa8a5; sourceTree = "<group>"; };
@@ -160,9 +181,11 @@
 		7CEA0CDA310242526C47C261 /* 0ef05aa921c179a0dd041e5e689ccbb16f2924 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 0ef05aa921c179a0dd041e5e689ccbb16f2924; sourceTree = "<group>"; };
 		7D2A56981E63D2B7294B8671 /* 1c2efe571e9c6227fe429e2209decde1d8a357 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 1c2efe571e9c6227fe429e2209decde1d8a357; sourceTree = "<group>"; };
 		7D4D9631BE3A48079D208286 /* f7123c9cd6322940580679212d127ac6b620c3 */ = {isa = PBXFileReference; lastKnownFileType = file; path = f7123c9cd6322940580679212d127ac6b620c3; sourceTree = "<group>"; };
+		7D8F77A5283816A250E271BC /* 40d937759416838a7d93eb1d9095d1b283b82a */ = {isa = PBXFileReference; lastKnownFileType = file; path = 40d937759416838a7d93eb1d9095d1b283b82a; sourceTree = "<group>"; };
 		7DDCDD17098E2756DE19A874 /* ed38dd137c17f6764efa1e88eefd205c0eece8 */ = {isa = PBXFileReference; lastKnownFileType = file; path = ed38dd137c17f6764efa1e88eefd205c0eece8; sourceTree = "<group>"; };
 		7E374C605E72C7C52A3F43D5 /* config */ = {isa = PBXFileReference; lastKnownFileType = text; path = config; sourceTree = "<group>"; };
 		8095E676FFD0B9E77351C33F /* b53289dcbdf383368ceb84a8af971df2e81299 */ = {isa = PBXFileReference; lastKnownFileType = file; path = b53289dcbdf383368ceb84a8af971df2e81299; sourceTree = "<group>"; };
+		81597F8C1891B6E414CBBE7B /* 26f403fd8e8e3e145bd3d276447f5356823756 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 26f403fd8e8e3e145bd3d276447f5356823756; sourceTree = "<group>"; };
 		827CD004EF54B023255B8995 /* f1b1513eb57fa9a34fab581d472f030d65ac73 */ = {isa = PBXFileReference; lastKnownFileType = file; path = f1b1513eb57fa9a34fab581d472f030d65ac73; sourceTree = "<group>"; };
 		84A0FB86CF57B5543D5EB537 /* bb05a635d4c92f32a86c06b04b6702204e68e4 */ = {isa = PBXFileReference; lastKnownFileType = text; path = bb05a635d4c92f32a86c06b04b6702204e68e4; sourceTree = "<group>"; };
 		84F2CE7C3E36AACDF3631711 /* fe1180a1879170aff32ef1303599cd7290d104 */ = {isa = PBXFileReference; lastKnownFileType = file; path = fe1180a1879170aff32ef1303599cd7290d104; sourceTree = "<group>"; };
@@ -171,13 +194,17 @@
 		86FCF79C0283D54FA3D10BFD /* d27de88a2845fd238c6b77d1757785a09be947 */ = {isa = PBXFileReference; lastKnownFileType = file; path = d27de88a2845fd238c6b77d1757785a09be947; sourceTree = "<group>"; };
 		8733389AFF86009A36822B77 /* 86d47869eebf018603df1b78d50f245999167a */ = {isa = PBXFileReference; lastKnownFileType = file; path = 86d47869eebf018603df1b78d50f245999167a; sourceTree = "<group>"; };
 		87C589D26734EC9FE4847540 /* b27267e9ca2bdb0b3252668103c25a1b6b4322 */ = {isa = PBXFileReference; lastKnownFileType = text; path = b27267e9ca2bdb0b3252668103c25a1b6b4322; sourceTree = "<group>"; };
+		89161E40BEAE1AB67EF2A514 /* f46f552303c49db6a5d83c3974d880ffd1e9e4 */ = {isa = PBXFileReference; lastKnownFileType = file; path = f46f552303c49db6a5d83c3974d880ffd1e9e4; sourceTree = "<group>"; };
 		8927F11A4ECE85ECDC90D0B3 /* TravelerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TravelerApp.swift; sourceTree = "<group>"; };
 		89F44711C8C1CF16C71252AD /* 185191f914cd09a28c112ebc262d852d524e00 */ = {isa = PBXFileReference; lastKnownFileType = text; path = 185191f914cd09a28c112ebc262d852d524e00; sourceTree = "<group>"; };
 		8A63A49B2313C527DA80FB24 /* f82251e9b7196f62e4e8db3e4d4d3a74217429 */ = {isa = PBXFileReference; lastKnownFileType = file; path = f82251e9b7196f62e4e8db3e4d4d3a74217429; sourceTree = "<group>"; };
+		8BC2355C9D587511A7EA1438 /* 96c557c3a9697e6a3dad56c478fb34f3dad233 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 96c557c3a9697e6a3dad56c478fb34f3dad233; sourceTree = "<group>"; };
 		8D00632BFE16309AD911D4CF /* 066d7e2a8139c6dece586a09f92720e6051593 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 066d7e2a8139c6dece586a09f92720e6051593; sourceTree = "<group>"; };
 		8DDB61202E4152F8D14FD1F4 /* b0db3202ed1325d54343af20abdea8787c0e35 */ = {isa = PBXFileReference; lastKnownFileType = file; path = b0db3202ed1325d54343af20abdea8787c0e35; sourceTree = "<group>"; };
 		8F0ACA070E38A1C9F615D3D8 /* e164158d0d9ee0f38bebb930b68feaeb929b6c */ = {isa = PBXFileReference; lastKnownFileType = file; path = e164158d0d9ee0f38bebb930b68feaeb929b6c; sourceTree = "<group>"; };
 		908267B3B827B179F282ABC5 /* f338ff8724a0786e4c5e28ab1f621d1917737d */ = {isa = PBXFileReference; lastKnownFileType = file; path = f338ff8724a0786e4c5e28ab1f621d1917737d; sourceTree = "<group>"; };
+		914EE738DFFF6F566F93329A /* 15f34e760c1bb59e27731581ed60dc275c6a98 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 15f34e760c1bb59e27731581ed60dc275c6a98; sourceTree = "<group>"; };
+		93E1CDAB5F95CBA10F6E165D /* ea221c31ad385d326b95fd8805fdaaf9269f76 */ = {isa = PBXFileReference; lastKnownFileType = file; path = ea221c31ad385d326b95fd8805fdaaf9269f76; sourceTree = "<group>"; };
 		9433E3A5B778DDE25ACFEB3F /* 2271d020ea83355e627f535af4399bbe1b96b7 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 2271d020ea83355e627f535af4399bbe1b96b7; sourceTree = "<group>"; };
 		94DCF39DBB8DB774C00E1028 /* 26fe7b62ebeb3c0c2f6ce9bcaa828adb7df345 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 26fe7b62ebeb3c0c2f6ce9bcaa828adb7df345; sourceTree = "<group>"; };
 		95453D65C142D1742AEA46E0 /* 5e19d4ed65c9e912ef4a60482a18770a10765d */ = {isa = PBXFileReference; lastKnownFileType = file; path = 5e19d4ed65c9e912ef4a60482a18770a10765d; sourceTree = "<group>"; };
@@ -198,12 +225,14 @@
 		A15C42F7BA0DFE357FBBCCDA /* 11711072a402437c1733e688c818d28d4306f7 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 11711072a402437c1733e688c818d28d4306f7; sourceTree = "<group>"; };
 		A2881B5585B941E513DF2C57 /* 5d7d6a6ae7c977b44f64bf6e7ebcf4c6f2fe30 */ = {isa = PBXFileReference; lastKnownFileType = text; path = 5d7d6a6ae7c977b44f64bf6e7ebcf4c6f2fe30; sourceTree = "<group>"; };
 		A294D66D8BED23215AE1BC92 /* f2de98e4451a61cf28419fa5e908e71dcd3548 */ = {isa = PBXFileReference; lastKnownFileType = file; path = f2de98e4451a61cf28419fa5e908e71dcd3548; sourceTree = "<group>"; };
-		A29BF4C81E0752A4E7F5E11A /* Traveler.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Traveler.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A29BF4C81E0752A4E7F5E11A /* Traveler.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Traveler.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A313257B1408AA86C16CFD7A /* HEAD */ = {isa = PBXFileReference; lastKnownFileType = text; path = HEAD; sourceTree = "<group>"; };
+		A3330DB368F90413B4FAF71E /* 3135de9c9cbda69a9f0727b5c69b38caf2b507 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 3135de9c9cbda69a9f0727b5c69b38caf2b507; sourceTree = "<group>"; };
 		A3413DBB7BA2494F06A85253 /* ff041e2e19c1cd0dd404c376ae1ebda10f2764 */ = {isa = PBXFileReference; lastKnownFileType = file; path = ff041e2e19c1cd0dd404c376ae1ebda10f2764; sourceTree = "<group>"; };
 		A4F28EEB786466F1F36EFA67 /* 6fefa0c9e8d6bd2309f20c2ee45a41754c5eb0 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 6fefa0c9e8d6bd2309f20c2ee45a41754c5eb0; sourceTree = "<group>"; };
 		A6186AE1D24931285F32BD8F /* 511d48bb3beee11f9f33a6e1deac3b3ce116ed */ = {isa = PBXFileReference; lastKnownFileType = file; path = 511d48bb3beee11f9f33a6e1deac3b3ce116ed; sourceTree = "<group>"; };
 		A6AD9189618A49E59D9D99DA /* 21295f220731bfcb00919e10c0404975fd6ee8 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 21295f220731bfcb00919e10c0404975fd6ee8; sourceTree = "<group>"; };
+		A85BF94CDC69FD816DAE9B7F /* 770513d5d54bd33e2b2e85dcb272726a391310 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 770513d5d54bd33e2b2e85dcb272726a391310; sourceTree = "<group>"; };
 		A85F189E00A425136B3D368B /* 1de63d124fabd9ee1113b968d75d9e45268ad4 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 1de63d124fabd9ee1113b968d75d9e45268ad4; sourceTree = "<group>"; };
 		A8A2DF31056A0F722C4037F9 /* b91163b40323120d5a833f0778549bc96e8b11 */ = {isa = PBXFileReference; lastKnownFileType = text; path = b91163b40323120d5a833f0778549bc96e8b11; sourceTree = "<group>"; };
 		A90A75772EE89E7A8E82CD7D /* b28a59fb2a010c45107a3cee0a6ac17b8ce632 */ = {isa = PBXFileReference; lastKnownFileType = text; path = b28a59fb2a010c45107a3cee0a6ac17b8ce632; sourceTree = "<group>"; };
@@ -213,6 +242,7 @@
 		AB5F629D0262B8978C1E8DFE /* 11131fdffd2c595bbbbabbd52f730b469c9493 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 11131fdffd2c595bbbbabbd52f730b469c9493; sourceTree = "<group>"; };
 		AC3998BC2DA38FEAEAE397F7 /* e23d7992e4e754ad95b2d312e2b1adb65595c9 */ = {isa = PBXFileReference; lastKnownFileType = file; path = e23d7992e4e754ad95b2d312e2b1adb65595c9; sourceTree = "<group>"; };
 		AC5C89B586C2510B518D5E90 /* d4eae5aa3dc156bc8c92fda6552a54a18346f1 */ = {isa = PBXFileReference; lastKnownFileType = file; path = d4eae5aa3dc156bc8c92fda6552a54a18346f1; sourceTree = "<group>"; };
+		AC765A6913367AA6A08A8F9D /* 3bc9a9666190b878d0182ea9e495890a544c90 */ = {isa = PBXFileReference; lastKnownFileType = text; path = 3bc9a9666190b878d0182ea9e495890a544c90; sourceTree = "<group>"; };
 		AC89A12187435AD09648B14D /* 8848175857a5bf11e6dc36162b516882127cce */ = {isa = PBXFileReference; lastKnownFileType = file; path = 8848175857a5bf11e6dc36162b516882127cce; sourceTree = "<group>"; };
 		AD8EFF3E311BF59C34860806 /* 3f6de6e28c39105e79b5bac3d9af9409889810 */ = {isa = PBXFileReference; lastKnownFileType = text; path = 3f6de6e28c39105e79b5bac3d9af9409889810; sourceTree = "<group>"; };
 		AEE3D7D1F8733245A7201833 /* prepare-commit-msg.sample */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "prepare-commit-msg.sample"; sourceTree = "<group>"; };
@@ -222,6 +252,7 @@
 		B0AFB1231B18AB5EB7E2F337 /* post-update.sample */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "post-update.sample"; sourceTree = "<group>"; };
 		B10BB261F815462E2FC6B908 /* 01ec8ab2e82c34ee57c388ce2743e9e6acb245 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 01ec8ab2e82c34ee57c388ce2743e9e6acb245; sourceTree = "<group>"; };
 		B245B1779C1085A42E34A493 /* 2131e422cee5cf9a95e082c0187ae4ff52167c */ = {isa = PBXFileReference; lastKnownFileType = text; path = 2131e422cee5cf9a95e082c0187ae4ff52167c; sourceTree = "<group>"; };
+		B2DBD821C173CA51459B094F /* 7de591531c8f7d0f5e45bf6e99931804c5e58b */ = {isa = PBXFileReference; lastKnownFileType = file; path = 7de591531c8f7d0f5e45bf6e99931804c5e58b; sourceTree = "<group>"; };
 		B3BDB73D7DC1F6094447A35B /* e164dbcd1a757521a652c0cac13a597e0632e3 */ = {isa = PBXFileReference; lastKnownFileType = file; path = e164dbcd1a757521a652c0cac13a597e0632e3; sourceTree = "<group>"; };
 		B4B610EC27A7BFF4627B5A2C /* db1f220dff1e8c3d10e21a80e6209cf75a99a7 */ = {isa = PBXFileReference; lastKnownFileType = file; path = db1f220dff1e8c3d10e21a80e6209cf75a99a7; sourceTree = "<group>"; };
 		B6265D940F37CA9853E0AC54 /* fb3051cb6ed04e73f2b3a86d8ac17a8dbda9e9 */ = {isa = PBXFileReference; lastKnownFileType = file; path = fb3051cb6ed04e73f2b3a86d8ac17a8dbda9e9; sourceTree = "<group>"; };
@@ -235,9 +266,11 @@
 		BFA24243C1D06C5C60487653 /* 34c5840253f1595094a738c8ab1a84c73222ab */ = {isa = PBXFileReference; lastKnownFileType = file; path = 34c5840253f1595094a738c8ab1a84c73222ab; sourceTree = "<group>"; };
 		BFC582EF8611384A22AC8903 /* b956d6a46b36f5d2550949ae7d823b73d08ff8 */ = {isa = PBXFileReference; lastKnownFileType = file; path = b956d6a46b36f5d2550949ae7d823b73d08ff8; sourceTree = "<group>"; };
 		C09A20D6E02C0581AA69FD1D /* 6dfe7b507f7db3b46b944516df33425bea69ff */ = {isa = PBXFileReference; lastKnownFileType = file; path = 6dfe7b507f7db3b46b944516df33425bea69ff; sourceTree = "<group>"; };
+		C20CA39B89B68BD4D3635A43 /* 9627e04568bd12d808ddee0ef11c31f2dc3cee */ = {isa = PBXFileReference; lastKnownFileType = file; path = 9627e04568bd12d808ddee0ef11c31f2dc3cee; sourceTree = "<group>"; };
 		C2D3B1EC871BE7C4CB074554 /* 5c5676ec26cec166db6534e26003fe057c793e */ = {isa = PBXFileReference; lastKnownFileType = file; path = 5c5676ec26cec166db6534e26003fe057c793e; sourceTree = "<group>"; };
 		C3C95828DF138C75098895C7 /* LocationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationManager.swift; sourceTree = "<group>"; };
 		C47B1486CC83230F1061D84E /* 2315e2cd9794590a7b84eca6a57a1a33a53807 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 2315e2cd9794590a7b84eca6a57a1a33a53807; sourceTree = "<group>"; };
+		C53B1179E9AFA037649E39EC /* 5dff4217dc44fcd0caf732402ff1861845b730 */ = {isa = PBXFileReference; lastKnownFileType = text; path = 5dff4217dc44fcd0caf732402ff1861845b730; sourceTree = "<group>"; };
 		C7146020BB8BB015E6F23A2F /* 239e2cc03deece37705b2d38b91de3845d3703 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 239e2cc03deece37705b2d38b91de3845d3703; sourceTree = "<group>"; };
 		C7C86528BECA605A8B0D93D9 /* 3e44f9d0ec534a7c9f521a5b3d80a84f441393 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 3e44f9d0ec534a7c9f521a5b3d80a84f441393; sourceTree = "<group>"; };
 		C9104879022D51DFEABD498A /* d7dd61ce007b8ccddc2bbd6946671d51157ea3 */ = {isa = PBXFileReference; lastKnownFileType = text; path = d7dd61ce007b8ccddc2bbd6946671d51157ea3; sourceTree = "<group>"; };
@@ -245,10 +278,14 @@
 		C991FA6A086EE144FE8B7DFD /* e0d3ce19dab59c87cd640189450e992d5968f5 */ = {isa = PBXFileReference; lastKnownFileType = file; path = e0d3ce19dab59c87cd640189450e992d5968f5; sourceTree = "<group>"; };
 		CA90E465944C910AA0D20D6C /* 39b6e06f841c80a3422422a7e0991372bc9372 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 39b6e06f841c80a3422422a7e0991372bc9372; sourceTree = "<group>"; };
 		CAF0CF3A1EEFEEA02CEF782B /* 7bf85058dc12bff0072882f30547d33f07ba99 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 7bf85058dc12bff0072882f30547d33f07ba99; sourceTree = "<group>"; };
+		CC85B33D9B009473620152EF /* 8024dc5592524b5531da0dd4f2dc7f5f36d92b */ = {isa = PBXFileReference; lastKnownFileType = file; path = 8024dc5592524b5531da0dd4f2dc7f5f36d92b; sourceTree = "<group>"; };
 		CCE18132823D603B991BD8D0 /* 801af8561c2170f5285b5f3a5f4ab84a4742d6 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 801af8561c2170f5285b5f3a5f4ab84a4742d6; sourceTree = "<group>"; };
+		CE16A2C3CD8DCE3CA76FD47E /* f4900248703ceeea348f7d68f052f442ecba84 */ = {isa = PBXFileReference; lastKnownFileType = file; path = f4900248703ceeea348f7d68f052f442ecba84; sourceTree = "<group>"; };
 		CE23CF8759C7B12F7F5412AD /* index */ = {isa = PBXFileReference; lastKnownFileType = file; path = index; sourceTree = "<group>"; };
 		CE73E05BD7F68B9673B3754D /* 1b8e7bc9f294175b95166109f6eb8a4df16f04 */ = {isa = PBXFileReference; lastKnownFileType = text; path = 1b8e7bc9f294175b95166109f6eb8a4df16f04; sourceTree = "<group>"; };
+		CF1D4B964F1CD719B08517A0 /* 22609514176be99d01c57557aa9d25d6521a4e */ = {isa = PBXFileReference; lastKnownFileType = file; path = 22609514176be99d01c57557aa9d25d6521a4e; sourceTree = "<group>"; };
 		CFCE246FDB136E70EFC07028 /* aa433ee12cbc997ede35cc3dd30ef19272c96e */ = {isa = PBXFileReference; lastKnownFileType = file; path = aa433ee12cbc997ede35cc3dd30ef19272c96e; sourceTree = "<group>"; };
+		D028CBF5310BB2778E8BA3F7 /* ca0efbafceafee297a37c6fd482193d241062f */ = {isa = PBXFileReference; lastKnownFileType = text; path = ca0efbafceafee297a37c6fd482193d241062f; sourceTree = "<group>"; };
 		D327AEF841E30FB6D835428E /* 13956c08be55d15454e58c0e40d0a2f8e0c014 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 13956c08be55d15454e58c0e40d0a2f8e0c014; sourceTree = "<group>"; };
 		D461A11DEB8C19DE46931BB3 /* 0c5b7ab3ceb391c2743bf1a61dd96c65a8c986 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 0c5b7ab3ceb391c2743bf1a61dd96c65a8c986; sourceTree = "<group>"; };
 		D5FDCA72C718D0064ECE5504 /* 46bafeee6c4080f656a53bbf01e00a5449c2ce */ = {isa = PBXFileReference; lastKnownFileType = file; path = 46bafeee6c4080f656a53bbf01e00a5449c2ce; sourceTree = "<group>"; };
@@ -257,10 +294,12 @@
 		D78487BABCC108AF4A14437C /* 87573ecfafd51a30236eb0e0761de1e45557ed */ = {isa = PBXFileReference; lastKnownFileType = file; path = 87573ecfafd51a30236eb0e0761de1e45557ed; sourceTree = "<group>"; };
 		D8551E6E369E00D227688905 /* 9948e434ab3139e3e296ffb82ea3991408fd0e */ = {isa = PBXFileReference; lastKnownFileType = file; path = 9948e434ab3139e3e296ffb82ea3991408fd0e; sourceTree = "<group>"; };
 		D873A5299FC0C4383E7B7565 /* b78bf556a5c5f908aab6a418754e4cc78f44d3 */ = {isa = PBXFileReference; lastKnownFileType = file; path = b78bf556a5c5f908aab6a418754e4cc78f44d3; sourceTree = "<group>"; };
+		DACA4AEFD242736BCA7BA0AD /* e8a87d5f5f057fbbab72a16153f1e5d98bafba */ = {isa = PBXFileReference; lastKnownFileType = file; path = e8a87d5f5f057fbbab72a16153f1e5d98bafba; sourceTree = "<group>"; };
 		DAD51C38ED40B62FED55095A /* 91a5c04fe9cbca06b567191c0027e3390a64f0 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 91a5c04fe9cbca06b567191c0027e3390a64f0; sourceTree = "<group>"; };
 		DB14AEB4E0F0CBB476C3B728 /* 54318970706da94c5dd8c8f26eaad289cbce1d */ = {isa = PBXFileReference; lastKnownFileType = file; path = 54318970706da94c5dd8c8f26eaad289cbce1d; sourceTree = "<group>"; };
 		DB18EA84EED2497E389FCB33 /* HEAD */ = {isa = PBXFileReference; lastKnownFileType = text; path = HEAD; sourceTree = "<group>"; };
 		DB8E2EEC8A4CFA7949DFC7A4 /* bcd0aadd568684c6d4cdd8dad57879820d6750 */ = {isa = PBXFileReference; lastKnownFileType = file; path = bcd0aadd568684c6d4cdd8dad57879820d6750; sourceTree = "<group>"; };
+		DBBB9DFB7CC974F07A16D68B /* 0e0a827a8b02ed397a761e0a3529d53ae72ecd */ = {isa = PBXFileReference; lastKnownFileType = file; path = 0e0a827a8b02ed397a761e0a3529d53ae72ecd; sourceTree = "<group>"; };
 		DC6FE4A37EFCC0912E8C74DE /* 9c8ee82f3df643ca22510ef6cfe2b9cfb1c27c */ = {isa = PBXFileReference; lastKnownFileType = text; path = 9c8ee82f3df643ca22510ef6cfe2b9cfb1c27c; sourceTree = "<group>"; };
 		DDD8AB7AFA7591BB650CA12F /* 60243602eac3e165c54d38258aebe7612ec14a */ = {isa = PBXFileReference; lastKnownFileType = file; path = 60243602eac3e165c54d38258aebe7612ec14a; sourceTree = "<group>"; };
 		DDFDA1DAB32F33E120E9DD83 /* 564166ff3f8cf5d495cbd78fc3d0e196083467 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 564166ff3f8cf5d495cbd78fc3d0e196083467; sourceTree = "<group>"; };
@@ -284,6 +323,7 @@
 		ED9682AF7B1AD699ECD2105D /* d5e1fc14bcb30152ddfb247db95aaa13298784 */ = {isa = PBXFileReference; lastKnownFileType = file; path = d5e1fc14bcb30152ddfb247db95aaa13298784; sourceTree = "<group>"; };
 		EEAEAD0A587BFB196348111F /* e8353678d876cbb9624d2bba01ec68c2f5c9dc */ = {isa = PBXFileReference; lastKnownFileType = file; path = e8353678d876cbb9624d2bba01ec68c2f5c9dc; sourceTree = "<group>"; };
 		EEC459CC4B3A5213E6597050 /* 00e9409fdae6b83350826c83823d6d93ea2d95 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 00e9409fdae6b83350826c83823d6d93ea2d95; sourceTree = "<group>"; };
+		EFDC00EBD96F088F5C3F3F36 /* 7f7ed3f46671f549ffad159e0ac6469e44255f */ = {isa = PBXFileReference; lastKnownFileType = file; path = 7f7ed3f46671f549ffad159e0ac6469e44255f; sourceTree = "<group>"; };
 		F0CCFB7EE196BC450B4A39A9 /* 8a6bd46e06342d6fc16acf04c3ce9ff7255ddf */ = {isa = PBXFileReference; lastKnownFileType = file; path = 8a6bd46e06342d6fc16acf04c3ce9ff7255ddf; sourceTree = "<group>"; };
 		F1129D9610C3CDBDE3821F29 /* df4a3c54076fc8000dddae7b70731eba14cf35 */ = {isa = PBXFileReference; lastKnownFileType = text; path = df4a3c54076fc8000dddae7b70731eba14cf35; sourceTree = "<group>"; };
 		F15F82F201971AA3C355722D /* 295cf3b504a93ef03962d71ef190e7dfded2ff */ = {isa = PBXFileReference; lastKnownFileType = file; path = 295cf3b504a93ef03962d71ef190e7dfded2ff; sourceTree = "<group>"; };
@@ -294,6 +334,7 @@
 		F4C48DADB62C7E044889EA47 /* TripEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripEditorView.swift; sourceTree = "<group>"; };
 		F543922EAC319532B90017A5 /* 4be60d2c817f997f884089894b7058316625de */ = {isa = PBXFileReference; lastKnownFileType = file; path = 4be60d2c817f997f884089894b7058316625de; sourceTree = "<group>"; };
 		F6C46C528E0429AA24759975 /* 7c963ed022ce6d9120912fc94030ad659e2be0 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 7c963ed022ce6d9120912fc94030ad659e2be0; sourceTree = "<group>"; };
+		F728AAFA9CA17319C5DE0742 /* 8ecebf3fb4b4f79b107f0b831f7c15f3475909 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 8ecebf3fb4b4f79b107f0b831f7c15f3475909; sourceTree = "<group>"; };
 		F772DDB81CE96B94985DFA1A /* PDFKitView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFKitView.swift; sourceTree = "<group>"; };
 		F7D9149F4A9C21A1B73D2168 /* 164bff94764ca2ee104295bfefaf5134b2fc71 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 164bff94764ca2ee104295bfefaf5134b2fc71; sourceTree = "<group>"; };
 		F89DAD754328D9450F26610B /* f3b5d2ce5601080d3a190fc0f3912c02379ce0 */ = {isa = PBXFileReference; lastKnownFileType = file; path = f3b5d2ce5601080d3a190fc0f3912c02379ce0; sourceTree = "<group>"; };
@@ -301,9 +342,11 @@
 		F993986D26BDC4B7CA5D1B36 /* ba18826f7c6878b6921903ac2c24e8ac522b7e */ = {isa = PBXFileReference; lastKnownFileType = file; path = ba18826f7c6878b6921903ac2c24e8ac522b7e; sourceTree = "<group>"; };
 		FA770DA468BBC70517CB4FB3 /* fcbfc3968c1095e533d4224eb13a3f744c8e7a */ = {isa = PBXFileReference; lastKnownFileType = file; path = fcbfc3968c1095e533d4224eb13a3f744c8e7a; sourceTree = "<group>"; };
 		FA9C3D5E24DCF69DB1B65FF0 /* c9bb9dcaf5584ce4b5f3a0d11a20fcef5f681a */ = {isa = PBXFileReference; lastKnownFileType = file; path = c9bb9dcaf5584ce4b5f3a0d11a20fcef5f681a; sourceTree = "<group>"; };
+		FB876D26DE28BBF02E6A8822 /* 027a909156b14c8a984098a780799fced1b69a */ = {isa = PBXFileReference; lastKnownFileType = file; path = 027a909156b14c8a984098a780799fced1b69a; sourceTree = "<group>"; };
 		FC4D5413036EDEA317DA1BCD /* COMMIT_EDITMSG */ = {isa = PBXFileReference; lastKnownFileType = text; path = COMMIT_EDITMSG; sourceTree = "<group>"; };
 		FCEB0ADEE41EA609BB575FB8 /* dead5eaff2badd8845151478e1c2b42e7083eb */ = {isa = PBXFileReference; lastKnownFileType = file; path = dead5eaff2badd8845151478e1c2b42e7083eb; sourceTree = "<group>"; };
 		FE77F1B0C7FB3B1B81D27C6B /* 67f5acdc592ec104bd8bd8fffee30a3e1ed270 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 67f5acdc592ec104bd8bd8fffee30a3e1ed270; sourceTree = "<group>"; };
+		FFF4C8CC96961215658A5DCA /* 328df17aad207f1ae9ab2b072791c2a7fb61ce */ = {isa = PBXFileReference; lastKnownFileType = text; path = 328df17aad207f1ae9ab2b072791c2a7fb61ce; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -331,12 +374,28 @@
 			path = remotes;
 			sourceTree = "<group>";
 		};
+		0A4A808ED5DC43C09529BF82 /* 6b */ = {
+			isa = PBXGroup;
+			children = (
+				43AA778FEB16025259F8BF1F /* 9cac72be5e43c9bfbc4e120b7dd6a161094b6c */,
+			);
+			path = 6b;
+			sourceTree = "<group>";
+		};
 		0B9FF0E672A6EB2E5A6F667C /* cb */ = {
 			isa = PBXGroup;
 			children = (
 				175F56D724AF0273522D2E7F /* a8173e0a9830f2c745957cf235b730f7a765d4 */,
 			);
 			path = cb;
+			sourceTree = "<group>";
+		};
+		0BF703461A2F76B7F96BF52D /* 4f */ = {
+			isa = PBXGroup;
+			children = (
+				693E685CBE797CB1DDAB865A /* 1cd3f9a18f4a40ad3cfa5d3f99e5c487088a85 */,
+			);
+			path = 4f;
 			sourceTree = "<group>";
 		};
 		0C1D46503D9809B55CF1BA6C /* .git */ = {
@@ -381,6 +440,14 @@
 			path = c9;
 			sourceTree = "<group>";
 		};
+		12921C82C3D95E8C6BC583E3 /* fe */ = {
+			isa = PBXGroup;
+			children = (
+				CE16A2C3CD8DCE3CA76FD47E /* f4900248703ceeea348f7d68f052f442ecba84 */,
+			);
+			path = fe;
+			sourceTree = "<group>";
+		};
 		12C026006F4B9D301311509D /* 5b */ = {
 			isa = PBXGroup;
 			children = (
@@ -392,6 +459,7 @@
 		14024B7545749CAC3D551CCD /* 0f */ = {
 			isa = PBXGroup;
 			children = (
+				A3330DB368F90413B4FAF71E /* 3135de9c9cbda69a9f0727b5c69b38caf2b507 */,
 				AC89A12187435AD09648B14D /* 8848175857a5bf11e6dc36162b516882127cce */,
 				410976A96A94D9A3B3B5A3AA /* fc0e803cc2a1b9b3ad9859342cc67d3a1197ed */,
 			);
@@ -442,6 +510,7 @@
 		19B7739055CB360EBBD3319D /* 47 */ = {
 			isa = PBXGroup;
 			children = (
+				02704D4F6B64B6BCC62D52AD /* 2ac9b5f26cbdced105ffd510bf37b451edd1d7 */,
 				2C7109DFC8680B8D3132C19E /* ef031b0d2c7aa37c8eefb0710b91c6707f4a19 */,
 			);
 			path = 47;
@@ -552,6 +621,7 @@
 		2E4C8ACF1A91BDBA2D622097 /* 94 */ = {
 			isa = PBXGroup;
 			children = (
+				7D8F77A5283816A250E271BC /* 40d937759416838a7d93eb1d9095d1b283b82a */,
 				7877B3101C4F2589D49A3779 /* 688f72efa950bb0511d79b3f6a56648f736ead */,
 			);
 			path = 94;
@@ -565,10 +635,19 @@
 			path = 9f;
 			sourceTree = "<group>";
 		};
+		2FEEC5468F68113FE1E96985 /* bd */ = {
+			isa = PBXGroup;
+			children = (
+				424A0BC8302ED958179CDD2F /* 2ec1490c4a9a32f30635b6911bab8424b39a42 */,
+			);
+			path = bd;
+			sourceTree = "<group>";
+		};
 		3323890140514016D7D1372E /* 55 */ = {
 			isa = PBXGroup;
 			children = (
 				7CEA0CDA310242526C47C261 /* 0ef05aa921c179a0dd041e5e689ccbb16f2924 */,
+				42D6AE6B61629A059783CF9A /* 8559c2dbd726db7bf13679aabed07e3bb425ff */,
 			);
 			path = 55;
 			sourceTree = "<group>";
@@ -610,10 +689,19 @@
 			path = ab;
 			sourceTree = "<group>";
 		};
+		3A0366941F204E391C734CB0 /* 40 */ = {
+			isa = PBXGroup;
+			children = (
+				739302270F319A16FF0E7AA3 /* 937829db9aa0ae289ae824ac6d5011f407e3dd */,
+			);
+			path = 40;
+			sourceTree = "<group>";
+		};
 		3AE435E877DE375097F4B2E3 /* e8 */ = {
 			isa = PBXGroup;
 			children = (
 				00C8FF57922D7ABA46BA1012 /* 3bc9197d38df5caab0fae1383a45b6d91311bc */,
+				2EF77A97C8CA5F681C1FE16B /* 76cdde05c790e379b8d51fa879f84fb48c9e98 */,
 			);
 			path = e8;
 			sourceTree = "<group>";
@@ -761,6 +849,14 @@
 			path = 1c;
 			sourceTree = "<group>";
 		};
+		52DF7C7EDECC8ED2A8A3DC65 /* 46 */ = {
+			isa = PBXGroup;
+			children = (
+				FFF4C8CC96961215658A5DCA /* 328df17aad207f1ae9ab2b072791c2a7fb61ce */,
+			);
+			path = 46;
+			sourceTree = "<group>";
+		};
 		53B64168FC7B9D1841121A04 /* ae */ = {
 			isa = PBXGroup;
 			children = (
@@ -781,6 +877,7 @@
 		5782844DB5A87C013A2577BD /* 0b */ = {
 			isa = PBXGroup;
 			children = (
+				233D894A7DB3DF3B433DB430 /* 9e44d7c7f8ce827daa34d319b868e53e833791 */,
 				D8551E6E369E00D227688905 /* 9948e434ab3139e3e296ffb82ea3991408fd0e */,
 			);
 			path = 0b;
@@ -820,6 +917,14 @@
 			path = 86;
 			sourceTree = "<group>";
 		};
+		5A12117B8974ECB8D1E80D48 /* dc */ = {
+			isa = PBXGroup;
+			children = (
+				2051F50B890AB560715B8080 /* 49e1e049f3c32342de4867fa167a30fc99bc5e */,
+			);
+			path = dc;
+			sourceTree = "<group>";
+		};
 		5E070C79F6C4149C1DA8481A /* 2a */ = {
 			isa = PBXGroup;
 			children = (
@@ -842,6 +947,7 @@
 		5F632D3C3DDA6780165C5189 /* 0a */ = {
 			isa = PBXGroup;
 			children = (
+				2C806E79615CA828DB620B79 /* 8f2ed41f1042a7b4a5889dfabed65a1e9ecf73 */,
 				2D72100AB772C968A663C6C9 /* c7d218a6e98db661fdd329c60d0de724565aaf */,
 			);
 			path = 0a;
@@ -867,6 +973,7 @@
 			isa = PBXGroup;
 			children = (
 				3451D6A3F649DF9BB10E3803 /* 112eb4bd8629a169417ab5638c18017ad7a4bb */,
+				A85BF94CDC69FD816DAE9B7F /* 770513d5d54bd33e2b2e85dcb272726a391310 */,
 			);
 			path = cd;
 			sourceTree = "<group>";
@@ -883,6 +990,7 @@
 			isa = PBXGroup;
 			children = (
 				A85F189E00A425136B3D368B /* 1de63d124fabd9ee1113b968d75d9e45268ad4 */,
+				B2DBD821C173CA51459B094F /* 7de591531c8f7d0f5e45bf6e99931804c5e58b */,
 				24E009D003D6EA96F8336C8D /* ff78f72ffd73b053cd837fdcf3b25e736ed399 */,
 			);
 			path = 27;
@@ -909,6 +1017,7 @@
 			isa = PBXGroup;
 			children = (
 				98D4103C5ECCA8A05287E3DA /* 487bc0c4eaf516a231c20a8a39c27cdbf4cf48 */,
+				27EFF822962CD01269B2B3BA /* d4d38fe9aedf5266f8a881ac57c834de54168f */,
 			);
 			path = 69;
 			sourceTree = "<group>";
@@ -926,6 +1035,7 @@
 			children = (
 				96F1CAAF71661754F31B89DB /* 64eb040490c5de4dde9294a8938d5b011236a6 */,
 				EC8EAEA890308F788F5BD0C1 /* aa010e82996bc1e55e9188e78aa8e1a4aed907 */,
+				93E1CDAB5F95CBA10F6E165D /* ea221c31ad385d326b95fd8805fdaaf9269f76 */,
 			);
 			path = 00;
 			sourceTree = "<group>";
@@ -991,6 +1101,14 @@
 			path = 6a;
 			sourceTree = "<group>";
 		};
+		7031215182B74B46D8FC9D44 /* c7 */ = {
+			isa = PBXGroup;
+			children = (
+				AC765A6913367AA6A08A8F9D /* 3bc9a9666190b878d0182ea9e495890a544c90 */,
+			);
+			path = c7;
+			sourceTree = "<group>";
+		};
 		736C76E5EFF07E47ABD51584 /* bb */ = {
 			isa = PBXGroup;
 			children = (
@@ -1002,6 +1120,7 @@
 		743ED64D7F1755A58A535A3B /* 93 */ = {
 			isa = PBXGroup;
 			children = (
+				C53B1179E9AFA037649E39EC /* 5dff4217dc44fcd0caf732402ff1861845b730 */,
 				3E55DDF5069DEE0C573F576B /* 8e3d6326daa8efecc04d83d88f538d68f5b58b */,
 				CA90E465944C910AA0D20D6C /* 39b6e06f841c80a3422422a7e0991372bc9372 */,
 			);
@@ -1029,6 +1148,8 @@
 			children = (
 				F0CCFB7EE196BC450B4A39A9 /* 8a6bd46e06342d6fc16acf04c3ce9ff7255ddf */,
 				B8E290600548A6EECC9AECFC /* 52ce59123e5987e65ca020b20219bc21906320 */,
+				CF1D4B964F1CD719B08517A0 /* 22609514176be99d01c57557aa9d25d6521a4e */,
+				DACA4AEFD242736BCA7BA0AD /* e8a87d5f5f057fbbab72a16153f1e5d98bafba */,
 			);
 			path = de;
 			sourceTree = "<group>";
@@ -1132,6 +1253,7 @@
 			isa = PBXGroup;
 			children = (
 				B10BB261F815462E2FC6B908 /* 01ec8ab2e82c34ee57c388ce2743e9e6acb245 */,
+				C20CA39B89B68BD4D3635A43 /* 9627e04568bd12d808ddee0ef11c31f2dc3cee */,
 				4E2D85DB200369581609E540 /* c824afd689734269350150761da63eb70a8f6b */,
 			);
 			path = 8f;
@@ -1143,6 +1265,14 @@
 				ED9682AF7B1AD699ECD2105D /* d5e1fc14bcb30152ddfb247db95aaa13298784 */,
 			);
 			path = 36;
+			sourceTree = "<group>";
+		};
+		8D888E3248C51B27777EFDDD /* 7c */ = {
+			isa = PBXGroup;
+			children = (
+				CC85B33D9B009473620152EF /* 8024dc5592524b5531da0dd4f2dc7f5f36d92b */,
+			);
+			path = 7c;
 			sourceTree = "<group>";
 		};
 		9056CDD8B9764D0331C83135 /* 7d */ = {
@@ -1258,6 +1388,8 @@
 			isa = PBXGroup;
 			children = (
 				EEC459CC4B3A5213E6597050 /* 00e9409fdae6b83350826c83823d6d93ea2d95 */,
+				0F0957B6AFCCA3215A1049A5 /* 65cf41d160fd4c5d66173dbe2aecece543b2ea */,
+				8BC2355C9D587511A7EA1438 /* 96c557c3a9697e6a3dad56c478fb34f3dad233 */,
 			);
 			path = 06;
 			sourceTree = "<group>";
@@ -1274,6 +1406,7 @@
 			isa = PBXGroup;
 			children = (
 				27010332018970A8D3AEFD97 /* d8d1945ab1af99408eacb2358a44ca3501deff */,
+				227D83326622FE0913BC9BF4 /* d19e607585bbad01be0f8835245f7e186bbaeb */,
 			);
 			path = a4;
 			sourceTree = "<group>";
@@ -1303,9 +1436,17 @@
 			path = info;
 			sourceTree = "<group>";
 		};
-		A4216AF92FF06F0F0039FEBE /* Products */ = {
+		A4216AFB2FF120350039FEBE /* Products */ = {
 			isa = PBXGroup;
 			name = Products;
+			sourceTree = "<group>";
+		};
+		A6A1F88DA621DE65C166F053 /* c5 */ = {
+			isa = PBXGroup;
+			children = (
+				0B3F2250CC1BD30744900CC3 /* cf9829546bc20dc8a47669b9f9acb46f186f9f */,
+			);
+			path = c5;
 			sourceTree = "<group>";
 		};
 		A793CD9DAFFB7DBD6B88D59D /* a8 */ = {
@@ -1344,6 +1485,7 @@
 		AA2A2F8F8EAD53A62B65BB33 /* 05 */ = {
 			isa = PBXGroup;
 			children = (
+				1D40DC19A95073E34FD6C52F /* 39c9746cc8bb80d054571f2042897486e76625 */,
 				A6AD9189618A49E59D9D99DA /* 21295f220731bfcb00919e10c0404975fd6ee8 */,
 				F44EC06CEA143699836A06D2 /* df4cbfd703da3487ea589f9acebfda4f4c54da */,
 			);
@@ -1388,6 +1530,7 @@
 		B48510AFBE6AC209C21831DE /* 7a */ = {
 			isa = PBXGroup;
 			children = (
+				DBBB9DFB7CC974F07A16D68B /* 0e0a827a8b02ed397a761e0a3529d53ae72ecd */,
 				67D22F1D33913B1B59BEE5D2 /* 0e4857726ef0b829518015463a232022f0a9e6 */,
 			);
 			path = 7a;
@@ -1407,6 +1550,7 @@
 			isa = PBXGroup;
 			children = (
 				526D28F244CC53910E38A29A /* .gitignore */,
+				45C3EF40B48EA34C84733110 /* Assets.xcassets */,
 				2216F304310979F2185A133C /* ContentView.swift */,
 				290B839685794EEFDFD218D1 /* ExpenseTrackerView.swift */,
 				C3C95828DF138C75098895C7 /* LocationManager.swift */,
@@ -1424,6 +1568,15 @@
 			path = .;
 			sourceTree = "<group>";
 		};
+		C01C8075BEEB81FB585E6AD8 /* 98 */ = {
+			isa = PBXGroup;
+			children = (
+				64DFE05737552DF4877AD8CE /* 18464082a8ca3d63f9793648de9e5761ed99d4 */,
+				607FD89674003DE2C93A3272 /* a5c8a9c2ee5251f513ffec3e5dd73b226e2c6a */,
+			);
+			path = 98;
+			sourceTree = "<group>";
+		};
 		C1CDFF585F006557C72134B9 /* d4 */ = {
 			isa = PBXGroup;
 			children = (
@@ -1435,6 +1588,7 @@
 		C50695ECBDCA3855D76C38AA /* a9 */ = {
 			isa = PBXGroup;
 			children = (
+				914EE738DFFF6F566F93329A /* 15f34e760c1bb59e27731581ed60dc275c6a98 */,
 				3739155A521485DA8D0803CF /* f6a280c418740ed33daad53f01286b5b51a356 */,
 			);
 			path = a9;
@@ -1483,6 +1637,7 @@
 		CCA4338FC2ED4344A99DC18F /* df */ = {
 			isa = PBXGroup;
 			children = (
+				FB876D26DE28BBF02E6A8822 /* 027a909156b14c8a984098a780799fced1b69a */,
 				027E861A3AA8DE4A67134BBF /* 331f4e53f39d1cb9f73556e9bf0b1405c3b10c */,
 			);
 			path = df;
@@ -1523,6 +1678,7 @@
 		D51F0EB1587049016E9DB43B /* c3 */ = {
 			isa = PBXGroup;
 			children = (
+				F728AAFA9CA17319C5DE0742 /* 8ecebf3fb4b4f79b107f0b831f7c15f3475909 */,
 				422735440BD494617ADA1463 /* 8f76b4923877620dbde46a4e2bd6fad4a26701 */,
 				D5FDCA72C718D0064ECE5504 /* 46bafeee6c4080f656a53bbf01e00a5449c2ce */,
 				6831D11154D60F820181819F /* 625ee04f94674619154b025e28830698ab5434 */,
@@ -1535,6 +1691,7 @@
 			isa = PBXGroup;
 			children = (
 				7D2A56981E63D2B7294B8671 /* 1c2efe571e9c6227fe429e2209decde1d8a357 */,
+				89161E40BEAE1AB67EF2A514 /* f46f552303c49db6a5d83c3974d880ffd1e9e4 */,
 			);
 			path = c8;
 			sourceTree = "<group>";
@@ -1559,6 +1716,7 @@
 			isa = PBXGroup;
 			children = (
 				A2881B5585B941E513DF2C57 /* 5d7d6a6ae7c977b44f64bf6e7ebcf4c6f2fe30 */,
+				EFDC00EBD96F088F5C3F3F36 /* 7f7ed3f46671f549ffad159e0ac6469e44255f */,
 				8733389AFF86009A36822B77 /* 86d47869eebf018603df1b78d50f245999167a */,
 				DAD51C38ED40B62FED55095A /* 91a5c04fe9cbca06b567191c0027e3390a64f0 */,
 				1D8743ADB8858A665595792E /* 006485fca5b247f0e46141aa143dd19ad88952 */,
@@ -1600,6 +1758,8 @@
 				F896AAC67ECE4D237AA32A29 /* 04 */,
 				3D64B3F48F5D1FFD9B658796 /* 4a */,
 				5EC9E47C1D55EF646FC62C7C /* 4b */,
+				E6BC6A9EAC4896F42B652792 /* 4e */,
+				0BF703461A2F76B7F96BF52D /* 4f */,
 				AA2A2F8F8EAD53A62B65BB33 /* 05 */,
 				CE968E8B006142B7DCEE0E3C /* 5a */,
 				12C026006F4B9D301311509D /* 5b */,
@@ -1608,11 +1768,13 @@
 				8ACD7B05BC2090EC5FE801A2 /* 5f */,
 				9F4AFAA33090108832ACDBFD /* 06 */,
 				6EA406A3AD73B48922E9AB11 /* 6a */,
+				0A4A808ED5DC43C09529BF82 /* 6b */,
 				19AACE82A9837A7CB1B96AAA /* 6c */,
 				F0BF013BBE4F06284586D852 /* 6d */,
 				017CCD8B696883E0B8C306B8 /* 07 */,
 				B48510AFBE6AC209C21831DE /* 7a */,
 				203796DB7D7BBEA795DDB89B /* 7b */,
+				8D888E3248C51B27777EFDDD /* 7c */,
 				9056CDD8B9764D0331C83135 /* 7d */,
 				DEC80F40AD00DF484D3D47EA /* 7e */,
 				4D0F6686D985E68E92BDC1B0 /* 7f */,
@@ -1641,10 +1803,12 @@
 				8C56D3E91AAA65FC7C07E8EE /* 36 */,
 				DE0F29DF4600E1581C9023E2 /* 38 */,
 				934A0CE744009C62F2F38E8D /* 39 */,
+				3A0366941F204E391C734CB0 /* 40 */,
 				90F146DBA39974982E7D5983 /* 41 */,
 				C6E0EAD1F92D441BCD0F9703 /* 42 */,
 				4466472392766E39E8C9DF47 /* 44 */,
 				6C75B64F346688C2F7C72A99 /* 45 */,
+				52DF7C7EDECC8ED2A8A3DC65 /* 46 */,
 				19B7739055CB360EBBD3319D /* 47 */,
 				95C75407E3131B90115A757F /* 49 */,
 				1ED87356E365BDE7A9EF79CA /* 51 */,
@@ -1677,6 +1841,7 @@
 				2E4C8ACF1A91BDBA2D622097 /* 94 */,
 				D0F68107735F8278A052A7B9 /* 96 */,
 				CFC0EE49FC5B790EC569226E /* 97 */,
+				C01C8075BEEB81FB585E6AD8 /* 98 */,
 				15076A278FE22B9B5A47E0AA /* 99 */,
 				899A6F92508318161E4211AB /* a0 */,
 				EBFB4FB248697F9AA33468CB /* a2 */,
@@ -1699,11 +1864,14 @@
 				79B4D2B43BDF1BB4E68E9738 /* ba */,
 				736C76E5EFF07E47ABD51584 /* bb */,
 				A30DA9649FD823A76F117F8F /* bc */,
+				2FEEC5468F68113FE1E96985 /* bd */,
 				173138135C60ACA73368E1FA /* be */,
 				6C9E03A6A7B58996995442B2 /* bf */,
 				16E37FB3C2DB58F6A330BCEE /* c0 */,
 				D51F0EB1587049016E9DB43B /* c3 */,
+				A6A1F88DA621DE65C166F053 /* c5 */,
 				6161C24BFB8855FCABF26B37 /* c6 */,
+				7031215182B74B46D8FC9D44 /* c7 */,
 				D531C12B687C4239F5CAC6F0 /* c8 */,
 				1283F0C5A3E256D453CE46B6 /* c9 */,
 				F7CD1E7B3231510D981077A9 /* ca */,
@@ -1715,6 +1883,7 @@
 				4B70FD2CDA0D01299CE4E399 /* d8 */,
 				FE68C4A0EF0ACB37D79E56B9 /* d9 */,
 				959499DBEF706B7D56CBCB13 /* da */,
+				5A12117B8974ECB8D1E80D48 /* dc */,
 				A9E59655F9233718893D5944 /* dd */,
 				777C5A5F7D39A6E7EB58251F /* de */,
 				CCA4338FC2ED4344A99DC18F /* df */,
@@ -1732,7 +1901,9 @@
 				8159702DEA04130404FFBB3C /* f6 */,
 				F57FE0CA09F10CDD69DECD7D /* f7 */,
 				83F99DA907831498FA17C8FD /* f8 */,
+				EF8D6C2565E8B2CE0E1F4C53 /* fb */,
 				A1A4D27F3AAD349E8AEABB7B /* fc */,
+				12921C82C3D95E8C6BC583E3 /* fe */,
 			);
 			path = objects;
 			sourceTree = "<group>";
@@ -1821,6 +1992,14 @@
 			path = d7;
 			sourceTree = "<group>";
 		};
+		E6BC6A9EAC4896F42B652792 /* 4e */ = {
+			isa = PBXGroup;
+			children = (
+				D028CBF5310BB2778E8BA3F7 /* ca0efbafceafee297a37c6fd482193d241062f */,
+			);
+			path = 4e;
+			sourceTree = "<group>";
+		};
 		E86F79A45E3E871208486124 /* 0c */ = {
 			isa = PBXGroup;
 			children = (
@@ -1854,9 +2033,18 @@
 			path = a2;
 			sourceTree = "<group>";
 		};
+		EF8D6C2565E8B2CE0E1F4C53 /* fb */ = {
+			isa = PBXGroup;
+			children = (
+				3C9A7B105055D097EA88D168 /* 6f837829c0892f6786ad4585ab3586ee823be1 */,
+			);
+			path = fb;
+			sourceTree = "<group>";
+		};
 		F0BF013BBE4F06284586D852 /* 6d */ = {
 			isa = PBXGroup;
 			children = (
+				81597F8C1891B6E414CBBE7B /* 26f403fd8e8e3e145bd3d276447f5356823756 */,
 				8DDB61202E4152F8D14FD1F4 /* b0db3202ed1325d54343af20abdea8787c0e35 */,
 			);
 			path = 6d;
@@ -1924,6 +2112,7 @@
 		FCAE8B2D105C0F576BCCAECD /* 3c */ = {
 			isa = PBXGroup;
 			children = (
+				4DE56A065D8682DAC417541A /* 57fe52da168d10156f37582fb6d45fbf11b7b8 */,
 				9642FE6DF4CF1D7669527ED0 /* a12d667ec76312b82d2c3b96b2b1c803fc3aa6 */,
 			);
 			path = 3c;
@@ -1998,7 +2187,7 @@
 			projectDirPath = "";
 			projectReferences = (
 				{
-					ProductGroup = A4216AF92FF06F0F0039FEBE /* Products */;
+					ProductGroup = A4216AFB2FF120350039FEBE /* Products */;
 					ProjectRef = F38A8798CFA6B4EB9D109962 /* Traveler.xcodeproj */;
 				},
 			);
@@ -2014,6 +2203,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				23C68E449B0E0D418531083B /* Assets.xcassets in Resources */,
 				CDB48448FE44C63AB1B6BBF5 /* Traveler.xcodeproj in Resources */,
 				5114DD8F2B728957E208DF4B /* applypatch-msg.sample in Resources */,
 				0B2A11B3709C02A171989E22 /* commit-msg.sample in Resources */,
@@ -2062,7 +2252,6 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = HAL7H5WW52;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -2084,7 +2273,6 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = HAL7H5WW52;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
