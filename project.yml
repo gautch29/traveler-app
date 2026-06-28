@@ -18,6 +18,9 @@ targets:
           NSAllowsArbitraryLoads: true
         NSLocationWhenInUseUsageDescription: "We need your location to add expense locations at your current position."
         UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        UIRequiresFullScreen: true
     settings:
       GENERATE_INFOPLIST_FILE: NO
       MARKETING_VERSION: "1.0"
@@ -25,3 +28,5 @@ targets:
       IPHONEOS_DEPLOYMENT_TARGET: "17.0"
       SWIFT_VERSION: "5.9"
       ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+      CODE_SIGNING_ALLOWED: NO
+      CODE_SIGNING_REQUIRED: NO
